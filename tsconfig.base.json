@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@jobos/database": ["packages/database/src/index.ts"],
+      "@jobos/contracts": ["packages/contracts/src/index.ts"],
+      "@jobos/validation": ["packages/validation/src/index.ts"],
+      "@jobos/config": ["packages/config/src/index.ts"],
+      "@jobos/logger": ["packages/logger/src/index.ts"],
+      "@jobos/ai": ["packages/ai/src/index.ts"]
+    }
+  }
+}
+
