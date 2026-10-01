@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, desc, eq } from "drizzle-orm";
-import { applications, companies, jobs, resumeVersions, resumes, users } from "@jobos/database";
-import type { CreateResumeInput, CreateResumeVersionInput } from "@jobos/validation";
+import { applications, atsAnalyses, companies, jobResumeMatches, jobs, resumeVersions, resumes, users } from "@jobos/database";
+import type { CreateResumeInput, CreateResumeVersionFromParseInput, CreateResumeVersionInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -86,7 +86,35 @@ export class ResumesRepository {
       .where(eq(resumeVersions.resumeId, id))
       .orderBy(asc(applications.createdAt));
 
-    return { ...resume, versions, applications: linkedApplications };
+    const analyses = await this.db
+      .select({
+        id: atsAnalyses.id,
+        jobId: atsAnalyses.jobId,
+        resumeVersionId: atsAnalyses.resumeVersionId,
+        scores: atsAnalyses.scores,
+        findings: atsAnalyses.findings,
+        createdAt: atsAnalyses.createdAt
+      })
+      .from(atsAnalyses)
+      .innerJoin(resumeVersions, eq(atsAnalyses.resumeVersionId, resumeVersions.id))
+      .where(eq(resumeVersions.resumeId, id))
+      .orderBy(desc(atsAnalyses.createdAt));
+
+    const matches = await this.db
+      .select({
+        id: jobResumeMatches.id,
+        jobId: jobResumeMatches.jobId,
+        resumeVersionId: jobResumeMatches.resumeVersionId,
+        score: jobResumeMatches.score,
+        recommendations: jobResumeMatches.recommendations,
+        createdAt: jobResumeMatches.createdAt
+      })
+      .from(jobResumeMatches)
+      .innerJoin(resumeVersions, eq(jobResumeMatches.resumeVersionId, resumeVersions.id))
+      .where(eq(resumeVersions.resumeId, id))
+      .orderBy(desc(jobResumeMatches.createdAt));
+
+    return { ...resume, versions, applications: linkedApplications, analyses, matches };
   }
 
   async createVersion(id: string, input: CreateResumeVersionInput) {
@@ -113,6 +141,20 @@ export class ResumesRepository {
       .returning();
 
     return version;
+  }
+
+  async createVersionFromParsed(id: string, input: CreateResumeVersionFromParseInput) {
+    return this.createVersion(id, {
+      title: input.title,
+      content: {
+        ...input.parsed,
+        metadata: {
+          source: "resume_paste",
+          originalText: input.originalText,
+          importedAt: new Date().toISOString()
+        }
+      }
+    });
   }
 
   private async ensureDevUser() {

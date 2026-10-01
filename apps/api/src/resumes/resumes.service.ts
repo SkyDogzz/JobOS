@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { createResumeSchema, createResumeVersionSchema } from "@jobos/validation";
+import { parseResumeText } from "@jobos/document-parser";
+import { createResumeSchema, createResumeVersionFromParseSchema, createResumeVersionSchema, parseResumeSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { ResumesRepository } from "./resumes.repository.js";
 
@@ -26,6 +27,20 @@ export class ResumesService {
 
   async createVersion(id: string, body: unknown) {
     const version = await this.resumes.createVersion(id, parseBody(createResumeVersionSchema, body));
+    if (!version) {
+      throw new NotFoundException("Resume not found.");
+    }
+
+    return version;
+  }
+
+  parse(body: unknown) {
+    const input = parseBody(parseResumeSchema, body);
+    return parseResumeText(input.text);
+  }
+
+  async createVersionFromParsed(id: string, body: unknown) {
+    const version = await this.resumes.createVersionFromParsed(id, parseBody(createResumeVersionFromParseSchema, body));
     if (!version) {
       throw new NotFoundException("Resume not found.");
     }

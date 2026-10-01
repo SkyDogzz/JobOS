@@ -33,6 +33,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   const [jobs, setJobs] = useState(initialData.jobs);
   const [applications, setApplications] = useState(initialData.applications);
   const [resumes, setResumes] = useState(initialData.resumes);
+  const matches = initialData.matches ?? [];
   const [apiAvailable, setApiAvailable] = useState(initialData.apiAvailable);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle", message: "" });
   const [pendingForm, setPendingForm] = useState<"job" | "resume" | "application" | null>(null);
@@ -252,6 +253,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
           <SavedJobsList jobs={jobs} />
           <ResumeList resumes={resumes} />
+          <MatchSuggestions matches={matches} />
         </div>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -260,6 +262,23 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       </section>
     </main>
+  );
+}
+
+function MatchSuggestions({ matches }: { matches: Array<{ id: string; jobId?: string; score: number; resumeName?: string; resumeTitle?: string; recommendations: Record<string, unknown> }> }) {
+  return (
+    <section className="rounded border border-ink/10 bg-white p-5 shadow-sm">
+      <h2 className="font-semibold">Best CV Suggestions</h2>
+      {matches.length === 0 ? <EmptyState text="Run matching to see recommendations." /> : null}
+      <div className="mt-2 divide-y divide-ink/10">
+        {matches.slice(0, 4).map((match) => (
+          <article className="py-3" key={match.id}>
+            <p className="font-medium">{match.resumeName ?? "CV"} · {match.score}</p>
+            <p className="mt-1 text-sm text-ink/60">{match.resumeTitle ?? "Resume version"}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

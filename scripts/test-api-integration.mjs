@@ -76,9 +76,72 @@ async function main() {
   });
   if (secondVersion.versionNumber !== 2) throw new Error("Resume version creation did not increment version number.");
 
+  const pastedText = `Integration Candidate
+integration@example.com
+Summary
+TypeScript engineer with PostgreSQL API experience building integration workflows.
+Skills
+TypeScript, PostgreSQL, NestJS, API testing
+Experience
+Engineer - JobOS Test Co
+- Built deterministic API integration coverage.
+Education
+BS Computer Science - Test University
+https://example.com/profile`;
+  const parsed = await request("/resumes/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: pastedText })
+  });
+  if (!parsed.skills.includes("TypeScript")) throw new Error("Resume parser did not extract skills.");
+
+  const parsedVersion = await request(`/resumes/${resume.id}/versions/from-parse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Parsed integration CV", parsed, originalText: pastedText })
+  });
+  if (parsedVersion.content.metadata.originalText !== pastedText) throw new Error("Parsed resume version did not preserve original text.");
+
+  const analysis = await request("/ats/analyses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: job.id, resumeVersionId: parsedVersion.id })
+  });
+  if (typeof analysis.scores.keywordCoverage !== "number") throw new Error("ATS analysis did not score keyword coverage.");
+
+  const matches = await request("/matches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: job.id, resumeVersionIds: [resume.currentVersion.id, parsedVersion.id] })
+  });
+  if (!Array.isArray(matches) || matches.length === 0) throw new Error("Matching did not persist results.");
+
+  const tailored = await request("/ai/tailor-resume", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: job.id, resumeVersionId: parsedVersion.id })
+  });
+  if (!tailored.promptHash || !tailored.draft) throw new Error("Tailoring did not return a draft with metadata.");
+
+  const approved = await request("/ai/tailor-resume/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      resumeId: resume.id,
+      title: "Tailored integration CV",
+      draft: tailored.draft,
+      sourceVersionId: parsedVersion.id,
+      jobId: job.id,
+      promptHash: tailored.promptHash,
+      metadata: { provider: tailored.provider, model: tailored.model }
+    })
+  });
+  if (approved.content.metadata.source !== "cv_tailoring") throw new Error("Approved tailoring did not create a tailored resume version.");
+
   const detail = await request(`/applications/${application.id}`);
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
+  if (!Array.isArray(detail.analyses)) throw new Error("Application detail did not include ATS analyses.");
 
   const updated = await request(`/applications/${application.id}/stage`, {
     method: "PATCH",

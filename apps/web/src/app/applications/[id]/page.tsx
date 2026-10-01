@@ -53,6 +53,14 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
               <StageControls applicationId={application.id} initialStage={application.stage} />
             </section>
 
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <h2 className="mb-4 font-semibold">ATS Findings</h2>
+              {application.analyses.length === 0 ? <p className="text-sm text-ink/55">No ATS scan yet.</p> : null}
+              {application.analyses.slice(-1).map((analysis) => (
+                <pre className="overflow-auto rounded bg-paper p-3 text-xs" key={analysis.id}>{JSON.stringify({ scores: analysis.scores, findings: analysis.findings }, null, 2)}</pre>
+              ))}
+            </section>
+
           </aside>
         </div>
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
-import { companies, jobs, users } from "@jobos/database";
+import { companies, jobResumeMatches, jobs, resumeVersions, resumes, users } from "@jobos/database";
 import type { CreateJobInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -50,6 +50,46 @@ export class JobsRepository {
     return job;
   }
 
+  async findById(id: string) {
+    const [job] = await this.db
+      .select({
+        id: jobs.id,
+        title: jobs.title,
+        description: jobs.description,
+        location: jobs.location,
+        sourceUrl: jobs.sourceUrl,
+        sourceName: jobs.sourceName,
+        remotePolicy: jobs.remotePolicy,
+        salaryText: jobs.salaryText,
+        companyName: companies.name,
+        createdAt: jobs.createdAt
+      })
+      .from(jobs)
+      .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .where(eq(jobs.id, id))
+      .limit(1);
+
+    if (!job) return null;
+
+    const matches = await this.db
+      .select({
+        id: jobResumeMatches.id,
+        resumeVersionId: jobResumeMatches.resumeVersionId,
+        score: jobResumeMatches.score,
+        recommendations: jobResumeMatches.recommendations,
+        resumeName: resumes.name,
+        resumeTitle: resumeVersions.title,
+        createdAt: jobResumeMatches.createdAt
+      })
+      .from(jobResumeMatches)
+      .innerJoin(resumeVersions, eq(jobResumeMatches.resumeVersionId, resumeVersions.id))
+      .innerJoin(resumes, eq(resumeVersions.resumeId, resumes.id))
+      .where(eq(jobResumeMatches.jobId, id))
+      .orderBy(asc(jobResumeMatches.createdAt));
+
+    return { ...job, matches: matches.reverse() };
+  }
+
   private async findOrCreateCompany(name: string) {
     const [existing] = await this.db.select({ id: companies.id }).from(companies).where(eq(companies.name, name)).limit(1);
     if (existing) {
@@ -67,4 +107,3 @@ export class JobsRepository {
       .onConflictDoNothing({ target: users.email });
   }
 }
-

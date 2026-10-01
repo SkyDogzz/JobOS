@@ -110,6 +110,34 @@ export const resumeVersions = pgTable("resume_versions", {
   resumeVersionIdx: uniqueIndex("resume_versions_resume_version_idx").on(table.resumeId, table.versionNumber)
 }));
 
+export const atsAnalyses = pgTable("ats_analyses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id").references(() => jobs.id, { onDelete: "cascade" }).notNull(),
+  resumeVersionId: uuid("resume_version_id").references(() => resumeVersions.id, { onDelete: "cascade" }).notNull(),
+  inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull(),
+  scores: jsonb("scores").$type<Record<string, unknown>>().notNull(),
+  findings: jsonb("findings").$type<Record<string, unknown>>().notNull(),
+  provider: text("provider").notNull().default("local"),
+  model: text("model").notNull().default("deterministic-v1"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  pairIdx: index("ats_analyses_pair_idx").on(table.jobId, table.resumeVersionId)
+}));
+
+export const jobResumeMatches = pgTable("job_resume_matches", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id").references(() => jobs.id, { onDelete: "cascade" }).notNull(),
+  resumeVersionId: uuid("resume_version_id").references(() => resumeVersions.id, { onDelete: "cascade" }).notNull(),
+  score: integer("score").notNull(),
+  recommendations: jsonb("recommendations").$type<Record<string, unknown>>().notNull(),
+  inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull(),
+  provider: text("provider").notNull().default("local"),
+  model: text("model").notNull().default("deterministic-v1"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  pairIdx: index("job_resume_matches_pair_idx").on(table.jobId, table.resumeVersionId)
+}));
+
 export const applications = pgTable("applications", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

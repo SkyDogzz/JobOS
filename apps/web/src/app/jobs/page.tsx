@@ -20,7 +20,7 @@ export default async function JobsPage() {
         <div className="grid gap-3">
           {jobs.map((job) => (
             <article className="rounded border border-ink/10 bg-white p-5" key={job.id}>
-              <p className="text-lg font-semibold">{job.title}</p>
+              <Link className="text-lg font-semibold hover:text-tide" href={`/jobs/${job.id}`}>{job.title}</Link>
               <p className="mt-1 text-sm text-ink/60">{job.companyName ?? "No company"} · {job.location ?? "No location"}</p>
               <p className="mt-3 text-sm leading-6 text-ink/65">{job.description}</p>
             </article>
@@ -30,4 +30,3 @@ export default async function JobsPage() {
     </main>
   );
 }
-

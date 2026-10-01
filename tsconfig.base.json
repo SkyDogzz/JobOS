@@ -18,8 +18,8 @@
       "@jobos/validation": ["packages/validation/src/index.ts"],
       "@jobos/config": ["packages/config/src/index.ts"],
       "@jobos/logger": ["packages/logger/src/index.ts"],
-      "@jobos/ai": ["packages/ai/src/index.ts"]
+      "@jobos/ai": ["packages/ai/src/index.ts"],
+      "@jobos/document-parser": ["packages/document-parser/src/index.ts"]
     }
   }
 }
-

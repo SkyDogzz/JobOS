@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
-import { applicationEvents, applications, companies, jobs, users } from "@jobos/database";
+import { applicationEvents, applications, atsAnalyses, companies, jobs, users } from "@jobos/database";
 import type { CreateApplicationInput, UpdateApplicationStageInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
@@ -65,7 +65,20 @@ export class ApplicationsRepository {
       .where(eq(applicationEvents.applicationId, id))
       .orderBy(asc(applicationEvents.createdAt));
 
-    return { ...application, events };
+    const analyses = application.resumeVersionId
+      ? await this.db
+          .select({
+            id: atsAnalyses.id,
+            scores: atsAnalyses.scores,
+            findings: atsAnalyses.findings,
+            createdAt: atsAnalyses.createdAt
+          })
+          .from(atsAnalyses)
+          .where(eq(atsAnalyses.resumeVersionId, application.resumeVersionId))
+          .orderBy(asc(atsAnalyses.createdAt))
+      : [];
+
+    return { ...application, events, analyses };
   }
 
   async create(input: CreateApplicationInput) {

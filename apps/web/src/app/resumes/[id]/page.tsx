@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, FileText } from "lucide-react";
 import { getResumeDetail } from "../../../lib/api";
 import { ResumeVersionForm } from "./resume-version-form";
+import { ResumeImportForm } from "./resume-import-form";
 
 export default async function ResumeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,6 +56,23 @@ export default async function ResumeDetailPage({ params }: { params: Promise<{ i
 
           <div className="grid gap-5">
             <ResumeVersionForm resumeId={resume.id} />
+            <ResumeImportForm resumeId={resume.id} />
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <h2 className="mb-4 font-semibold">ATS & Matches</h2>
+              {resume.analyses.length === 0 && resume.matches.length === 0 ? <p className="text-sm text-ink/55">No ATS scans or matches yet.</p> : null}
+              {resume.analyses.slice(0, 3).map((analysis) => (
+                <article className="border-t border-ink/10 py-3 text-sm" key={analysis.id}>
+                  <p className="font-medium">ATS scan</p>
+                  <pre className="mt-2 overflow-auto rounded bg-paper p-2 text-xs">{JSON.stringify(analysis.scores, null, 2)}</pre>
+                </article>
+              ))}
+              {resume.matches.slice(0, 3).map((match) => (
+                <article className="border-t border-ink/10 py-3 text-sm" key={match.id}>
+                  <p className="font-medium">Match score {match.score}</p>
+                  <pre className="mt-2 overflow-auto rounded bg-paper p-2 text-xs">{JSON.stringify(match.recommendations, null, 2)}</pre>
+                </article>
+              ))}
+            </section>
             <section className="rounded border border-ink/10 bg-white p-5">
               <h2 className="mb-4 font-semibold">Applications Using This CV</h2>
               {resume.applications.length === 0 ? <p className="rounded border border-dashed border-ink/20 bg-paper p-3 text-sm text-ink/55">No applications linked yet.</p> : null}

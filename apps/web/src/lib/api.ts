@@ -32,6 +32,7 @@ export interface ApplicationDetail extends DashboardApplication {
     payload: Record<string, unknown>;
     createdAt: string;
   }>;
+  analyses: AnalysisSummary[];
 }
 
 export interface ApplicationNote {
@@ -95,6 +96,32 @@ export interface ResumeDetail {
     companyName: string | null;
     createdAt: string;
   }>;
+  analyses: AnalysisSummary[];
+  matches: MatchSummary[];
+}
+
+export interface AnalysisSummary {
+  id: string;
+  jobId?: string;
+  resumeVersionId?: string;
+  scores: Record<string, unknown>;
+  findings: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface MatchSummary {
+  id: string;
+  jobId?: string;
+  resumeVersionId: string;
+  score: number;
+  recommendations: Record<string, unknown>;
+  resumeName?: string;
+  resumeTitle?: string;
+  createdAt: string;
+}
+
+export interface JobDetail extends DashboardJob {
+  matches: MatchSummary[];
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -109,18 +136,20 @@ async function getJson<T>(path: string): Promise<T> {
 
 export async function getDashboardData() {
   try {
-    const [jobs, applications, resumes] = await Promise.all([
+    const [jobs, applications, resumes, matches] = await Promise.all([
       getJson<DashboardJob[]>("/jobs"),
       getJson<DashboardApplication[]>("/applications"),
-      getJson<DashboardResume[]>("/resumes")
+      getJson<DashboardResume[]>("/resumes"),
+      getJson<MatchSummary[]>("/matches")
     ]);
 
-    return { jobs, applications, resumes, apiAvailable: true };
+    return { jobs, applications, resumes, matches, apiAvailable: true };
   } catch {
     return {
       jobs: [] as DashboardJob[],
       applications: [] as DashboardApplication[],
       resumes: [] as DashboardResume[],
+      matches: [] as MatchSummary[],
       apiAvailable: false
     };
   }
@@ -130,6 +159,10 @@ export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
 export async function getJobs() {
   return getJson<DashboardJob[]>("/jobs");
+}
+
+export async function getJobDetail(id: string) {
+  return getJson<JobDetail>(`/jobs/${id}`);
 }
 
 export async function getResumes() {

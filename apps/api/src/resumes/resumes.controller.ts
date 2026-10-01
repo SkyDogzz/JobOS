@@ -20,8 +20,18 @@ export class ResumesController {
     return this.resumes.create(body);
   }
 
+  @Post("parse")
+  parse(@Body() body: unknown) {
+    return this.resumes.parse(body);
+  }
+
   @Post(":id/versions")
   createVersion(@Param("id") id: string, @Body() body: unknown) {
     return this.resumes.createVersion(id, body);
+  }
+
+  @Post(":id/versions/from-parse")
+  createVersionFromParsed(@Param("id") id: string, @Body() body: unknown) {
+    return this.resumes.createVersionFromParsed(id, body);
   }
 }
