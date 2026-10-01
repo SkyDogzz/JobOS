@@ -3,11 +3,15 @@ node_modules
 dist
 coverage
 .turbo
+.bin
+.corepack
+.pnpm-home
+.pnpm-store
 .env
 .env.*
 !.env.example
 *.log
+*.tsbuildinfo
 .DS_Store
 tmp
 uploads
-

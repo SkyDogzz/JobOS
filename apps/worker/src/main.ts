@@ -1,9 +1,9 @@
 import { Worker } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { createLogger } from "@jobos/logger";
 
 const logger = createLogger("jobos-worker");
-const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
+const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null
 });
 
@@ -24,4 +24,3 @@ for (const queueName of queues) {
 }
 
 logger.info({ queues }, "JobOS workers started");
-
