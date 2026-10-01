@@ -7,6 +7,7 @@
     },
     "dev": {
       "cache": false,
+      "env": ["API_PORT", "WEB_PORT", "NEXT_PUBLIC_API_URL", "EXTENSION_IMPORT_TOKEN"],
       "persistent": true
     },
     "lint": {
@@ -21,4 +22,3 @@
     }
   }
 }
-

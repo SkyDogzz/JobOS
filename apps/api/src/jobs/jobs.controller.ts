@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Post, Query } from "@nestjs/common";
 import { JobsService } from "./jobs.service.js";
 
 @Controller("jobs")
@@ -23,6 +23,11 @@ export class JobsController {
   @Post("dedupe")
   dedupe(@Body() body: unknown) {
     return this.jobs.dedupe(body);
+  }
+
+  @Post("import")
+  importFromExtension(@Headers("authorization") authorization: string | undefined, @Body() body: unknown) {
+    return this.jobs.importFromExtension(authorization, body);
   }
 
   @Post(":id/merge")

@@ -137,6 +137,46 @@ async function main() {
   });
   if (mergedJob.location !== "Hybrid" || mergedJob.salaryText !== "$150k - $175k") throw new Error("Duplicate merge did not update the existing job.");
 
+  const unauthorizedImport = await fetch(`${apiUrl}/jobs/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pageUrl: "https://boards.greenhouse.io/extension/jobs/unauthorized",
+      html: "<html><body><h1>Unauthorized Import</h1><p>Should fail authentication.</p></body></html>"
+    })
+  });
+  if (unauthorizedImport.status !== 401) throw new Error("Extension import endpoint did not require authentication.");
+
+  const extensionImport = await request("/jobs/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
+    body: JSON.stringify({
+      contractVersion: "0.4.4",
+      pageUrl: "https://boards.greenhouse.io/extensionco/jobs/12345",
+      html: `<html><head><meta property="og:title" content="Extension Import Engineer"><script type="application/ld+json">{"@type":"JobPosting","title":"Extension Import Engineer","hiringOrganization":{"name":"ExtensionCo"},"jobLocation":{"address":{"addressLocality":"Remote"}},"description":"Import current browser pages into JobOS with deterministic contracts."}</script></head><body>Extension payload</body></html>`,
+      sourceName: "browser_extension"
+    })
+  });
+  if (extensionImport.status !== "created") throw new Error("Extension import did not create a job.");
+  if (extensionImport.parsed.sourceUrl !== "https://boards.greenhouse.io/extensionco/jobs/12345") throw new Error("Extension import did not preserve the page URL.");
+
+  const extensionUpdate = await request("/jobs/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
+    body: JSON.stringify({
+      contractVersion: "0.4.4",
+      pageUrl: "https://boards.greenhouse.io/extensionco/jobs/12345",
+      title: "Extension Import Engineer",
+      companyName: "ExtensionCo",
+      description: "Updated browser extension import with salary.",
+      salaryText: "$130k - $160k",
+      sourceName: "browser_extension"
+    })
+  });
+  if (extensionUpdate.status !== "updated") throw new Error("Extension import did not update a duplicate source URL.");
+  if (extensionUpdate.job.id !== extensionImport.job.id) throw new Error("Extension import update created a duplicate job.");
+  if (extensionUpdate.job.salaryText !== "$130k - $160k") throw new Error("Extension import update did not persist changed fields.");
+
   const searchedJobs = await request(`/jobs?q=${encodeURIComponent("Attributed Integration")}&sourceId=${source.id}`);
   if (!searchedJobs.some((item) => item.id === attributedJob.id)) throw new Error("Job search did not return the attributed job.");
 

@@ -2179,6 +2179,53 @@ POST /jobs/import
 
 The user reviews extracted data before saving when extraction confidence is poor.
 
+## Browser extension import contract
+
+JobOS accepts browser extension imports at:
+
+```http
+POST /jobs/import
+Authorization: Bearer <EXTENSION_IMPORT_TOKEN>
+Content-Type: application/json
+```
+
+Local development can use `Bearer jobos-dev-extension-token` when `EXTENSION_IMPORT_TOKEN` is not set and `NODE_ENV` is not `production`. Production deployments must set `EXTENSION_IMPORT_TOKEN`.
+
+Request contract `0.4.4`:
+
+```json
+{
+  "contractVersion": "0.4.4",
+  "pageUrl": "https://boards.example.com/company/jobs/123",
+  "html": "<html>...</html>",
+  "text": "Optional visible page text",
+  "title": "Optional extractor override",
+  "companyName": "Optional extractor override",
+  "location": "Optional extractor override",
+  "description": "Optional extractor override",
+  "sourceName": "browser_extension",
+  "remotePolicy": "Remote",
+  "salaryText": "$130k - $160k",
+  "capturedAt": "2026-10-01T00:00:00.000Z"
+}
+```
+
+The extension must send `pageUrl` and at least one of `description`, `html`, or `text`. JobOS parses the payload with the same deterministic job board parser used by the paste/import UI, then applies any explicit extractor fields as overrides.
+
+Response contract:
+
+```json
+{
+  "contractVersion": "0.4.4",
+  "status": "created",
+  "job": {},
+  "parsed": {},
+  "duplicates": []
+}
+```
+
+`status` is `created` for new jobs and `updated` when an existing job has the same source URL. Duplicate candidates include match scores and reasons so the extension can show a confirmation UI later without changing the API contract.
+
 ---
 
 # 62. Job ingestion architecture

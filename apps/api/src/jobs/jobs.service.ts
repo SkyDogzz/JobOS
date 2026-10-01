@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { createJobSchema, dedupeJobSchema, jobSearchSchema, mergeJobSchema, saveJobFilterSchema } from "@jobos/validation";
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { parseJobPosting } from "@jobos/job-sources";
+import { createJobSchema, dedupeJobSchema, extensionJobImportSchema, jobSearchSchema, mergeJobSchema, saveJobFilterSchema } from "@jobos/validation";
+import type { CreateJobInput } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { JobsRepository } from "./jobs.repository.js";
 
@@ -32,6 +34,30 @@ export class JobsService {
     return job;
   }
 
+  async importFromExtension(authorization: string | undefined, body: unknown) {
+    if (!isAuthorizedExtension(authorization)) throw new UnauthorizedException("Invalid extension import token.");
+    const input = parseBody(extensionJobImportSchema, body);
+    const parsed = parseJobPosting({ url: input.pageUrl, html: input.html, text: input.text ?? input.description });
+    const incoming: CreateJobInput = {
+      title: input.title ?? parsed.title,
+      companyName: input.companyName ?? parsed.companyName,
+      location: input.location ?? parsed.location,
+      description: input.description ?? parsed.description,
+      sourceUrl: input.pageUrl,
+      sourceName: input.sourceName,
+      remotePolicy: input.remotePolicy ?? parsed.remotePolicy,
+      salaryText: input.salaryText ?? parsed.salaryText
+    };
+    const duplicates = await this.jobs.findDuplicates(incoming);
+    const exact = duplicates.find((job) => job.sourceUrl === input.pageUrl);
+    if (exact) {
+      const job = await this.jobs.merge(exact.id, incoming, "update_existing");
+      return { contractVersion: "0.4.4", status: "updated", job, parsed: incoming, duplicates };
+    }
+    const job = await this.jobs.create(incoming);
+    return { contractVersion: "0.4.4", status: "created", job, parsed: incoming, duplicates };
+  }
+
   filters() {
     return this.jobs.listFilters();
   }
@@ -39,4 +65,10 @@ export class JobsService {
   saveFilter(body: unknown) {
     return this.jobs.saveFilter(parseBody(saveJobFilterSchema, body));
   }
+}
+
+function isAuthorizedExtension(authorization: string | undefined) {
+  const token = process.env.EXTENSION_IMPORT_TOKEN ?? (process.env.NODE_ENV === "production" ? undefined : "jobos-dev-extension-token");
+  if (!token || !authorization?.startsWith("Bearer ")) return false;
+  return authorization.slice("Bearer ".length) === token;
 }
