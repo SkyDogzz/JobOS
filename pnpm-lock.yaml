@@ -32,12 +32,18 @@ importers:
       '@fastify/static':
         specifier: ^6.12.0
         version: 6.12.0
+      '@jobos/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@jobos/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@jobos/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@jobos/document-parser':
+        specifier: workspace:*
+        version: link:../../packages/document-parser
       '@jobos/validation':
         specifier: workspace:*
         version: link:../../packages/validation
