@@ -412,6 +412,8 @@ Implement v0.6.1 source performance analytics:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `e1560ef Add source performance analytics`
+
 ### v0.6.2 — Interview and Task Analytics
 
 Implement v0.6.2 interview and task analytics:
