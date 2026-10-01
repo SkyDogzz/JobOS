@@ -14,5 +14,14 @@ export class AiController {
   approveTailoredResume(@Body() body: unknown) {
     return this.ai.approveTailoredResume(body);
   }
-}
 
+  @Post("cover-letters")
+  generateCoverLetters(@Body() body: unknown) {
+    return this.ai.generateCoverLetters(body);
+  }
+
+  @Post("cover-letters/approve")
+  approveCoverLetter(@Body() body: unknown) {
+    return this.ai.approveCoverLetter(body);
+  }
+}

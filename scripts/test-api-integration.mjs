@@ -138,6 +138,35 @@ https://example.com/profile`;
   });
   if (approved.content.metadata.source !== "cv_tailoring") throw new Error("Approved tailoring did not create a tailored resume version.");
 
+  const coverLetters = await request("/ai/cover-letters", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jobId: job.id,
+      resumeVersionId: parsedVersion.id,
+      applicationId: application.id,
+      tones: ["concise", "narrative", "technical", "recruiter_friendly"]
+    })
+  });
+  if (coverLetters.variants.length !== 4) throw new Error("Cover letter generation did not return all requested variants.");
+  if (!coverLetters.variants.every((variant) => Array.isArray(variant.groundedClaims))) throw new Error("Cover letter variants are missing grounded claims.");
+
+  const approvedCoverLetter = await request("/ai/cover-letters/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      applicationId: application.id,
+      name: "Integration cover letter",
+      variant: coverLetters.variants[0],
+      jobId: job.id,
+      resumeVersionId: parsedVersion.id,
+      artifactId: coverLetters.artifactId,
+      promptHash: coverLetters.promptHash,
+      metadata: { provider: coverLetters.provider, model: coverLetters.model }
+    })
+  });
+  if (approvedCoverLetter.kind !== "cover_letter") throw new Error("Approved cover letter was not persisted as a cover letter document.");
+
   const detail = await request(`/applications/${application.id}`);
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");

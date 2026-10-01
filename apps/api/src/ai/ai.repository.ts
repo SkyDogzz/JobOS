@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
-import { aiArtifacts, candidateProfiles, jobs, resumeVersions, users } from "@jobos/database";
-import type { ApproveTailoredResumeInput } from "@jobos/validation";
+import { aiArtifacts, applications, candidateProfiles, documents, jobs, resumeVersions, users } from "@jobos/database";
+import type { ApproveCoverLetterInput, ApproveTailoredResumeInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -17,6 +17,14 @@ export class AiRepository {
     const userId = await this.ensureDevUser();
     const [profile] = await this.db.select().from(candidateProfiles).where(eq(candidateProfiles.userId, userId)).limit(1);
     return job && resumeVersion ? { job, resumeVersion, profile, userId } : null;
+  }
+
+  async loadCoverLetterContext(jobId: string, resumeVersionId: string, applicationId?: string) {
+    const context = await this.loadTailoringContext(jobId, resumeVersionId);
+    if (!context) return null;
+    if (!applicationId) return { ...context, application: null };
+    const [application] = await this.db.select().from(applications).where(eq(applications.id, applicationId)).limit(1);
+    return application ? { ...context, application } : null;
   }
 
   async saveArtifact(input: { userId: string; provider: string; model: string; purpose: string; promptHash: string; output: Record<string, unknown>; groundedInProfile: boolean }) {
@@ -48,6 +56,33 @@ export class AiRepository {
       }
     }).returning();
     return version;
+  }
+
+  async approveCoverLetter(input: ApproveCoverLetterInput) {
+    const context = await this.loadCoverLetterContext(input.jobId, input.resumeVersionId, input.applicationId);
+    if (!context) return null;
+    const content = {
+      ...input.variant,
+      metadata: {
+        ...input.metadata,
+        source: "cover_letter_generation",
+        artifactId: input.artifactId,
+        promptHash: input.promptHash,
+        targetJobId: input.jobId,
+        sourceVersionId: input.resumeVersionId,
+        approvedAt: new Date().toISOString()
+      }
+    };
+    const contentHash = this.hashPrompt(JSON.stringify(content));
+    const [document] = await this.db.insert(documents).values({
+      userId: context.userId,
+      applicationId: input.applicationId,
+      kind: "cover_letter",
+      name: input.name,
+      storageKey: `local/documents/${input.applicationId}/${contentHash}.json`,
+      contentHash
+    }).returning();
+    return { ...document, content };
   }
 
   hashPrompt(prompt: string) {

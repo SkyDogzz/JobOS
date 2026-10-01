@@ -73,6 +73,31 @@ export const approveTailoredResumeSchema = z.object({
   metadata: z.record(z.unknown()).default({})
 });
 
+export const coverLetterToneSchema = z.enum(["concise", "narrative", "technical", "recruiter_friendly"]);
+
+export const generateCoverLettersSchema = z.object({
+  jobId: z.string().uuid(),
+  resumeVersionId: z.string().uuid(),
+  applicationId: z.string().uuid().optional(),
+  tones: z.array(coverLetterToneSchema).min(1).max(4).default(["concise", "narrative", "technical", "recruiter_friendly"])
+});
+
+export const approveCoverLetterSchema = z.object({
+  applicationId: z.string().uuid(),
+  name: z.string().min(1),
+  variant: z.object({
+    tone: coverLetterToneSchema,
+    title: z.string().min(1),
+    body: z.string().min(1),
+    groundedClaims: z.array(z.string()).default([])
+  }),
+  jobId: z.string().uuid(),
+  resumeVersionId: z.string().uuid(),
+  artifactId: z.string().uuid(),
+  promptHash: z.string().min(1),
+  metadata: z.record(z.unknown()).default({})
+});
+
 export const updateApplicationStageSchema = z.object({
   stage: z.enum([
     "wishlist",
@@ -125,6 +150,8 @@ export type AtsAnalysisInput = z.infer<typeof atsAnalysisSchema>;
 export type MatchJobInput = z.infer<typeof matchJobSchema>;
 export type TailorResumeInput = z.infer<typeof tailorResumeSchema>;
 export type ApproveTailoredResumeInput = z.infer<typeof approveTailoredResumeSchema>;
+export type GenerateCoverLettersInput = z.infer<typeof generateCoverLettersSchema>;
+export type ApproveCoverLetterInput = z.infer<typeof approveCoverLetterSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
