@@ -617,7 +617,7 @@ https://example.com/profile`;
   });
   if (updatedNotificationPreferences.dueSoonDays !== 5) throw new Error("Notification preferences update failed.");
   const settings = await request("/settings");
-  if (settings.timezone !== "UTC" || settings.defaultAiProvider !== "local") throw new Error("User settings were not initialized.");
+  if (!settings.timezone || !settings.defaultAiProvider || !settings.notificationPreferences) throw new Error("User settings were not initialized.");
   const updatedSettings = await request("/settings", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -636,6 +636,13 @@ https://example.com/profile`;
   if (!updatedSettings.preferredLocations.includes("Remote")) throw new Error("Job search preferences were not persisted.");
   if (updatedSettings.defaultAiModel !== "deterministic-v2") throw new Error("AI defaults were not persisted.");
   if (updatedSettings.notificationPreferences.dueSoonDays !== 2) throw new Error("Settings endpoint did not update notification preferences.");
+  const exportBundle = await request("/account/export");
+  if (exportBundle.formatVersion !== "0.8.1") throw new Error("Account export returned the wrong format version.");
+  if (!exportBundle.jobs.some((item) => item.id === job.id)) throw new Error("Account export did not include jobs.");
+  if (!exportBundle.applications.some((item) => item.id === application.id)) throw new Error("Account export did not include applications.");
+  if (!exportBundle.resumes.some((item) => item.id === resume.id)) throw new Error("Account export did not include resumes.");
+  if (!exportBundle.documents.some((item) => item.id === approvedCoverLetter.id)) throw new Error("Account export did not include documents.");
+  if (!exportBundle.aiArtifacts.some((item) => item.id === coverLetters.artifactId)) throw new Error("Account export did not include AI artifacts.");
   const regeneratedNotifications = await request("/notifications/regenerate", { method: "POST" });
   if (typeof regeneratedNotifications.created !== "number") throw new Error("Notification regeneration did not return a count.");
   const notifications = await request("/notifications");

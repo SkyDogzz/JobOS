@@ -17,6 +17,7 @@ export const routes = [
   "/analytics",
   "/notifications",
   "/settings",
+  "/settings/export",
   "/settings/profile",
   "/settings/integrations",
   "/settings/notifications",

@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { ArrowLeft, BellRing, BrainCircuit, MapPin, Save } from "lucide-react";
+import { ArrowLeft, BellRing, BrainCircuit, Download, MapPin, Save } from "lucide-react";
 import { apiUrl, getUserSettings } from "../../lib/api";
 
 async function saveSettings(formData: FormData) {
@@ -43,7 +43,13 @@ export default async function SettingsPage() {
           Dashboard
         </Link>
         <section className="mb-8 border-b border-ink/10 pb-6">
-          <h1 className="text-3xl font-semibold">Settings</h1>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-3xl font-semibold">Settings</h1>
+            <Link className="inline-flex items-center gap-2 rounded border border-ink/15 px-3 py-2 text-sm font-medium hover:bg-ink/5" href="/settings/export">
+              <Download size={16} />
+              Data export
+            </Link>
+          </div>
           <p className="mt-2 max-w-2xl text-sm text-ink/60">Local defaults for matching, reminders, and deterministic document generation.</p>
         </section>
         {!settings ? <p className="rounded border border-rust/20 bg-rust/10 p-4 text-sm text-rust">Settings are unavailable.</p> : null}

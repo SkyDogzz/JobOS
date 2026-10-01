@@ -344,6 +344,18 @@ export interface UserSettings {
   notificationPreferences: NotificationPreferences;
 }
 
+export interface AccountExportSummary {
+  exportedAt: string;
+  formatVersion: string;
+  user: SessionUser;
+  jobs: DashboardJob[];
+  applications: DashboardApplication[];
+  resumes: DashboardResume[];
+  documents: DocumentSummary[];
+  tasks: ApplicationTask[];
+  aiArtifacts: AiArtifactSummary[];
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -600,6 +612,10 @@ export async function getNotificationPreferences() {
 
 export async function getUserSettings() {
   return getJson<UserSettings>("/settings");
+}
+
+export async function getAccountExportSummary() {
+  return getJson<AccountExportSummary>("/account/export");
 }
 
 export async function getFunnelAnalytics(query = "") {

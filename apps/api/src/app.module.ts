@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AccountModule } from "./account/account.module.js";
 import { ApplicationsModule } from "./applications/applications.module.js";
 import { AtsModule } from "./ats/ats.module.js";
 import { AuditModule } from "./audit/audit.module.js";
@@ -28,6 +29,7 @@ import { UsersModule } from "./users/users.module.js";
   imports: [
     HealthModule,
     DatabaseModule,
+    AccountModule,
     AuthModule,
     UsersModule,
     ProfilesModule,
