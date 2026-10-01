@@ -1,0 +1,63 @@
+import { Inject, Injectable } from "@nestjs/common";
+import { asc, eq } from "drizzle-orm";
+import { applicationEvents, applications, companies, jobs, users } from "@jobos/database";
+import type { CreateApplicationInput } from "@jobos/validation";
+import { devUser } from "../common/dev-user.js";
+import { DATABASE } from "../database/database.module.js";
+import type { JobOsDatabase } from "../database/database.types.js";
+
+@Injectable()
+export class ApplicationsRepository {
+  constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
+
+  async list() {
+    return this.db
+      .select({
+        id: applications.id,
+        stage: applications.stage,
+        appliedAt: applications.appliedAt,
+        outcome: applications.outcome,
+        jobId: jobs.id,
+        jobTitle: jobs.title,
+        companyName: companies.name,
+        resumeVersionId: applications.resumeVersionId,
+        createdAt: applications.createdAt
+      })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .orderBy(asc(applications.createdAt));
+  }
+
+  async create(input: CreateApplicationInput) {
+    const userId = await this.ensureDevUser();
+    const [application] = await this.db
+      .insert(applications)
+      .values({
+        userId,
+        jobId: input.jobId,
+        resumeVersionId: input.resumeVersionId,
+        stage: input.stage ?? "saved"
+      })
+      .returning();
+
+    await this.db.insert(applicationEvents).values({
+      applicationId: application.id,
+      kind: "created",
+      payload: { jobId: input.jobId, resumeVersionId: input.resumeVersionId ?? null }
+    });
+
+    return application;
+  }
+
+  private async ensureDevUser() {
+    await this.db
+      .insert(users)
+      .values(devUser)
+      .onConflictDoNothing({ target: users.email });
+
+    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
+    return user.id;
+  }
+}
+

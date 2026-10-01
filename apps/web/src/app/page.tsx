@@ -1,4 +1,7 @@
 import { BriefcaseBusiness, ChartNoAxesCombined, FileText, Search } from "lucide-react";
+import { getDashboardData } from "../lib/api";
+
+export const dynamic = "force-dynamic";
 
 const navGroups = [
   ["Search", "Discover", "Saved Jobs", "Companies"],
@@ -9,14 +12,17 @@ const navGroups = [
   ["Insights", "Analytics"]
 ];
 
-const metrics = [
-  ["Active applications", "0"],
-  ["Interviews scheduled", "0"],
-  ["Follow-ups due", "0"],
-  ["Resume versions", "0"]
-];
+export default async function DashboardPage() {
+  const { jobs, applications, resumes, apiAvailable } = await getDashboardData();
+  const activeApplications = applications.filter((application) => !["rejected", "withdrawn", "accepted"].includes(application.stage));
+  const stages = ["saved", "applied", "interviewing"];
+  const metrics = [
+    ["Saved jobs", String(jobs.length)],
+    ["Active applications", String(activeApplications.length)],
+    ["Resume versions", String(resumes.filter((resume) => resume.versionId).length)],
+    ["API status", apiAvailable ? "Live" : "Offline"]
+  ];
 
-export default function DashboardPage() {
   return (
     <main className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
       <aside className="border-b border-ink/10 bg-white px-5 py-6 lg:min-h-screen lg:border-b-0 lg:border-r">
@@ -49,7 +55,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-semibold">Dashboard</h1>
             <p className="mt-2 max-w-2xl text-ink/65">
-              Track applications, documents, interviews, and follow-ups from one canonical record.
+              Track applications, documents, interviews, and follow-ups from one canonical record backed by Postgres.
             </p>
           </div>
           <button className="inline-flex h-10 items-center gap-2 rounded bg-rust px-4 text-sm font-semibold text-white">
@@ -72,8 +78,18 @@ export default function DashboardPage() {
               <h2 className="font-semibold">Application Pipeline</h2>
             </div>
             <div className="grid grid-cols-3 gap-3 text-sm">
-              {["Saved", "Applied", "Interviewing"].map((stage) => (
-                <div className="min-h-32 rounded border border-ink/10 bg-paper p-3" key={stage}>{stage}</div>
+              {stages.map((stage) => (
+                <div className="min-h-32 rounded border border-ink/10 bg-paper p-3" key={stage}>
+                  <p className="mb-3 font-semibold capitalize">{stage}</p>
+                  <div className="space-y-2">
+                    {applications.filter((application) => application.stage === stage).slice(0, 3).map((application) => (
+                      <div className="rounded bg-white p-2 text-xs shadow-sm" key={application.id}>
+                        <p className="font-medium">{application.jobTitle}</p>
+                        <p className="text-ink/55">{application.companyName ?? "No company"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </section>
@@ -83,9 +99,19 @@ export default function DashboardPage() {
               <h2 className="font-semibold">Funnel Snapshot</h2>
             </div>
             <div className="space-y-3 text-sm text-ink/70">
-              <div className="h-3 rounded bg-tide/70" />
-              <div className="h-3 w-2/3 rounded bg-moss/70" />
-              <div className="h-3 w-1/3 rounded bg-rust/70" />
+              {[
+                ["Jobs", jobs.length, "bg-tide/70"],
+                ["Applications", applications.length, "bg-moss/70"],
+                ["Resumes", resumes.length, "bg-rust/70"]
+              ].map(([label, value, color]) => (
+                <div key={label as string}>
+                  <div className="mb-1 flex justify-between">
+                    <span>{label}</span>
+                    <span>{value}</span>
+                  </div>
+                  <div className={`h-3 rounded ${color as string}`} style={{ width: `${Math.max(Number(value) * 20, 8)}%` }} />
+                </div>
+              ))}
             </div>
           </section>
         </div>
@@ -93,4 +119,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-

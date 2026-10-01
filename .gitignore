@@ -7,6 +7,7 @@ coverage
 .corepack
 .pnpm-home
 .pnpm-store
+.xdg
 .env
 .env.*
 !.env.example

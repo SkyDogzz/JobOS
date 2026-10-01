@@ -10,8 +10,8 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
-    "db:generate": "pnpm --filter @jobos/database db:generate",
-    "db:migrate": "pnpm --filter @jobos/database db:migrate"
+    "db:generate": "XDG_DATA_HOME=.xdg/data XDG_CACHE_HOME=.xdg/cache pnpm --filter @jobos/database db:generate",
+    "db:migrate": "XDG_DATA_HOME=.xdg/data XDG_CACHE_HOME=.xdg/cache pnpm --filter @jobos/database db:migrate"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.9",
@@ -20,4 +20,3 @@
     "typescript": "^5.6.3"
   }
 }
-

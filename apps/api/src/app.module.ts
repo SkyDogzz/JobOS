@@ -8,6 +8,7 @@ import { AnalyticsModule } from "./analytics/analytics.module.js";
 import { BillingModule } from "./billing/billing.module.js";
 import { CompaniesModule } from "./companies/companies.module.js";
 import { ContactsModule } from "./contacts/contacts.module.js";
+import { DatabaseModule } from "./database/database.module.js";
 import { DocumentsModule } from "./documents/documents.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { IntegrationsModule } from "./integrations/integrations.module.js";
@@ -25,6 +26,7 @@ import { UsersModule } from "./users/users.module.js";
 @Module({
   imports: [
     HealthModule,
+    DatabaseModule,
     AuthModule,
     UsersModule,
     ProfilesModule,
