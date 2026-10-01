@@ -3,8 +3,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export interface DashboardJob {
   id: string;
   title: string;
+  description: string;
   companyName: string | null;
   location: string | null;
+  sourceName: string | null;
 }
 
 export interface DashboardApplication {
@@ -18,6 +20,7 @@ export interface DashboardResume {
   id: string;
   name: string;
   versionId: string | null;
+  versionTitle: string | null;
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -48,3 +51,5 @@ export async function getDashboardData() {
     };
   }
 }
+
+export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
