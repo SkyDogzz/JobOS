@@ -92,6 +92,13 @@
       "when": 1790942400000,
       "tag": "0012_user_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791028800000,
+      "tag": "0013_privacy_controls",
+      "breakpoints": true
     }
   ]
 }

@@ -629,6 +629,9 @@ https://example.com/profile`;
       preferredSources: ["referral", "company_page"],
       defaultAiProvider: "local",
       defaultAiModel: "deterministic-v2",
+      redactSensitiveExports: true,
+      storeEmailBodies: false,
+      aiArtifactRetention: "redact_on_export",
       notificationPreferences: { dueSoonDays: 2, deliveryChannel: "in_app" }
     })
   });
@@ -636,13 +639,22 @@ https://example.com/profile`;
   if (!updatedSettings.preferredLocations.includes("Remote")) throw new Error("Job search preferences were not persisted.");
   if (updatedSettings.defaultAiModel !== "deterministic-v2") throw new Error("AI defaults were not persisted.");
   if (updatedSettings.notificationPreferences.dueSoonDays !== 2) throw new Error("Settings endpoint did not update notification preferences.");
+  if (updatedSettings.aiArtifactRetention !== "redact_on_export") throw new Error("Privacy controls were not persisted.");
   const exportBundle = await request("/account/export");
-  if (exportBundle.formatVersion !== "0.8.1") throw new Error("Account export returned the wrong format version.");
+  if (exportBundle.formatVersion !== "0.8.2") throw new Error("Account export returned the wrong format version.");
+  if (exportBundle.user.email !== "[redacted]") throw new Error("Account export did not redact sensitive user fields.");
   if (!exportBundle.jobs.some((item) => item.id === job.id)) throw new Error("Account export did not include jobs.");
   if (!exportBundle.applications.some((item) => item.id === application.id)) throw new Error("Account export did not include applications.");
   if (!exportBundle.resumes.some((item) => item.id === resume.id)) throw new Error("Account export did not include resumes.");
   if (!exportBundle.documents.some((item) => item.id === approvedCoverLetter.id)) throw new Error("Account export did not include documents.");
   if (!exportBundle.aiArtifacts.some((item) => item.id === coverLetters.artifactId)) throw new Error("Account export did not include AI artifacts.");
+  const deletionPreview = await request("/account", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirmEmail: "dev@jobos.local", dryRun: true })
+  });
+  if (deletionPreview.status !== "dry_run" || deletionPreview.deleted !== false) throw new Error("Account deletion dry run failed.");
+  if (deletionPreview.counts.applications < 1) throw new Error("Account deletion preview did not include lifecycle counts.");
   const regeneratedNotifications = await request("/notifications/regenerate", { method: "POST" });
   if (typeof regeneratedNotifications.created !== "number") throw new Error("Notification regeneration did not return a count.");
   const notifications = await request("/notifications");

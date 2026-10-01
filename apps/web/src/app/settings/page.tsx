@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { ArrowLeft, BellRing, BrainCircuit, Download, MapPin, Save } from "lucide-react";
+import { ArrowLeft, BellRing, BrainCircuit, Download, MapPin, Save, ShieldCheck } from "lucide-react";
 import { apiUrl, getUserSettings } from "../../lib/api";
 
 async function saveSettings(formData: FormData) {
@@ -18,6 +18,9 @@ async function saveSettings(formData: FormData) {
       preferredSources: list("preferredSources"),
       defaultAiProvider: String(formData.get("defaultAiProvider") ?? "local"),
       defaultAiModel: String(formData.get("defaultAiModel") ?? "deterministic-v1"),
+      redactSensitiveExports: formData.get("redactSensitiveExports") === "on",
+      storeEmailBodies: formData.get("storeEmailBodies") === "on",
+      aiArtifactRetention: String(formData.get("aiArtifactRetention") ?? "keep"),
       notificationPreferences: {
         dueSoonDays: Number(formData.get("dueSoonDays") ?? 3),
         taskRemindersEnabled: formData.get("taskRemindersEnabled") === "on",
@@ -111,6 +114,25 @@ export default async function SettingsPage() {
                   </select>
                 </label>
                 <Field label="Model" name="defaultAiModel" defaultValue={settings.defaultAiModel} />
+              </div>
+            </section>
+
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <ShieldCheck size={18} />
+                <h2 className="font-semibold">Privacy Controls</h2>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Toggle label="Redact sensitive exports" name="redactSensitiveExports" defaultChecked={settings.redactSensitiveExports} />
+                <Toggle label="Store email bodies" name="storeEmailBodies" defaultChecked={settings.storeEmailBodies} />
+                <label className="grid gap-2 text-sm font-medium">
+                  AI artifact retention
+                  <select name="aiArtifactRetention" defaultValue={settings.aiArtifactRetention} className="rounded border border-ink/15 bg-white px-3 py-2 text-sm">
+                    <option value="keep">Keep</option>
+                    <option value="redact_on_export">Redact on export</option>
+                    <option value="delete_on_account_deletion">Delete on account deletion</option>
+                  </select>
+                </label>
               </div>
             </section>
 

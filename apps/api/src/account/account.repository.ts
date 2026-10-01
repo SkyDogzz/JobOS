@@ -22,6 +22,7 @@ import {
   userSettings,
   users
 } from "@jobos/database";
+import type { AccountDeletionInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -74,12 +75,14 @@ export class AccountRepository {
       this.db.select().from(notifications).where(eq(notifications.userId, user.id)).orderBy(asc(notifications.createdAt))
     ]);
 
-    return {
+    const settings = settingRows[0] ?? null;
+    const redact = settings?.redactSensitiveExports ?? true;
+    const bundle = {
       exportedAt: new Date().toISOString(),
-      formatVersion: "0.8.1",
+      formatVersion: "0.8.2",
       user: { id: user.id, email: user.email, name: user.name, emailVerifiedAt: user.emailVerifiedAt, createdAt: user.createdAt },
       profile: profileRows[0] ?? null,
-      settings: settingRows[0] ?? null,
+      settings,
       notificationPreferences: notificationPreferenceRows[0] ?? null,
       companies: companyRows,
       contacts: contactRows,
@@ -98,6 +101,28 @@ export class AccountRepository {
       jobResumeMatches: matchRows,
       notifications: notificationRows
     };
+    return redact ? redactBundle(bundle) : bundle;
+  }
+
+  async deletionPreview(input: AccountDeletionInput) {
+    const user = await this.ensureDevUser();
+    if (input.confirmEmail !== user.email) {
+      return { status: "confirmation_mismatch", deleted: false, counts: null };
+    }
+    const bundle = await this.exportBundle();
+    const counts = {
+      jobs: bundle.jobs.length,
+      applications: bundle.applications.length,
+      resumes: bundle.resumes.length,
+      documents: bundle.documents.length,
+      tasks: bundle.tasks.length,
+      aiArtifacts: bundle.aiArtifacts.length
+    };
+    if (input.dryRun) {
+      return { status: "dry_run", deleted: false, counts };
+    }
+    await this.db.delete(users).where(eq(users.id, user.id));
+    return { status: "deleted", deleted: true, counts };
   }
 
   private async ensureDevUser() {
@@ -105,4 +130,25 @@ export class AccountRepository {
     const [user] = await this.db.select().from(users).where(eq(users.email, devUser.email)).limit(1);
     return user;
   }
+}
+
+function redactBundle<T extends Record<string, unknown>>(bundle: T): T {
+  return redactValue(bundle) as T;
+}
+
+function redactValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactValue);
+  if (!value || typeof value !== "object" || value instanceof Date) return value;
+  const output: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    const normalized = key.toLowerCase();
+    if (normalized.includes("email") || normalized.includes("passwordhash")) {
+      output[key] = item ? "[redacted]" : item;
+    } else if (normalized === "body" && typeof item === "string") {
+      output[key] = "[redacted]";
+    } else {
+      output[key] = redactValue(item);
+    }
+  }
+  return output;
 }

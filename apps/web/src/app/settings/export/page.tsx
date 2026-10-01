@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
 import { apiUrl, getAccountExportSummary } from "../../../lib/api";
 
 export default async function ExportSettingsPage() {
@@ -28,6 +28,13 @@ export default async function ExportSettingsPage() {
               <Download size={16} />
               Download JSON
             </a>
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <ShieldCheck size={18} />
+                <h2 className="font-semibold">Account Deletion Preview</h2>
+              </div>
+              <p className="text-sm text-ink/60">The API supports a confirmation-gated dry run before deletion. Use the exported bundle before making lifecycle changes.</p>
+            </section>
             <p className="text-xs text-ink/45">Format {bundle.formatVersion} generated {new Date(bundle.exportedAt).toLocaleString()}.</p>
           </section>
         ) : null}

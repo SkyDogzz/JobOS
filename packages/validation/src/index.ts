@@ -234,7 +234,15 @@ export const updateUserSettingsSchema = z.object({
   minimumSalary: z.string().max(80).nullable().optional(),
   preferredSources: z.array(z.string().min(1)).max(20).optional(),
   defaultAiProvider: z.enum(["local", "openai", "anthropic"]).optional(),
-  defaultAiModel: z.string().min(1).max(120).optional()
+  defaultAiModel: z.string().min(1).max(120).optional(),
+  redactSensitiveExports: z.boolean().optional(),
+  storeEmailBodies: z.boolean().optional(),
+  aiArtifactRetention: z.enum(["keep", "redact_on_export", "delete_on_account_deletion"]).optional()
+});
+
+export const accountDeletionSchema = z.object({
+  confirmEmail: z.string().email(),
+  dryRun: z.boolean().default(true)
 });
 
 export const upsertInterviewSchema = z.object({
@@ -358,6 +366,7 @@ export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
 export type UpdateUserSettingsInput = z.infer<typeof updateUserSettingsSchema>;
+export type AccountDeletionInput = z.infer<typeof accountDeletionSchema>;
 export type UpsertInterviewInput = z.infer<typeof upsertInterviewSchema>;
 export type CreateEmailConnectionInput = z.infer<typeof createEmailConnectionSchema>;
 export type UpdateEmailConnectionInput = z.infer<typeof updateEmailConnectionSchema>;

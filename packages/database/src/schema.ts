@@ -236,6 +236,9 @@ export const userSettings = pgTable("user_settings", {
   preferredSources: jsonb("preferred_sources").$type<string[]>().notNull().default([]),
   defaultAiProvider: text("default_ai_provider").notNull().default("local"),
   defaultAiModel: text("default_ai_model").notNull().default("deterministic-v1"),
+  redactSensitiveExports: boolean("redact_sensitive_exports").default(true).notNull(),
+  storeEmailBodies: boolean("store_email_bodies").default(false).notNull(),
+  aiArtifactRetention: text("ai_artifact_retention").notNull().default("keep"),
   ...timestamps
 }, (table) => ({
   userIdx: uniqueIndex("user_settings_user_idx").on(table.userId)

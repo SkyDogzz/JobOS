@@ -341,6 +341,9 @@ export interface UserSettings {
   preferredSources: string[];
   defaultAiProvider: string;
   defaultAiModel: string;
+  redactSensitiveExports: boolean;
+  storeEmailBodies: boolean;
+  aiArtifactRetention: string;
   notificationPreferences: NotificationPreferences;
 }
 
