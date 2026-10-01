@@ -321,6 +321,8 @@ Implement v0.4.4 browser extension import contract:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `eb59afd Add browser extension import contract`
+
 ### v0.4.5 — Browser Extension Companion App
 
 Implement v0.4.5 browser extension companion app:
