@@ -451,6 +451,8 @@ Implement v0.7.0 notifications and reminders:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `ed6f6e8 Add notification center`
+
 ### v0.7.1 — Audit and Activity Feed
 
 Implement v0.7.1 audit and activity feed:
