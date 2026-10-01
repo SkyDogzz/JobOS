@@ -12,6 +12,25 @@ export const createJobSchema = z.object({
   salaryText: z.string().min(1).optional()
 });
 
+export const jobSearchSchema = z.object({
+  q: z.string().optional(),
+  companyId: z.string().uuid().optional(),
+  company: z.string().optional(),
+  location: z.string().optional(),
+  remotePolicy: z.string().optional(),
+  salaryText: z.string().optional(),
+  sourceId: z.string().uuid().optional(),
+  sourceName: z.string().optional(),
+  stage: z.string().optional(),
+  savedAfter: z.string().datetime().optional(),
+  savedBefore: z.string().datetime().optional()
+});
+
+export const saveJobFilterSchema = z.object({
+  name: z.string().min(1),
+  filters: jobSearchSchema
+});
+
 export const upsertCompanySchema = z.object({
   name: z.string().min(1),
   website: z.string().url().optional(),
@@ -186,6 +205,8 @@ export const loginSchema = z.object({
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;
+export type JobSearchInput = z.infer<typeof jobSearchSchema>;
+export type SaveJobFilterInput = z.infer<typeof saveJobFilterSchema>;
 export type UpsertCompanyInput = z.infer<typeof upsertCompanySchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type UpsertJobSourceInput = z.infer<typeof upsertJobSourceSchema>;

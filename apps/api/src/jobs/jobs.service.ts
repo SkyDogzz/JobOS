@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { createJobSchema } from "@jobos/validation";
+import { createJobSchema, jobSearchSchema, saveJobFilterSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { JobsRepository } from "./jobs.repository.js";
 
@@ -7,8 +7,8 @@ import { JobsRepository } from "./jobs.repository.js";
 export class JobsService {
   constructor(private readonly jobs: JobsRepository) {}
 
-  list() {
-    return this.jobs.list();
+  list(query: unknown) {
+    return this.jobs.list(jobSearchSchema.parse(query));
   }
 
   async findById(id: string) {
@@ -19,5 +19,13 @@ export class JobsService {
 
   create(body: unknown) {
     return this.jobs.create(parseBody(createJobSchema, body));
+  }
+
+  filters() {
+    return this.jobs.listFilters();
+  }
+
+  saveFilter(body: unknown) {
+    return this.jobs.saveFilter(parseBody(saveJobFilterSchema, body));
   }
 }

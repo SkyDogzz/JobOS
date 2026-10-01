@@ -43,6 +43,13 @@
       "when": 1790841000000,
       "tag": "0005_job_sources_crud",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790844000000,
+      "tag": "0006_saved_job_filters",
+      "breakpoints": true
     }
   ]
 }

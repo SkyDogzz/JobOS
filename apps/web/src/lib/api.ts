@@ -191,6 +191,12 @@ export interface JobSourceSummary {
   notes: string | null;
 }
 
+export interface SavedJobFilter {
+  id: string;
+  name: string;
+  filters: Record<string, unknown>;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 
@@ -224,8 +230,8 @@ export async function getDashboardData() {
 
 export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
-export async function getJobs() {
-  return getJson<DashboardJob[]>("/jobs");
+export async function getJobs(query = "") {
+  return getJson<DashboardJob[]>(`/jobs${query}`);
 }
 
 export async function getJobDetail(id: string) {
@@ -282,6 +288,10 @@ export async function getContacts() {
 
 export async function getJobSources() {
   return getJson<JobSourceSummary[]>("/job-sources");
+}
+
+export async function getSavedJobFilters() {
+  return getJson<SavedJobFilter[]>("/jobs/filters");
 }
 
 export async function getSession() {

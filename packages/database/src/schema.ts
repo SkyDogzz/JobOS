@@ -76,6 +76,14 @@ export const jobSources = pgTable("job_sources", {
   nameIdx: uniqueIndex("job_sources_name_idx").on(table.name)
 }));
 
+export const savedJobFilters = pgTable("saved_job_filters", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  filters: jsonb("filters").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+});
+
 export const contacts = pgTable("contacts", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),

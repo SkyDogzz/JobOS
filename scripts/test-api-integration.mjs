@@ -69,6 +69,18 @@ async function main() {
   const attributedDetail = await request(`/jobs/${attributedJob.id}`);
   if (attributedDetail.sourceId !== source.id) throw new Error("Job source attribution was not persisted.");
 
+  const searchedJobs = await request(`/jobs?q=${encodeURIComponent("Attributed Integration")}&sourceId=${source.id}`);
+  if (!searchedJobs.some((item) => item.id === attributedJob.id)) throw new Error("Job search did not return the attributed job.");
+
+  const savedFilter = await request("/jobs/filters", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Integration source filter", filters: { q: "Attributed", sourceId: source.id } })
+  });
+  if (savedFilter.filters.sourceId !== source.id) throw new Error("Saved job filter was not persisted.");
+  const savedFilters = await request("/jobs/filters");
+  if (!savedFilters.some((item) => item.id === savedFilter.id)) throw new Error("Saved job filter was not listed.");
+
   const resume = await request("/resumes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

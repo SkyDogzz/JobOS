@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { asc, eq } from "drizzle-orm";
-import { companies, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, users } from "@jobos/database";
-import type { CreateJobInput } from "@jobos/validation";
+import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { applications, companies, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters, users } from "@jobos/database";
+import type { CreateJobInput, JobSearchInput, SaveJobFilterInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 import { devUser } from "../common/dev-user.js";
@@ -10,7 +10,28 @@ import { devUser } from "../common/dev-user.js";
 export class JobsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
-  async list() {
+  async list(filters: JobSearchInput = {}) {
+    const conditions = [
+      filters.companyId ? eq(jobs.companyId, filters.companyId) : undefined,
+      filters.sourceId ? eq(jobs.sourceId, filters.sourceId) : undefined,
+      filters.location ? ilike(jobs.location, `%${filters.location}%`) : undefined,
+      filters.remotePolicy ? ilike(jobs.remotePolicy, `%${filters.remotePolicy}%`) : undefined,
+      filters.salaryText ? ilike(jobs.salaryText, `%${filters.salaryText}%`) : undefined,
+      filters.company ? ilike(companies.name, `%${filters.company}%`) : undefined,
+      filters.sourceName ? ilike(jobSources.name, `%${filters.sourceName}%`) : undefined,
+      filters.stage ? eq(applications.stage, filters.stage as typeof applications.$inferSelect.stage) : undefined,
+      filters.savedAfter ? gte(jobs.createdAt, new Date(filters.savedAfter)) : undefined,
+      filters.savedBefore ? lte(jobs.createdAt, new Date(filters.savedBefore)) : undefined,
+      filters.q
+        ? or(
+            ilike(jobs.title, `%${filters.q}%`),
+            ilike(jobs.description, `%${filters.q}%`),
+            ilike(companies.name, `%${filters.q}%`),
+            ilike(jobSources.name, `%${filters.q}%`)
+          )
+        : undefined
+    ].filter(Boolean);
+
     return this.db
       .select({
         id: jobs.id,
@@ -26,12 +47,15 @@ export class JobsRepository {
         salaryText: jobs.salaryText,
         companyId: companies.id,
         companyName: companies.name,
+        applicationStage: applications.stage,
         createdAt: jobs.createdAt
       })
       .from(jobs)
       .leftJoin(companies, eq(jobs.companyId, companies.id))
       .leftJoin(jobSources, eq(jobs.sourceId, jobSources.id))
-      .orderBy(asc(jobs.createdAt));
+      .leftJoin(applications, eq(applications.jobId, jobs.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(jobs.createdAt));
   }
 
   async create(input: CreateJobInput) {
@@ -100,6 +124,17 @@ export class JobsRepository {
     return { ...job, matches: matches.reverse() };
   }
 
+  async listFilters() {
+    const userId = await this.ensureDevUser();
+    return this.db.select().from(savedJobFilters).where(eq(savedJobFilters.userId, userId)).orderBy(asc(savedJobFilters.name));
+  }
+
+  async saveFilter(input: SaveJobFilterInput) {
+    const userId = await this.ensureDevUser();
+    const [filter] = await this.db.insert(savedJobFilters).values({ userId, name: input.name, filters: input.filters }).returning();
+    return filter;
+  }
+
   private async findOrCreateCompany(name: string) {
     const [existing] = await this.db.select({ id: companies.id }).from(companies).where(eq(companies.name, name)).limit(1);
     if (existing) {
@@ -122,5 +157,8 @@ export class JobsRepository {
       .insert(users)
       .values(devUser)
       .onConflictDoNothing({ target: users.email });
+
+    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
+    return user.id;
   }
 }
