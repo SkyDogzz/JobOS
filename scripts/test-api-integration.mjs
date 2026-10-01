@@ -24,9 +24,11 @@ async function main() {
     return;
   }
   const metrics = await request("/health/metrics");
-  if (metrics.version !== "0.9.0" || typeof metrics.monitoring.rateLimitMax !== "number") {
+  if (metrics.version !== "1.0.0" || typeof metrics.monitoring.rateLimitMax !== "number") {
     throw new Error("Health metrics did not expose monitoring data.");
   }
+  const prometheusMetrics = await fetch(`${apiUrl}/health/metrics/prometheus`).then((response) => response.text());
+  if (!prometheusMetrics.includes("jobos_api_uptime_seconds")) throw new Error("Prometheus metrics were not exposed.");
 
   const job = await request("/jobs", {
     method: "POST",
