@@ -98,6 +98,18 @@ export const approveCoverLetterSchema = z.object({
   metadata: z.record(z.unknown()).default({})
 });
 
+export const documentFiltersSchema = z.object({
+  kind: z.enum(["resume", "cover_letter", "portfolio", "other"]).optional(),
+  applicationId: z.string().uuid().optional(),
+  provider: z.string().min(1).optional(),
+  model: z.string().min(1).optional(),
+  approvalState: z.string().min(1).optional()
+});
+
+export const assignDocumentSchema = z.object({
+  applicationId: z.string().uuid().nullable()
+});
+
 export const updateApplicationStageSchema = z.object({
   stage: z.enum([
     "wishlist",
@@ -152,6 +164,8 @@ export type TailorResumeInput = z.infer<typeof tailorResumeSchema>;
 export type ApproveTailoredResumeInput = z.infer<typeof approveTailoredResumeSchema>;
 export type GenerateCoverLettersInput = z.infer<typeof generateCoverLettersSchema>;
 export type ApproveCoverLetterInput = z.infer<typeof approveCoverLetterSchema>;
+export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
+export type AssignDocumentInput = z.infer<typeof assignDocumentSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

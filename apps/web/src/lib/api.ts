@@ -124,6 +124,29 @@ export interface JobDetail extends DashboardJob {
   matches: MatchSummary[];
 }
 
+export interface DocumentSummary {
+  id: string;
+  applicationId: string | null;
+  kind: string;
+  name: string;
+  contentHash: string;
+  content: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiArtifactSummary {
+  id: string;
+  applicationId: string | null;
+  provider: string;
+  model: string;
+  purpose: string;
+  promptHash: string;
+  output: Record<string, unknown>;
+  groundedInProfile: boolean;
+  createdAt: string;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 
@@ -187,6 +210,18 @@ export async function getApplicationTasks(id: string) {
 
 export async function getCandidateProfile() {
   return getJson<CandidateProfile | null>("/profile");
+}
+
+export async function getDocuments() {
+  return getJson<DocumentSummary[]>("/documents");
+}
+
+export async function getDocumentDetail(id: string) {
+  return getJson<DocumentSummary>(`/documents/${id}`);
+}
+
+export async function getAiArtifacts() {
+  return getJson<AiArtifactSummary[]>("/documents/artifacts");
 }
 
 export async function getSession() {

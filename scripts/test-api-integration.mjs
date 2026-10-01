@@ -167,6 +167,23 @@ https://example.com/profile`;
   });
   if (approvedCoverLetter.kind !== "cover_letter") throw new Error("Approved cover letter was not persisted as a cover letter document.");
 
+  const [documents, artifacts] = await Promise.all([
+    request("/documents?kind=cover_letter"),
+    request("/documents/artifacts")
+  ]);
+  if (!documents.some((item) => item.id === approvedCoverLetter.id)) throw new Error("Approved cover letter was not listed in the document library.");
+  if (!artifacts.some((item) => item.id === coverLetters.artifactId)) throw new Error("Cover letter artifact was not listed in generated artifacts.");
+
+  const documentDetail = await request(`/documents/${approvedCoverLetter.id}`);
+  if (documentDetail.content.metadata.promptHash !== coverLetters.promptHash) throw new Error("Document detail did not include generation metadata.");
+
+  const unassignedDocument = await request(`/documents/${approvedCoverLetter.id}/application`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ applicationId: null })
+  });
+  if (unassignedDocument.applicationId !== null) throw new Error("Document assignment removal failed.");
+
   const detail = await request(`/applications/${application.id}`);
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");

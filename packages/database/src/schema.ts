@@ -159,6 +159,7 @@ export const documents = pgTable("documents", {
   name: text("name").notNull(),
   storageKey: text("storage_key").notNull(),
   contentHash: text("content_hash").notNull(),
+  content: jsonb("content").$type<Record<string, unknown>>().notNull().default({}),
   ...timestamps
 });
 

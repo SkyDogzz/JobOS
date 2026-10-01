@@ -80,9 +80,10 @@ export class AiRepository {
       kind: "cover_letter",
       name: input.name,
       storageKey: `local/documents/${input.applicationId}/${contentHash}.json`,
-      contentHash
+      contentHash,
+      content
     }).returning();
-    return { ...document, content };
+    return document;
   }
 
   hashPrompt(prompt: string) {
