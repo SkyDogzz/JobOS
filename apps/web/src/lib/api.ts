@@ -60,6 +60,12 @@ export interface CandidateProfile {
   };
 }
 
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
 export interface DashboardResume {
   id: string;
   name: string;
@@ -120,4 +126,8 @@ export async function getApplicationTasks(id: string) {
 
 export async function getCandidateProfile() {
   return getJson<CandidateProfile | null>("/profile");
+}
+
+export async function getSession() {
+  return getJson<SessionUser | null>("/auth/session");
 }

@@ -64,6 +64,17 @@ export const upsertCandidateProfileSchema = z.object({
   experience: z.string().optional()
 });
 
+export const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().min(1).optional()
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1)
+});
+
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
@@ -71,3 +82,5 @@ export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageS
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpsertCandidateProfileInput = z.infer<typeof upsertCandidateProfileSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

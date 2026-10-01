@@ -94,6 +94,14 @@ async function main() {
   });
   if (profile.headline !== "Integration Candidate") throw new Error("Profile upsert failed.");
 
+  const authEmail = `integration-${Date.now()}@jobos.local`;
+  const registered = await request("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: authEmail, password: "password123", name: "Integration User" })
+  });
+  if (registered.user.email !== authEmail) throw new Error("Auth registration failed.");
+
   console.log("API integration tests passed.");
 }
 

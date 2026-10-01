@@ -4666,6 +4666,14 @@ API integration smoke test:
 pnpm test:api
 ```
 
+Auth-aware local development:
+
+```bash
+open http://localhost:3000/login
+```
+
+The current auth foundation provides local registration, login, logout, and session endpoints backed by PostgreSQL. Full route protection and strict authenticated user scoping are the next hardening step.
+
 and have a fully functional local environment containing:
 
 ```text

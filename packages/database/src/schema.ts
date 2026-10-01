@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull(),
   name: text("name"),
+  passwordHash: text("password_hash"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   ...timestamps
 }, (table) => ({
@@ -181,4 +182,3 @@ export const applicationEvents = pgTable("application_events", {
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
-
