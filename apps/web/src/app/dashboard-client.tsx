@@ -221,10 +221,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               Track applications, documents, interviews, and follow-ups from one canonical record backed by Postgres.
             </p>
           </div>
-          <button className="inline-flex h-10 items-center gap-2 rounded bg-rust px-4 text-sm font-semibold text-white">
+          <Link className="inline-flex h-10 items-center gap-2 rounded bg-rust px-4 text-sm font-semibold text-white" href="/discover/manual">
             <Search size={16} />
             Discover jobs
-          </button>
+          </Link>
         </div>
 
         <StatusBanner apiAvailable={apiAvailable} isRefreshing={isRefreshing} submitState={submitState} />

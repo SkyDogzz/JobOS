@@ -6,6 +6,7 @@ export interface DashboardJob {
   description: string;
   companyName: string | null;
   location: string | null;
+  sourceUrl: string | null;
   sourceName: string | null;
 }
 
@@ -131,3 +132,5 @@ export async function getCandidateProfile() {
 export async function getSession() {
   return getJson<SessionUser | null>("/auth/session");
 }
+
+export { apiUrl };
