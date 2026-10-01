@@ -268,6 +268,8 @@ Implement v0.4.0 job sources CRUD:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `1f81e5e Add job source management`
+
 ### v0.4.1 — Job Search and Filtering
 
 Implement v0.4.1 job search and filtering:
