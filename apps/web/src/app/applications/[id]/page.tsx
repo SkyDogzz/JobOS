@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BriefcaseBusiness, FileText, History } from "lucide-react";
-import { getApplicationDetail } from "../../../lib/api";
+import { getApplicationDetail, getApplicationNotes, getApplicationTasks } from "../../../lib/api";
+import { NotesTasksPanel } from "./notes-tasks-panel";
 import { StageControls } from "./stage-controls";
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const application = await getApplicationDetail(id).catch(() => null);
+  const [application, notes, tasks] = await Promise.all([
+    getApplicationDetail(id).catch(() => null),
+    getApplicationNotes(id).catch(() => []),
+    getApplicationTasks(id).catch(() => [])
+  ]);
 
   if (!application) {
     notFound();
@@ -48,12 +53,10 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
               <StageControls applicationId={application.id} initialStage={application.stage} />
             </section>
 
-            <section className="rounded border border-ink/10 bg-white p-5">
-              <h2 className="mb-3 font-semibold">Notes</h2>
-              <p className="text-sm text-ink/55">Notes will land in v0.1.5.</p>
-            </section>
           </aside>
         </div>
+
+        <NotesTasksPanel applicationId={application.id} initialNotes={notes} initialTasks={tasks} />
 
         <section className="mt-4 rounded border border-ink/10 bg-white p-5">
           <div className="mb-4 flex items-center gap-2">

@@ -47,7 +47,18 @@ export const updateApplicationStageSchema = z.object({
   ])
 });
 
+export const createNoteSchema = z.object({
+  body: z.string().min(1)
+});
+
+export const createTaskSchema = z.object({
+  title: z.string().min(1),
+  dueAt: z.string().datetime().optional()
+});
+
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
+export type CreateNoteInput = z.infer<typeof createNoteSchema>;
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;

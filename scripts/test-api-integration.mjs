@@ -72,6 +72,21 @@ async function main() {
   });
   if (updated.stage !== "interviewing") throw new Error("Application stage update failed.");
 
+  const note = await request(`/applications/${application.id}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body: "Integration note" })
+  });
+  if (!note.id) throw new Error("Note creation failed.");
+
+  const task = await request(`/applications/${application.id}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Integration task" })
+  });
+  const completed = await request(`/tasks/${task.id}/complete`, { method: "PATCH" });
+  if (completed.status !== "done") throw new Error("Task completion failed.");
+
   console.log("API integration tests passed.");
 }
 

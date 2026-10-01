@@ -33,6 +33,22 @@ export interface ApplicationDetail extends DashboardApplication {
   }>;
 }
 
+export interface ApplicationNote {
+  id: string;
+  applicationId: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface ApplicationTask {
+  id: string;
+  applicationId: string | null;
+  title: string;
+  status: string;
+  dueAt: string | null;
+  createdAt: string;
+}
+
 export interface DashboardResume {
   id: string;
   name: string;
@@ -73,4 +89,12 @@ export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
 export async function getApplicationDetail(id: string) {
   return getJson<ApplicationDetail>(`/applications/${id}`);
+}
+
+export async function getApplicationNotes(id: string) {
+  return getJson<ApplicationNote[]>(`/applications/${id}/notes`);
+}
+
+export async function getApplicationTasks(id: string) {
+  return getJson<ApplicationTask[]>(`/applications/${id}/tasks`);
 }
