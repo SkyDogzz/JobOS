@@ -360,6 +360,8 @@ Implement v0.5.1 interviews:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `7574b01 Add interview scheduling workflow`
+
 ### v0.5.2 — Email Sync Foundation
 
 Implement v0.5.2 email sync foundation:
