@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && nest build",
-    "dev": "pnpm --dir ../.. turbo build --filter=@jobos/api^... && pnpm build && pnpm start",
+    "dev": "pnpm --filter @jobos/ai --filter @jobos/config --filter @jobos/database --filter @jobos/document-parser --filter @jobos/job-sources --filter @jobos/validation build && pnpm build && pnpm start",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/apps/api/src/main.js",
     "test": "pnpm --dir ../.. test:api",
