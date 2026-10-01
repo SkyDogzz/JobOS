@@ -221,57 +221,233 @@ Commit: `a11e9f0 Add resume intelligence workflows`
 
 Implement v0.3.2 cover letters:
 
-- Generate cover letter drafts from candidate profile, job, and selected resume version.
-- Add user-editable drafts and approval state.
+- Generate multiple grounded cover letter draft variants from candidate profile, job, and selected resume version.
+- Support distinct tones such as concise, narrative, technical, and recruiter-friendly.
+- Add user-editable drafts, variant comparison, and approval state.
 - Persist cover letter documents and AI artifact metadata.
 - Link cover letters to applications.
 - Keep checks green.
 - Commit the result.
 
-### v0.4.0 — Job Sources and Search
+### v0.3.3 — Generated Document Library
 
-Implement v0.4.0 job sources and search:
+Implement v0.3.3 generated document library:
 
-- Add company CRUD and job source metadata.
-- Add full-text and trigram search for jobs and companies.
-- Add duplicate detection for imported jobs.
-- Add frontend search and filtering.
+- Add document detail pages for approved cover letters and generated artifacts.
+- Add filtering by document kind, application, job, provider, model, and approval state.
+- Add reuse controls for assigning an approved document to an application.
+- Show generation metadata without exposing raw provider secrets.
 - Keep checks green.
-- Commit the result.
+- Commit and push the result.
 
-### v0.4.1 — Browser Extension Import Contract
+### v0.3.4 — Grounding Review Workflow
 
-Implement v0.4.1 browser extension import contract:
+Implement v0.3.4 grounding review workflow:
+
+- Add a claim review view for generated CV and cover letter drafts.
+- Show each generated claim alongside the profile or resume evidence that grounds it.
+- Block approval when required evidence is missing or unresolved.
+- Persist reviewer decisions, overrides, and audit events.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.4.0 — Job Sources CRUD
+
+Implement v0.4.0 job sources CRUD:
+
+- Add company CRUD with contacts and source attribution.
+- Add job source metadata for manual imports, job boards, referrals, and direct company pages.
+- Add source health/status fields and frontend management views.
+- Add validation and integration coverage for company/source updates.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.4.1 — Job Search and Filtering
+
+Implement v0.4.1 job search and filtering:
+
+- Add full-text and trigram search for jobs and companies.
+- Add filters for company, location, remote policy, salary text, source, application status, and date saved.
+- Add frontend search and filtering on saved jobs and dashboard views.
+- Persist reusable saved filters for the current user.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.4.2 — Job Deduplication
+
+Implement v0.4.2 job deduplication:
+
+- Add duplicate detection for imported jobs using source URL, company/title similarity, and normalized description fingerprints.
+- Add merge/update behavior for duplicate imports.
+- Add UI to review potential duplicates before merging.
+- Add integration coverage for exact and fuzzy duplicate cases.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.4.3 — Browser Extension Import Contract
+
+Implement v0.4.3 browser extension import contract:
 
 - Add an authenticated API endpoint for browser extension job imports.
 - Define request/response contracts for importing the current page.
 - Add source URL deduplication and update behavior.
 - Document extension integration requirements.
 - Keep checks green.
-- Commit the result.
+- Commit and push the result.
 
-### v0.5.0 — Email, Contacts, Interviews, Calendar
+### v0.4.4 — Browser Extension Companion App
 
-Implement v0.5.0 integrations foundation:
+Implement v0.4.4 browser extension companion app:
 
-- Add contacts CRUD.
-- Add interview scheduling records and frontend views.
-- Add email classification interfaces for application-related messages.
-- Add calendar integration interfaces and sync job placeholders.
+- Add a minimal extension package or documented scaffold for saving the current job page into JobOS.
+- Add local development instructions for extension authentication and API URL configuration.
+- Add fixtures for common ATS job page payloads.
+- Add smoke coverage for the import contract using fixture payloads.
 - Keep checks green.
-- Commit the result.
+- Commit and push the result.
 
-### v0.6.0 — Analytics
+### v0.5.0 — Contacts and Recruiters
 
-Implement v0.6.0 analytics:
+Implement v0.5.0 contacts and recruiters:
+
+- Add full contacts CRUD with company links and application links.
+- Add recruiter/contact notes and follow-up reminders.
+- Show contacts on company, job, and application detail pages.
+- Add integration coverage for contact lifecycle flows.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.5.1 — Interviews
+
+Implement v0.5.1 interviews:
+
+- Add interview scheduling records with format, location, participants, preparation notes, and outcome.
+- Add frontend interview list and application detail interview timeline.
+- Add task generation for interview preparation follow-ups.
+- Add integration coverage for interview CRUD and application linking.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.5.2 — Email Sync Foundation
+
+Implement v0.5.2 email sync foundation:
+
+- Add email integration connection records and sync job placeholders.
+- Add email classification interfaces for application-related messages.
+- Persist inbound message metadata, provider IDs, classification state, and linked application IDs.
+- Add privacy controls for excluding message bodies from storage.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.5.3 — Calendar Integration Foundation
+
+Implement v0.5.3 calendar integration foundation:
+
+- Add calendar connection records and sync job placeholders.
+- Add calendar event metadata for interviews and follow-ups.
+- Add conflict/status indicators on interview detail views.
+- Add integration coverage for calendar event linking.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.6.0 — Funnel Analytics
+
+Implement v0.6.0 funnel analytics:
 
 - Add funnel analytics by application stage.
+- Add dashboard charts and summary cards for stage counts and aging.
+- Add filters by source, company, date range, and resume version.
+- Add integration coverage for analytics aggregation.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.6.1 — Source Performance Analytics
+
+Implement v0.6.1 source performance analytics:
+
 - Add source performance reports.
+- Add response, interview, offer, and rejection rates by source.
+- Add source quality notes and ranking UI.
+- Add integration coverage for source performance calculations.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.6.2 — Interview and Task Analytics
+
+Implement v0.6.2 interview and task analytics:
+
 - Add interview conversion rates.
 - Add task SLA metrics.
-- Add CV/version usage statistics.
+- Add overdue, completed, and upcoming task reporting.
+- Add dashboard views for follow-up discipline and interview outcomes.
 - Keep checks green.
-- Commit the result.
+- Commit and push the result.
+
+### v0.6.3 — Document Performance Analytics
+
+Implement v0.6.3 document performance analytics:
+
+- Add CV/version usage statistics.
+- Add cover letter usage and outcome statistics.
+- Show which resume versions and generated documents are linked to successful stages.
+- Add integration coverage for document performance aggregation.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.7.0 — Notifications and Reminders
+
+Implement v0.7.0 notifications and reminders:
+
+- Add notification preference records and reminder delivery placeholders.
+- Add due-soon and overdue task notifications.
+- Add application follow-up reminder suggestions.
+- Add frontend notification center.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.7.1 — Audit and Activity Feed
+
+Implement v0.7.1 audit and activity feed:
+
+- Add audit events for user-visible create, update, delete, import, generation, and approval actions.
+- Add application and dashboard activity feeds.
+- Add filters by event type and related entity.
+- Add integration coverage for audit event creation.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.8.0 — Settings and Preferences
+
+Implement v0.8.0 settings and preferences:
+
+- Add user settings for timezone, job search preferences, notification preferences, and AI defaults.
+- Add frontend settings pages with validation.
+- Use preferences in matching, reminders, and generated document defaults.
+- Add integration coverage for settings persistence.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.8.1 — Data Export
+
+Implement v0.8.1 data export:
+
+- Add account export endpoints for profile, jobs, applications, resumes, documents, notes, tasks, and AI artifacts.
+- Generate machine-readable JSON export bundles.
+- Add UI to request and download exports.
+- Add integration coverage for export completeness.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.8.2 — Account Deletion and Privacy Controls
+
+Implement v0.8.2 account deletion and privacy controls:
+
+- Add account deletion workflow with confirmation and retention safeguards.
+- Add privacy controls for AI artifacts, email bodies, and generated documents.
+- Add redaction helpers for sensitive fields in logs and exports.
+- Add integration coverage for deletion and privacy settings.
+- Keep checks green.
+- Commit and push the result.
 
 ### v0.9.0 — Public Beta Hardening
 
