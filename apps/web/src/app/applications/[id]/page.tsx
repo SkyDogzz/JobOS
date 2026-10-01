@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BriefcaseBusiness, FileText, History } from "lucide-react";
 import { getApplicationDetail } from "../../../lib/api";
+import { StageControls } from "./stage-controls";
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,6 +42,10 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                 <h2 className="font-semibold">Selected CV</h2>
               </div>
               <p className="text-sm text-ink/65">{application.resumeVersionId ?? "No CV version selected"}</p>
+            </section>
+
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <StageControls applicationId={application.id} initialStage={application.stage} />
             </section>
 
             <section className="rounded border border-ink/10 bg-white p-5">

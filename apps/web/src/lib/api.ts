@@ -12,6 +12,7 @@ export interface DashboardJob {
 export interface DashboardApplication {
   id: string;
   stage: string;
+  jobId?: string;
   jobTitle: string;
   companyName: string | null;
 }

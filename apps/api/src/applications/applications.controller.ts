@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { ApplicationsService } from "./applications.service.js";
 
 @Controller("applications")
@@ -18,5 +18,10 @@ export class ApplicationsController {
   @Get(":id")
   findById(@Param("id") id: string) {
     return this.applications.findById(id);
+  }
+
+  @Patch(":id/stage")
+  updateStage(@Param("id") id: string, @Body() body: unknown) {
+    return this.applications.updateStage(id, body);
   }
 }

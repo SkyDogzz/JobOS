@@ -149,6 +149,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         {
           id: application.id,
           stage: application.stage,
+          jobId: application.jobId,
           jobTitle: job?.title ?? "Unknown job",
           companyName: job?.companyName ?? null
         }
@@ -161,6 +162,27 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       setSubmitState({ status: "error", message: error instanceof Error ? error.message : "Could not create application." });
     } finally {
       setPendingForm(null);
+    }
+  }
+
+  async function updateApplicationStage(applicationId: string, stage: string) {
+    const previous = applications;
+    setApplications((current) => current.map((application) => application.id === applicationId ? { ...application, stage } : application));
+    setSubmitState({ status: "idle", message: "" });
+
+    try {
+      await fetch(`${apiUrl}/applications/${applicationId}/stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage })
+      }).then((response) => {
+        if (!response.ok) throw new Error("Could not update stage.");
+      });
+      setSubmitState({ status: "success", message: "Application stage updated." });
+      refreshServerSnapshot();
+    } catch (error) {
+      setApplications(previous);
+      setSubmitState({ status: "error", message: error instanceof Error ? error.message : "Could not update stage." });
     }
   }
 
@@ -233,7 +255,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
-          <Pipeline applications={applications} />
+          <Pipeline applications={applications} onStageChange={updateApplicationStage} />
           <Funnel jobs={jobs} applications={applications} resumes={resumes} />
         </div>
       </section>
@@ -380,7 +402,7 @@ function CreateApplicationForm({
   );
 }
 
-function Pipeline({ applications }: { applications: DashboardApplication[] }) {
+function Pipeline({ applications, onStageChange }: { applications: DashboardApplication[]; onStageChange: (applicationId: string, stage: string) => void }) {
   return (
     <section className="rounded border border-ink/10 bg-white p-5">
       <div className="mb-4 flex items-center gap-2">
@@ -394,10 +416,24 @@ function Pipeline({ applications }: { applications: DashboardApplication[] }) {
             <p className="mb-3 font-semibold capitalize">{stage}</p>
             <div className="space-y-2">
               {applications.filter((application) => application.stage === stage).slice(0, 4).map((application) => (
-                <Link className="block rounded bg-white p-2 text-xs shadow-sm hover:ring-1 hover:ring-ink/20" href={`/applications/${application.id}`} key={application.id}>
-                  <p className="font-medium">{application.jobTitle}</p>
-                  <p className="text-ink/55">{application.companyName ?? "No company"}</p>
-                </Link>
+                <div key={application.id}>
+                  <Link className="block rounded bg-white p-2 text-xs shadow-sm hover:ring-1 hover:ring-ink/20" href={`/applications/${application.id}`}>
+                    <p className="font-medium">{application.jobTitle}</p>
+                    <p className="text-ink/55">{application.companyName ?? "No company"}</p>
+                  </Link>
+                  <select
+                    className="mt-1 h-8 w-full rounded border border-ink/10 bg-white px-2 text-xs"
+                    onChange={(event) => onStageChange(application.id, event.target.value)}
+                    value={application.stage}
+                  >
+                    <option value="saved">Saved</option>
+                    <option value="applied">Applied</option>
+                    <option value="screening">Screening</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="offer">Offer</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
               ))}
             </div>
           </div>

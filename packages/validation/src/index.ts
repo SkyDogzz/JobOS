@@ -33,6 +33,21 @@ export const createResumeSchema = z.object({
   content: z.record(z.unknown()).default({})
 });
 
+export const updateApplicationStageSchema = z.object({
+  stage: z.enum([
+    "wishlist",
+    "saved",
+    "applied",
+    "screening",
+    "interviewing",
+    "offer",
+    "rejected",
+    "withdrawn",
+    "accepted"
+  ])
+});
+
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
+export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;

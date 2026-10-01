@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
 import { applicationEvents, applications, companies, jobs, users } from "@jobos/database";
-import type { CreateApplicationInput } from "@jobos/validation";
+import type { CreateApplicationInput, UpdateApplicationStageInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -84,6 +84,28 @@ export class ApplicationsRepository {
       applicationId: application.id,
       kind: "created",
       payload: { jobId: input.jobId, resumeVersionId: input.resumeVersionId ?? null }
+    });
+
+    return application;
+  }
+
+  async updateStage(id: string, input: UpdateApplicationStageInput) {
+    const [before] = await this.db.select({ stage: applications.stage }).from(applications).where(eq(applications.id, id)).limit(1);
+
+    if (!before) {
+      return null;
+    }
+
+    const [application] = await this.db
+      .update(applications)
+      .set({ stage: input.stage, updatedAt: new Date() })
+      .where(eq(applications.id, id))
+      .returning();
+
+    await this.db.insert(applicationEvents).values({
+      applicationId: id,
+      kind: "stage_changed",
+      payload: { from: before.stage, to: input.stage }
     });
 
     return application;

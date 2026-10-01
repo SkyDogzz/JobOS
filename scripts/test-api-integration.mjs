@@ -65,6 +65,13 @@ async function main() {
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
 
+  const updated = await request(`/applications/${application.id}/stage`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage: "interviewing" })
+  });
+  if (updated.stage !== "interviewing") throw new Error("Application stage update failed.");
+
   console.log("API integration tests passed.");
 }
 
