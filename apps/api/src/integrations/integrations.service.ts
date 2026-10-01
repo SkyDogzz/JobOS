@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import {
   classifyEmailMessageSchema,
+  createCalendarConnectionSchema,
+  createCalendarEventSchema,
+  createCalendarSyncJobSchema,
   createEmailConnectionSchema,
   createEmailMessageSchema,
   createEmailSyncJobSchema,
@@ -47,5 +50,29 @@ export class IntegrationsService {
     const message = await this.integrations.classifyEmailMessage(id, parseBody(classifyEmailMessageSchema, body));
     if (!message) throw new NotFoundException("Email message not found.");
     return message;
+  }
+
+  listCalendarConnections() {
+    return this.integrations.listCalendarConnections();
+  }
+
+  createCalendarConnection(body: unknown) {
+    return this.integrations.createCalendarConnection(parseBody(createCalendarConnectionSchema, body));
+  }
+
+  createCalendarSyncJob(body: unknown) {
+    return this.integrations.createCalendarSyncJob(parseBody(createCalendarSyncJobSchema, body));
+  }
+
+  listCalendarSyncJobs() {
+    return this.integrations.listCalendarSyncJobs();
+  }
+
+  createCalendarEvent(body: unknown) {
+    return this.integrations.createCalendarEvent(parseBody(createCalendarEventSchema, body));
+  }
+
+  listCalendarEvents() {
+    return this.integrations.listCalendarEvents();
   }
 }

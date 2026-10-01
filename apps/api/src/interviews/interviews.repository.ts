@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
-import { applicationEvents, applications, companies, interviews, jobs, tasks, users } from "@jobos/database";
+import { applicationEvents, applications, calendarEvents, companies, interviews, jobs, tasks, users } from "@jobos/database";
 import type { UpsertInterviewInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
@@ -91,6 +91,9 @@ export class InterviewsRepository {
         preparationNotes: interviews.preparationNotes,
         outcome: interviews.outcome,
         notes: interviews.notes,
+        calendarStatus: calendarEvents.status,
+        calendarConflictStatus: calendarEvents.conflictStatus,
+        calendarEventId: calendarEvents.id,
         jobTitle: jobs.title,
         companyName: companies.name,
         stage: applications.stage,
@@ -100,7 +103,8 @@ export class InterviewsRepository {
       .from(interviews)
       .innerJoin(applications, eq(interviews.applicationId, applications.id))
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
-      .leftJoin(companies, eq(jobs.companyId, companies.id));
+      .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .leftJoin(calendarEvents, eq(calendarEvents.interviewId, interviews.id));
   }
 
   private async ensureDevUser() {

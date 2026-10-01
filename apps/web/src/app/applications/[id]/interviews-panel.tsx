@@ -79,6 +79,7 @@ export function InterviewsPanel({
           <article className="rounded border border-ink/10 bg-paper p-3 text-sm" key={interview.id}>
             <p className="font-medium">{new Date(interview.startsAt).toLocaleString()} · {interview.format ?? "Interview"}</p>
             <p className="mt-1 text-ink/55">{interview.location ?? "No location"} · {interview.participants.length ? interview.participants.join(", ") : "No participants"}</p>
+            {interview.calendarStatus ? <p className="mt-1 text-xs text-tide">Calendar {interview.calendarStatus} · {interview.calendarConflictStatus ?? "clear"}</p> : null}
             {interview.preparationNotes ? <p className="mt-2 text-ink/70">{interview.preparationNotes}</p> : null}
             {interview.outcome ? <p className="mt-2 text-rust">{interview.outcome}</p> : null}
           </article>

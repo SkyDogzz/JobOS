@@ -44,4 +44,34 @@ export class IntegrationsController {
   classifyEmailMessage(@Param("id") id: string, @Body() body: unknown) {
     return this.integrations.classifyEmailMessage(id, body);
   }
+
+  @Get("calendar/connections")
+  listCalendarConnections() {
+    return this.integrations.listCalendarConnections();
+  }
+
+  @Post("calendar/connections")
+  createCalendarConnection(@Body() body: unknown) {
+    return this.integrations.createCalendarConnection(body);
+  }
+
+  @Post("calendar/sync-jobs")
+  createCalendarSyncJob(@Body() body: unknown) {
+    return this.integrations.createCalendarSyncJob(body);
+  }
+
+  @Get("calendar/sync-jobs")
+  listCalendarSyncJobs() {
+    return this.integrations.listCalendarSyncJobs();
+  }
+
+  @Post("calendar/events")
+  createCalendarEvent(@Body() body: unknown) {
+    return this.integrations.createCalendarEvent(body);
+  }
+
+  @Get("calendar/events")
+  listCalendarEvents() {
+    return this.integrations.listCalendarEvents();
+  }
 }

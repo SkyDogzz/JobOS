@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { ArrowLeft, Plug } from "lucide-react";
-import { getEmailConnections, getEmailMessages, getEmailSyncJobs } from "../../../lib/api";
+import { getCalendarConnections, getCalendarEvents, getCalendarSyncJobs, getEmailConnections, getEmailMessages, getEmailSyncJobs } from "../../../lib/api";
 import { IntegrationsClient } from "./integrations-client";
 
 export default async function IntegrationsPage() {
-  const [connections, jobs, messages] = await Promise.all([
+  const [connections, jobs, messages, calendarConnections, calendarJobs, calendarEvents] = await Promise.all([
     getEmailConnections().catch(() => []),
     getEmailSyncJobs().catch(() => []),
-    getEmailMessages().catch(() => [])
+    getEmailMessages().catch(() => []),
+    getCalendarConnections().catch(() => []),
+    getCalendarSyncJobs().catch(() => []),
+    getCalendarEvents().catch(() => [])
   ]);
 
   return (
@@ -24,7 +27,14 @@ export default async function IntegrationsPage() {
           </div>
           <p className="mt-2 text-ink/65">Email sync placeholders, metadata retention, and application-message classification.</p>
         </section>
-        <IntegrationsClient initialConnections={connections} initialJobs={jobs} initialMessages={messages} />
+        <IntegrationsClient
+          initialCalendarConnections={calendarConnections}
+          initialCalendarEvents={calendarEvents}
+          initialCalendarJobs={calendarJobs}
+          initialConnections={connections}
+          initialJobs={jobs}
+          initialMessages={messages}
+        />
       </div>
     </main>
   );

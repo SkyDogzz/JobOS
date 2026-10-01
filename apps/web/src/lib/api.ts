@@ -66,6 +66,9 @@ export interface ApplicationInterview {
   preparationNotes: string | null;
   outcome: string | null;
   notes: string | null;
+  calendarStatus?: string | null;
+  calendarConflictStatus?: string | null;
+  calendarEventId?: string | null;
   jobTitle: string;
   companyName: string | null;
   stage: string;
@@ -260,6 +263,42 @@ export interface EmailMessageSummary {
   createdAt: string;
 }
 
+export interface CalendarConnectionSummary {
+  id: string;
+  provider: string;
+  accountEmail: string;
+  calendarName: string | null;
+  status: string;
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
+export interface CalendarSyncJobSummary {
+  id: string;
+  connectionId: string;
+  status: string;
+  cursor: string | null;
+  error: string | null;
+  provider: string;
+  accountEmail: string;
+  createdAt: string;
+}
+
+export interface CalendarEventSummary {
+  id: string;
+  connectionId: string;
+  interviewId: string | null;
+  taskId: string | null;
+  providerEventId: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string | null;
+  status: string;
+  conflictStatus: string;
+  createdAt: string;
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -410,6 +449,18 @@ export async function getEmailSyncJobs() {
 
 export async function getEmailMessages() {
   return getJson<EmailMessageSummary[]>("/integrations/email/messages");
+}
+
+export async function getCalendarConnections() {
+  return getJson<CalendarConnectionSummary[]>("/integrations/calendar/connections");
+}
+
+export async function getCalendarSyncJobs() {
+  return getJson<CalendarSyncJobSummary[]>("/integrations/calendar/sync-jobs");
+}
+
+export async function getCalendarEvents() {
+  return getJson<CalendarEventSummary[]>("/integrations/calendar/events");
 }
 
 export { apiUrl };

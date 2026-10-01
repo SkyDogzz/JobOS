@@ -71,6 +71,13 @@
       "when": 1790853000000,
       "tag": "0009_email_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790856000000,
+      "tag": "0010_calendar_integration",
+      "breakpoints": true
     }
   ]
 }

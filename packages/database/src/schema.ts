@@ -270,6 +270,47 @@ export const emailMessages = pgTable("email_messages", {
   providerMessageIdx: uniqueIndex("email_messages_connection_provider_message_idx").on(table.connectionId, table.providerMessageId)
 }));
 
+export const calendarIntegrationConnections = pgTable("calendar_integration_connections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  provider: text("provider").notNull(),
+  accountEmail: text("account_email").notNull(),
+  calendarName: text("calendar_name"),
+  status: text("status").notNull().default("placeholder"),
+  syncState: jsonb("sync_state").$type<Record<string, unknown>>().notNull().default({}),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  ...timestamps
+});
+
+export const calendarSyncJobs = pgTable("calendar_sync_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  connectionId: uuid("connection_id").references(() => calendarIntegrationConnections.id, { onDelete: "cascade" }).notNull(),
+  status: text("status").notNull().default("queued"),
+  cursor: text("cursor"),
+  error: text("error"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  ...timestamps
+});
+
+export const calendarEvents = pgTable("calendar_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  connectionId: uuid("connection_id").references(() => calendarIntegrationConnections.id, { onDelete: "cascade" }).notNull(),
+  interviewId: uuid("interview_id").references(() => interviews.id, { onDelete: "set null" }),
+  taskId: uuid("task_id").references(() => tasks.id, { onDelete: "set null" }),
+  providerEventId: text("provider_event_id").notNull(),
+  title: text("title").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  location: text("location"),
+  status: text("status").notNull().default("confirmed"),
+  conflictStatus: text("conflict_status").notNull().default("clear"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  providerEventIdx: uniqueIndex("calendar_events_connection_provider_event_idx").on(table.connectionId, table.providerEventId)
+}));
+
 export const aiArtifacts = pgTable("ai_artifacts", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

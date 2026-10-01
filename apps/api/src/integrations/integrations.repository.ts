@@ -1,8 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
-import { emailIntegrationConnections, emailMessages, emailSyncJobs, users } from "@jobos/database";
+import {
+  calendarEvents,
+  calendarIntegrationConnections,
+  calendarSyncJobs,
+  emailIntegrationConnections,
+  emailMessages,
+  emailSyncJobs,
+  users
+} from "@jobos/database";
 import type {
   ClassifyEmailMessageInput,
+  CreateCalendarConnectionInput,
+  CreateCalendarEventInput,
+  CreateCalendarSyncJobInput,
   CreateEmailConnectionInput,
   CreateEmailMessageInput,
   CreateEmailSyncJobInput,
@@ -133,6 +144,68 @@ export class IntegrationsRepository {
     return message ?? null;
   }
 
+  listCalendarConnections() {
+    return this.db.select().from(calendarIntegrationConnections).orderBy(desc(calendarIntegrationConnections.createdAt));
+  }
+
+  async createCalendarConnection(input: CreateCalendarConnectionInput) {
+    const userId = await this.ensureDevUser();
+    const [connection] = await this.db
+      .insert(calendarIntegrationConnections)
+      .values({
+        userId,
+        provider: input.provider,
+        accountEmail: input.accountEmail,
+        calendarName: input.calendarName,
+        status: input.status
+      })
+      .returning();
+    return connection;
+  }
+
+  listCalendarSyncJobs() {
+    return this.db
+      .select({
+        id: calendarSyncJobs.id,
+        connectionId: calendarSyncJobs.connectionId,
+        status: calendarSyncJobs.status,
+        cursor: calendarSyncJobs.cursor,
+        error: calendarSyncJobs.error,
+        startedAt: calendarSyncJobs.startedAt,
+        finishedAt: calendarSyncJobs.finishedAt,
+        provider: calendarIntegrationConnections.provider,
+        accountEmail: calendarIntegrationConnections.accountEmail,
+        createdAt: calendarSyncJobs.createdAt
+      })
+      .from(calendarSyncJobs)
+      .innerJoin(calendarIntegrationConnections, eq(calendarSyncJobs.connectionId, calendarIntegrationConnections.id))
+      .orderBy(desc(calendarSyncJobs.createdAt));
+  }
+
+  async createCalendarSyncJob(input: CreateCalendarSyncJobInput) {
+    const [job] = await this.db
+      .insert(calendarSyncJobs)
+      .values({ connectionId: input.connectionId, cursor: input.cursor, status: "queued" })
+      .returning();
+    return job;
+  }
+
+  listCalendarEvents() {
+    return this.db.select().from(calendarEvents).orderBy(desc(calendarEvents.startsAt), desc(calendarEvents.createdAt));
+  }
+
+  async createCalendarEvent(input: CreateCalendarEventInput) {
+    const [event] = await this.db
+      .insert(calendarEvents)
+      .values(calendarEventValues(input))
+      .onConflictDoUpdate({
+        target: [calendarEvents.connectionId, calendarEvents.providerEventId],
+        set: { ...calendarEventValues(input), updatedAt: new Date() }
+      })
+      .returning();
+    return event;
+  }
+
   private async ensureDevUser() {
     await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
     const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
@@ -148,4 +221,20 @@ function classifyFromMetadata(input: CreateEmailMessageInput) {
   if (input.applicationId) return "application_related";
   if (input.fromAddress?.includes("recruit")) return "recruiter";
   return "unclassified";
+}
+
+function calendarEventValues(input: CreateCalendarEventInput) {
+  return {
+    connectionId: input.connectionId,
+    interviewId: input.interviewId,
+    taskId: input.taskId,
+    providerEventId: input.providerEventId,
+    title: input.title,
+    startsAt: new Date(input.startsAt),
+    endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
+    location: input.location,
+    status: input.status,
+    conflictStatus: input.conflictStatus,
+    metadata: input.metadata
+  };
 }

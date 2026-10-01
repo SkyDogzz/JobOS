@@ -356,6 +356,50 @@ async function main() {
   if (!emailJobs.some((item) => item.id === emailSyncJob.id)) throw new Error("Email sync job was not listed.");
   if (!emailMessages.some((item) => item.id === emailMessage.id)) throw new Error("Email message was not listed.");
 
+  const calendarConnection = await request("/integrations/calendar/connections", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "google_calendar", accountEmail: "integration-calendar@example.com", calendarName: "JobOS Interviews" })
+  });
+  if (!calendarConnection.id) throw new Error("Calendar connection creation failed.");
+  const calendarSyncJob = await request("/integrations/calendar/sync-jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connectionId: calendarConnection.id, cursor: "calendar-cursor" })
+  });
+  if (calendarSyncJob.status !== "queued") throw new Error("Calendar sync placeholder was not queued.");
+  const calendarEvent = await request("/integrations/calendar/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      connectionId: calendarConnection.id,
+      interviewId: interview.id,
+      providerEventId: `calendar-event-${Date.now()}`,
+      title: "Integration interview",
+      startsAt: interviewStartsAt,
+      endsAt: new Date(new Date(interviewStartsAt).getTime() + 3600000).toISOString(),
+      location: "https://meet.example.com/integration",
+      status: "confirmed",
+      conflictStatus: "conflict",
+      metadata: { source: "integration-test" }
+    })
+  });
+  if (calendarEvent.interviewId !== interview.id || calendarEvent.conflictStatus !== "conflict") {
+    throw new Error("Calendar event did not link to interview with conflict status.");
+  }
+  const interviewWithCalendar = await request(`/interviews/${interview.id}`);
+  if (interviewWithCalendar.calendarConflictStatus !== "conflict") {
+    throw new Error("Interview detail did not expose calendar conflict status.");
+  }
+  const [calendarConnections, calendarJobs, calendarEvents] = await Promise.all([
+    request("/integrations/calendar/connections"),
+    request("/integrations/calendar/sync-jobs"),
+    request("/integrations/calendar/events")
+  ]);
+  if (!calendarConnections.some((item) => item.id === calendarConnection.id)) throw new Error("Calendar connection was not listed.");
+  if (!calendarJobs.some((item) => item.id === calendarSyncJob.id)) throw new Error("Calendar sync job was not listed.");
+  if (!calendarEvents.some((item) => item.id === calendarEvent.id)) throw new Error("Calendar event was not listed.");
+
   const resumeDetail = await request(`/resumes/${resume.id}`);
   if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
   if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");

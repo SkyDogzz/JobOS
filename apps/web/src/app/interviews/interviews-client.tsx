@@ -89,6 +89,7 @@ export function InterviewsClient({
             <article className="py-4 text-sm" key={interview.id}>
               <p className="font-medium">{interview.jobTitle} · {new Date(interview.startsAt).toLocaleString()}</p>
               <p className="mt-1 text-ink/55">{interview.companyName ?? "No company"} · {interview.format ?? "Interview"} · {interview.location ?? "No location"}</p>
+              {interview.calendarStatus ? <p className="mt-1 text-xs text-tide">Calendar {interview.calendarStatus} · {interview.calendarConflictStatus ?? "clear"}</p> : null}
               {interview.participants.length ? <p className="mt-1 text-ink/55">{interview.participants.join(", ")}</p> : null}
               {interview.preparationNotes ? <p className="mt-2 text-ink/70">{interview.preparationNotes}</p> : null}
               {interview.outcome ? <p className="mt-2 text-rust">{interview.outcome}</p> : null}
