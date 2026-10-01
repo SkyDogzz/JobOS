@@ -49,6 +49,17 @@ export interface ApplicationTask {
   createdAt: string;
 }
 
+export interface CandidateProfile {
+  id: string;
+  headline: string | null;
+  summary: string | null;
+  location: string | null;
+  canonicalData: {
+    skills?: string[];
+    experience?: string;
+  };
+}
+
 export interface DashboardResume {
   id: string;
   name: string;
@@ -105,4 +116,8 @@ export async function getApplicationNotes(id: string) {
 
 export async function getApplicationTasks(id: string) {
   return getJson<ApplicationTask[]>(`/applications/${id}/tasks`);
+}
+
+export async function getCandidateProfile() {
+  return getJson<CandidateProfile | null>("/profile");
 }

@@ -87,6 +87,13 @@ async function main() {
   const completed = await request(`/tasks/${task.id}/complete`, { method: "PATCH" });
   if (completed.status !== "done") throw new Error("Task completion failed.");
 
+  const profile = await request("/profile", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ headline: "Integration Candidate", skills: "TypeScript, PostgreSQL" })
+  });
+  if (profile.headline !== "Integration Candidate") throw new Error("Profile upsert failed.");
+
   console.log("API integration tests passed.");
 }
 

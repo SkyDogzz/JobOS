@@ -56,9 +56,18 @@ export const createTaskSchema = z.object({
   dueAt: z.string().datetime().optional()
 });
 
+export const upsertCandidateProfileSchema = z.object({
+  headline: z.string().optional(),
+  summary: z.string().optional(),
+  location: z.string().optional(),
+  skills: z.string().optional(),
+  experience: z.string().optional()
+});
+
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpsertCandidateProfileInput = z.infer<typeof upsertCandidateProfileSchema>;
