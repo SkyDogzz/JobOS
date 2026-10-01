@@ -527,3 +527,5 @@ Implement v1.0.0 production release:
 - Verify backup, restore, privacy, and account lifecycle flows.
 - Run full release checks.
 - Commit and tag the result.
+
+Commit: `0a6ec12 Add production release foundation`
