@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
-import { applications, companies, jobs, jobSources } from "@jobos/database";
+import { applications, companies, interviews, jobs, jobSources, tasks } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -94,6 +94,50 @@ export class AnalyticsRepository {
     };
   }
 
+  async operations(filters: AnalyticsFilters = {}) {
+    const applicationRows = (await this.applicationRows()).filter((row) => matchesFilters(row, filters));
+    const applicationIds = new Set(applicationRows.map((row) => row.id));
+    const interviewRows = (await this.interviewRows()).filter((row) => applicationIds.has(row.applicationId));
+    const taskRows = (await this.taskRows()).filter((row) => !row.applicationId || applicationIds.has(row.applicationId));
+    const now = Date.now();
+
+    const interviewApplications = new Set(interviewRows.map((row) => row.applicationId));
+    const applicationsWithResponse = applicationRows.filter((row) => responseStages.has(row.stage)).length;
+    const applicationsWithOffer = applicationRows.filter((row) => row.stage === "offer" || row.stage === "accepted").length;
+    const completedInterviews = interviewRows.filter((row) => row.startsAt.getTime() <= now);
+    const interviewsWithOutcome = interviewRows.filter((row) => row.outcome && row.outcome.trim().length > 0);
+
+    const overdueTasks = taskRows.filter((row) => row.status !== "done" && row.dueAt && row.dueAt.getTime() < now);
+    const upcomingTasks = taskRows.filter((row) => row.status !== "done" && row.dueAt && row.dueAt.getTime() >= now);
+    const completedTasks = taskRows.filter((row) => row.status === "done");
+    const tasksWithDueDates = taskRows.filter((row) => row.dueAt);
+    const completedOnTime = completedTasks.filter((row) => !row.dueAt || row.updatedAt.getTime() <= row.dueAt.getTime());
+
+    return {
+      filters,
+      interviews: {
+        totalInterviews: interviewRows.length,
+        completedInterviews: completedInterviews.length,
+        applicationsWithInterviews: interviewApplications.size,
+        interviewConversionRate: rate(interviewApplications.size, applicationsWithResponse || applicationRows.length),
+        offerConversionRate: rate(applicationsWithOffer, interviewApplications.size),
+        outcomeCaptureRate: rate(interviewsWithOutcome.length, completedInterviews.length),
+        outcomes: summarizeOutcomes(interviewRows)
+      },
+      tasks: {
+        totalTasks: taskRows.length,
+        overdueTasks: overdueTasks.length,
+        upcomingTasks: upcomingTasks.length,
+        completedTasks: completedTasks.length,
+        openTasks: taskRows.length - completedTasks.length,
+        dueSoonTasks: upcomingTasks.filter((row) => row.dueAt && row.dueAt.getTime() <= now + 7 * 86400000).length,
+        completionRate: rate(completedTasks.length, taskRows.length),
+        onTimeCompletionRate: rate(completedOnTime.length, completedTasks.length),
+        dueDateCoverageRate: rate(tasksWithDueDates.length, taskRows.length)
+      }
+    };
+  }
+
   private applicationRows() {
     return this.db
       .select({
@@ -113,6 +157,29 @@ export class AnalyticsRepository {
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .leftJoin(companies, eq(jobs.companyId, companies.id))
       .leftJoin(jobSources, eq(jobs.sourceId, jobSources.id));
+  }
+
+  private interviewRows() {
+    return this.db
+      .select({
+        id: interviews.id,
+        applicationId: interviews.applicationId,
+        startsAt: interviews.startsAt,
+        outcome: interviews.outcome
+      })
+      .from(interviews);
+  }
+
+  private taskRows() {
+    return this.db
+      .select({
+        id: tasks.id,
+        applicationId: tasks.applicationId,
+        status: tasks.status,
+        dueAt: tasks.dueAt,
+        updatedAt: tasks.updatedAt
+      })
+      .from(tasks);
   }
 }
 
@@ -141,4 +208,15 @@ function qualityNote(responseCount: number, interviewCount: number, offerCount: 
   if (responseCount / total >= 0.5) return "Responsive source: replies or later-stage movement are common.";
   if (rejectionCount / total >= 0.5) return "Watch closely: rejection rate is elevated.";
   return "Needs more data before ranking confidently.";
+}
+
+function summarizeOutcomes(rows: Array<{ outcome: string | null }>) {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.outcome?.trim() || "pending";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([outcome, count]) => ({ outcome, count }))
+    .sort((a, b) => b.count - a.count || a.outcome.localeCompare(b.outcome));
 }

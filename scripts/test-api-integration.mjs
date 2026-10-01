@@ -573,6 +573,13 @@ https://example.com/profile`;
   }
   const filteredFunnel = await request(`/analytics/funnel?sourceId=${source.id}`);
   if (typeof filteredFunnel.totalApplications !== "number") throw new Error("Filtered funnel analytics did not return totals.");
+  const operationsAnalytics = await request("/analytics/operations");
+  if (typeof operationsAnalytics.interviews.interviewConversionRate !== "number") {
+    throw new Error("Interview analytics did not return conversion metrics.");
+  }
+  if (typeof operationsAnalytics.tasks.completionRate !== "number") {
+    throw new Error("Task analytics did not return completion metrics.");
+  }
 
   const note = await request(`/applications/${application.id}/notes`, {
     method: "POST",

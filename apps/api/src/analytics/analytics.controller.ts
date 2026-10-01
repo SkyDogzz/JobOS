@@ -14,4 +14,9 @@ export class AnalyticsController {
   sources(@Query() query: Record<string, string | undefined>) {
     return this.analytics.sources(query);
   }
+
+  @Get("operations")
+  operations(@Query() query: Record<string, string | undefined>) {
+    return this.analytics.operations(query);
+  }
 }

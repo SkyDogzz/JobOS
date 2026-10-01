@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, ChartNoAxesCombined } from "lucide-react";
-import { getFunnelAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
+import { getFunnelAnalytics, getOperationsAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
 
 export default async function AnalyticsPage() {
-  const [funnel, sourcePerformance] = await Promise.all([
+  const [funnel, sourcePerformance, operations] = await Promise.all([
     getFunnelAnalytics().catch(() => null),
-    getSourcePerformanceAnalytics().catch(() => null)
+    getSourcePerformanceAnalytics().catch(() => null),
+    getOperationsAnalytics().catch(() => null)
   ]);
 
   return (
@@ -46,6 +47,49 @@ export default async function AnalyticsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </section>
+            <section className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded border border-ink/10 bg-white p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <h2 className="font-semibold">Interview Outcomes</h2>
+                  <span className="text-sm text-ink/55">{operations?.interviews.totalInterviews ?? 0} scheduled</span>
+                </div>
+                {!operations ? <p className="text-sm text-ink/60">No interview analytics yet.</p> : null}
+                {operations ? (
+                  <div className="grid gap-4">
+                    <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                      <Rate label="Conversion" value={operations.interviews.interviewConversionRate} />
+                      <Rate label="Offer" value={operations.interviews.offerConversionRate} />
+                      <Rate label="Outcomes" value={operations.interviews.outcomeCaptureRate} />
+                    </dl>
+                    <div className="space-y-2">
+                      {operations.interviews.outcomes.map((item) => (
+                        <div key={item.outcome} className="flex justify-between rounded bg-paper px-3 py-2 text-sm">
+                          <span className="capitalize">{item.outcome}</span>
+                          <span className="font-medium">{item.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div className="rounded border border-ink/10 bg-white p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <h2 className="font-semibold">Follow-up Discipline</h2>
+                  <span className="text-sm text-ink/55">{operations?.tasks.openTasks ?? 0} open tasks</span>
+                </div>
+                {!operations ? <p className="text-sm text-ink/60">No task analytics yet.</p> : null}
+                {operations ? (
+                  <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                    <Rate label="Complete" value={operations.tasks.completionRate} />
+                    <Rate label="On Time" value={operations.tasks.onTimeCompletionRate} />
+                    <Rate label="Due Dates" value={operations.tasks.dueDateCoverageRate} />
+                    <Rate label="Overdue" value={operations.tasks.overdueTasks} suffix="" />
+                    <Rate label="Due Soon" value={operations.tasks.dueSoonTasks} suffix="" />
+                    <Rate label="Upcoming" value={operations.tasks.upcomingTasks} suffix="" />
+                  </dl>
+                ) : null}
               </div>
             </section>
             <section className="rounded border border-ink/10 bg-white p-5">

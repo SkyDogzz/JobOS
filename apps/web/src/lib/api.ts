@@ -327,6 +327,29 @@ export interface SourcePerformanceAnalytics {
   }>;
 }
 
+export interface OperationsAnalytics {
+  interviews: {
+    totalInterviews: number;
+    completedInterviews: number;
+    applicationsWithInterviews: number;
+    interviewConversionRate: number;
+    offerConversionRate: number;
+    outcomeCaptureRate: number;
+    outcomes: Array<{ outcome: string; count: number }>;
+  };
+  tasks: {
+    totalTasks: number;
+    overdueTasks: number;
+    upcomingTasks: number;
+    completedTasks: number;
+    openTasks: number;
+    dueSoonTasks: number;
+    completionRate: number;
+    onTimeCompletionRate: number;
+    dueDateCoverageRate: number;
+  };
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -497,6 +520,10 @@ export async function getFunnelAnalytics(query = "") {
 
 export async function getSourcePerformanceAnalytics(query = "") {
   return getJson<SourcePerformanceAnalytics>(`/analytics/sources${query}`);
+}
+
+export async function getOperationsAnalytics(query = "") {
+  return getJson<OperationsAnalytics>(`/analytics/operations${query}`);
 }
 
 export { apiUrl };
