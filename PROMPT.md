@@ -515,6 +515,8 @@ Implement v0.9.0 public beta hardening:
 - Keep checks green.
 - Commit the result.
 
+Commit: `c93459d Add public beta hardening`
+
 ### v1.0.0 — Production Release
 
 Implement v1.0.0 production release:
