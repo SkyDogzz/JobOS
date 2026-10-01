@@ -334,6 +334,8 @@ Implement v0.4.5 browser extension companion app:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `b64cd24 Add browser extension companion app`
+
 ### v0.5.0 — Contacts and Recruiters
 
 Implement v0.5.0 contacts and recruiters:
