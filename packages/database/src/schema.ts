@@ -63,6 +63,19 @@ export const companies = pgTable("companies", {
   nameIdx: index("companies_name_idx").on(table.name)
 }));
 
+export const jobSources = pgTable("job_sources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  kind: text("kind").notNull(),
+  baseUrl: text("base_url"),
+  status: text("status").notNull().default("active"),
+  notes: text("notes"),
+  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => ({
+  nameIdx: uniqueIndex("job_sources_name_idx").on(table.name)
+}));
+
 export const contacts = pgTable("contacts", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
@@ -78,6 +91,7 @@ export const contacts = pgTable("contacts", {
 export const jobs = pgTable("jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
+  sourceId: uuid("source_id").references(() => jobSources.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   location: text("location"),

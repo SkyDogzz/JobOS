@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
-import { companies, jobResumeMatches, jobs, resumeVersions, resumes, users } from "@jobos/database";
+import { companies, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, users } from "@jobos/database";
 import type { CreateJobInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -18,7 +18,10 @@ export class JobsRepository {
         description: jobs.description,
         location: jobs.location,
         sourceUrl: jobs.sourceUrl,
+        sourceId: jobs.sourceId,
         sourceName: jobs.sourceName,
+        sourceKind: jobSources.kind,
+        sourceStatus: jobSources.status,
         remotePolicy: jobs.remotePolicy,
         salaryText: jobs.salaryText,
         companyId: companies.id,
@@ -27,16 +30,19 @@ export class JobsRepository {
       })
       .from(jobs)
       .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .leftJoin(jobSources, eq(jobs.sourceId, jobSources.id))
       .orderBy(asc(jobs.createdAt));
   }
 
   async create(input: CreateJobInput) {
     await this.ensureDevUser();
     const companyId = input.companyName ? await this.findOrCreateCompany(input.companyName) : null;
+    const sourceId = input.sourceId ?? (input.sourceName ? await this.findOrCreateSource(input.sourceName) : null);
     const [job] = await this.db
       .insert(jobs)
       .values({
         companyId,
+        sourceId,
         title: input.title,
         description: input.description,
         location: input.location,
@@ -58,7 +64,10 @@ export class JobsRepository {
         description: jobs.description,
         location: jobs.location,
         sourceUrl: jobs.sourceUrl,
+        sourceId: jobs.sourceId,
         sourceName: jobs.sourceName,
+        sourceKind: jobSources.kind,
+        sourceStatus: jobSources.status,
         remotePolicy: jobs.remotePolicy,
         salaryText: jobs.salaryText,
         companyName: companies.name,
@@ -66,6 +75,7 @@ export class JobsRepository {
       })
       .from(jobs)
       .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .leftJoin(jobSources, eq(jobs.sourceId, jobSources.id))
       .where(eq(jobs.id, id))
       .limit(1);
 
@@ -98,6 +108,13 @@ export class JobsRepository {
 
     const [company] = await this.db.insert(companies).values({ name }).returning({ id: companies.id });
     return company.id;
+  }
+
+  private async findOrCreateSource(name: string) {
+    const [existing] = await this.db.select({ id: jobSources.id }).from(jobSources).where(eq(jobSources.name, name)).limit(1);
+    if (existing) return existing.id;
+    const [source] = await this.db.insert(jobSources).values({ name, kind: "manual", status: "active" }).returning({ id: jobSources.id });
+    return source.id;
   }
 
   private async ensureDevUser() {

@@ -7,7 +7,10 @@ export interface DashboardJob {
   companyName: string | null;
   location: string | null;
   sourceUrl: string | null;
+  sourceId?: string | null;
   sourceName: string | null;
+  sourceKind?: string | null;
+  sourceStatus?: string | null;
 }
 
 export interface DashboardApplication {
@@ -161,6 +164,33 @@ export interface GroundingReviewSummary {
   updatedAt: string;
 }
 
+export interface CompanySummary {
+  id: string;
+  name: string;
+  website: string | null;
+  description: string | null;
+}
+
+export interface ContactSummary {
+  id: string;
+  companyId: string | null;
+  companyName: string | null;
+  name: string;
+  title: string | null;
+  email: string | null;
+  linkedinUrl: string | null;
+  notes: string | null;
+}
+
+export interface JobSourceSummary {
+  id: string;
+  name: string;
+  kind: string;
+  baseUrl: string | null;
+  status: string;
+  notes: string | null;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 
@@ -240,6 +270,18 @@ export async function getAiArtifacts() {
 
 export async function getGroundingReviews() {
   return getJson<GroundingReviewSummary[]>("/ai/grounding-reviews");
+}
+
+export async function getCompanies() {
+  return getJson<CompanySummary[]>("/companies");
+}
+
+export async function getContacts() {
+  return getJson<ContactSummary[]>("/contacts");
+}
+
+export async function getJobSources() {
+  return getJson<JobSourceSummary[]>("/job-sources");
 }
 
 export async function getSession() {

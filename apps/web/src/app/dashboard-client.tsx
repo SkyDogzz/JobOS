@@ -205,7 +205,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/45">{group}</p>
               <div className="grid gap-1">
                 {items.map((item) => (
-                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href={item === "Saved Jobs" ? "/jobs" : item === "CVs" ? "/resumes" : item === "Tools" ? "/documents" : "#"} key={item}>
+                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href={item === "Saved Jobs" ? "/jobs" : item === "CVs" ? "/resumes" : item === "Contacts" ? "/sources" : item === "Tools" ? "/documents" : "#"} key={item}>
                     {item}
                   </a>
                 ))}

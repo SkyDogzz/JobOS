@@ -31,6 +31,44 @@ async function main() {
     })
   });
 
+  const source = await request("/job-sources", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `Integration Source ${Date.now()}`, kind: "job_board", baseUrl: "https://jobs.example.com", status: "active" })
+  });
+  const updatedSource = await request(`/job-sources/${source.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: source.name, kind: "job_board", baseUrl: "https://jobs.example.com", status: "needs_review", notes: "Integration check" })
+  });
+  if (updatedSource.status !== "needs_review") throw new Error("Job source update failed.");
+
+  const company = await request("/companies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `Integration Company ${Date.now()}`, website: "https://company.example.com", description: "Integration company" })
+  });
+  const contact = await request("/contacts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ companyId: company.id, name: "Integration Recruiter", title: "Recruiter", email: "recruiter@example.com" })
+  });
+  if (!contact.id) throw new Error("Contact creation failed.");
+
+  const attributedJob = await request("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Attributed Integration Role",
+      companyName: company.name,
+      description: "Validate source attribution.",
+      sourceId: source.id,
+      sourceName: source.name
+    })
+  });
+  const attributedDetail = await request(`/jobs/${attributedJob.id}`);
+  if (attributedDetail.sourceId !== source.id) throw new Error("Job source attribution was not persisted.");
+
   const resume = await request("/resumes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

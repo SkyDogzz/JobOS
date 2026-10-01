@@ -6,9 +6,33 @@ export const createJobSchema = z.object({
   companyName: z.string().min(1).optional(),
   location: z.string().optional(),
   sourceUrl: z.string().url().optional(),
+  sourceId: z.string().uuid().optional(),
   sourceName: z.string().min(1).optional(),
   remotePolicy: z.string().min(1).optional(),
   salaryText: z.string().min(1).optional()
+});
+
+export const upsertCompanySchema = z.object({
+  name: z.string().min(1),
+  website: z.string().url().optional(),
+  description: z.string().optional()
+});
+
+export const createContactSchema = z.object({
+  companyId: z.string().uuid().optional(),
+  name: z.string().min(1),
+  title: z.string().optional(),
+  email: z.string().email().optional(),
+  linkedinUrl: z.string().url().optional(),
+  notes: z.string().optional()
+});
+
+export const upsertJobSourceSchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(["manual", "job_board", "referral", "company_page", "other"]),
+  baseUrl: z.string().url().optional(),
+  status: z.enum(["active", "paused", "needs_review", "disabled"]).default("active"),
+  notes: z.string().optional()
 });
 
 export const createApplicationSchema = z.object({
@@ -162,6 +186,9 @@ export const loginSchema = z.object({
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;
+export type UpsertCompanyInput = z.infer<typeof upsertCompanySchema>;
+export type CreateContactInput = z.infer<typeof createContactSchema>;
+export type UpsertJobSourceInput = z.infer<typeof upsertJobSourceSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
 export type CreateResumeVersionInput = z.infer<typeof createResumeVersionSchema>;
