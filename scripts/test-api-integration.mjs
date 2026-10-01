@@ -61,6 +61,10 @@ async function main() {
   if (!resumes.some((item) => item.id === resume.id)) throw new Error("Created resume not found in list.");
   if (!applications.some((item) => item.id === application.id)) throw new Error("Created application not found in list.");
 
+  const detail = await request(`/applications/${application.id}`);
+  if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
+  if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
+
   console.log("API integration tests passed.");
 }
 
@@ -68,4 +72,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-

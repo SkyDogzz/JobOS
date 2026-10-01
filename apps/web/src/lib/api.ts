@@ -16,6 +16,22 @@ export interface DashboardApplication {
   companyName: string | null;
 }
 
+export interface ApplicationDetail extends DashboardApplication {
+  appliedAt: string | null;
+  outcome: string | null;
+  jobId: string;
+  jobDescription: string;
+  jobLocation: string | null;
+  resumeVersionId: string | null;
+  createdAt: string;
+  events: Array<{
+    id: string;
+    kind: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+  }>;
+}
+
 export interface DashboardResume {
   id: string;
   name: string;
@@ -53,3 +69,7 @@ export async function getDashboardData() {
 }
 
 export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+
+export async function getApplicationDetail(id: string) {
+  return getJson<ApplicationDetail>(`/applications/${id}`);
+}

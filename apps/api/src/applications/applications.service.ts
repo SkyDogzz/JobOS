@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { createApplicationSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { ApplicationsRepository } from "./applications.repository.js";
@@ -13,5 +13,15 @@ export class ApplicationsService {
 
   create(body: unknown) {
     return this.applications.create(parseBody(createApplicationSchema, body));
+  }
+
+  async findById(id: string) {
+    const application = await this.applications.findById(id);
+
+    if (!application) {
+      throw new NotFoundException("Application not found.");
+    }
+
+    return application;
   }
 }

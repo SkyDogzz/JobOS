@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { ApplicationsService } from "./applications.service.js";
 
 @Controller("applications")
@@ -14,5 +14,9 @@ export class ApplicationsController {
   create(@Body() body: unknown) {
     return this.applications.create(body);
   }
-}
 
+  @Get(":id")
+  findById(@Param("id") id: string) {
+    return this.applications.findById(id);
+  }
+}

@@ -29,6 +29,45 @@ export class ApplicationsRepository {
       .orderBy(asc(applications.createdAt));
   }
 
+  async findById(id: string) {
+    const [application] = await this.db
+      .select({
+        id: applications.id,
+        stage: applications.stage,
+        appliedAt: applications.appliedAt,
+        outcome: applications.outcome,
+        jobId: jobs.id,
+        jobTitle: jobs.title,
+        jobDescription: jobs.description,
+        jobLocation: jobs.location,
+        companyName: companies.name,
+        resumeVersionId: applications.resumeVersionId,
+        createdAt: applications.createdAt
+      })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .where(eq(applications.id, id))
+      .limit(1);
+
+    if (!application) {
+      return null;
+    }
+
+    const events = await this.db
+      .select({
+        id: applicationEvents.id,
+        kind: applicationEvents.kind,
+        payload: applicationEvents.payload,
+        createdAt: applicationEvents.createdAt
+      })
+      .from(applicationEvents)
+      .where(eq(applicationEvents.applicationId, id))
+      .orderBy(asc(applicationEvents.createdAt));
+
+    return { ...application, events };
+  }
+
   async create(input: CreateApplicationInput) {
     const userId = await this.ensureDevUser();
     const [application] = await this.db
@@ -60,4 +99,3 @@ export class ApplicationsRepository {
     return user.id;
   }
 }
-

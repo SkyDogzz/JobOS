@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BriefcaseBusiness, ChartNoAxesCombined, CheckCircle2, FileText, Loader2, Plus, Search, XCircle } from "lucide-react";
 import type { DashboardApplication, DashboardData, DashboardJob, DashboardResume } from "../lib/api";
@@ -393,10 +394,10 @@ function Pipeline({ applications }: { applications: DashboardApplication[] }) {
             <p className="mb-3 font-semibold capitalize">{stage}</p>
             <div className="space-y-2">
               {applications.filter((application) => application.stage === stage).slice(0, 4).map((application) => (
-                <div className="rounded bg-white p-2 text-xs shadow-sm" key={application.id}>
+                <Link className="block rounded bg-white p-2 text-xs shadow-sm hover:ring-1 hover:ring-ink/20" href={`/applications/${application.id}`} key={application.id}>
                   <p className="font-medium">{application.jobTitle}</p>
                   <p className="text-ink/55">{application.companyName ?? "No company"}</p>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
