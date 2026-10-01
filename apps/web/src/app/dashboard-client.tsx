@@ -292,7 +292,7 @@ function navHref(item: string) {
     "Interview Prep": "/interviews",
     Companies: "/sources",
     Contacts: "/sources",
-    Analytics: "/",
+    Analytics: "/analytics",
     Tasks: "/",
     "ATS Scanner": "/documents",
     "Job Matcher": "/jobs"

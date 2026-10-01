@@ -552,6 +552,13 @@ https://example.com/profile`;
   });
   if (updated.stage !== "interviewing") throw new Error("Application stage update failed.");
 
+  const funnelAnalytics = await request("/analytics/funnel");
+  if (!funnelAnalytics.stageCounts.some((item) => item.stage === "interviewing" && item.count >= 1)) {
+    throw new Error("Funnel analytics did not aggregate application stages.");
+  }
+  const filteredFunnel = await request(`/analytics/funnel?sourceId=${source.id}`);
+  if (typeof filteredFunnel.totalApplications !== "number") throw new Error("Filtered funnel analytics did not return totals.");
+
   const note = await request(`/applications/${application.id}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

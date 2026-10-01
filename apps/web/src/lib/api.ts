@@ -299,6 +299,17 @@ export interface CalendarEventSummary {
   createdAt: string;
 }
 
+export interface FunnelAnalytics {
+  totalApplications: number;
+  activeApplications: number;
+  terminalApplications: number;
+  stageCounts: Array<{ stage: string; count: number; averageAgeDays: number }>;
+  aging: {
+    averageActiveAgeDays: number;
+    oldestActiveAgeDays: number;
+  };
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -461,6 +472,10 @@ export async function getCalendarSyncJobs() {
 
 export async function getCalendarEvents() {
   return getJson<CalendarEventSummary[]>("/integrations/calendar/events");
+}
+
+export async function getFunnelAnalytics(query = "") {
+  return getJson<FunnelAnalytics>(`/analytics/funnel${query}`);
 }
 
 export { apiUrl };
