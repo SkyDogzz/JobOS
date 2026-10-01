@@ -229,6 +229,8 @@ Implement v0.3.2 cover letters:
 - Keep checks green.
 - Commit the result.
 
+Commit: `50e68e4 Add cover letter variant generation`
+
 ### v0.3.3 — Generated Document Library
 
 Implement v0.3.3 generated document library:
@@ -240,6 +242,8 @@ Implement v0.3.3 generated document library:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `1192b58 Add generated document library`
+
 ### v0.3.4 — Grounding Review Workflow
 
 Implement v0.3.4 grounding review workflow:
@@ -250,6 +254,8 @@ Implement v0.3.4 grounding review workflow:
 - Persist reviewer decisions, overrides, and audit events.
 - Keep checks green.
 - Commit and push the result.
+
+Commit: `1629082 Add grounding review workflow`
 
 ### v0.4.0 — Job Sources CRUD
 
