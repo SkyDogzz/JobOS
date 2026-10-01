@@ -44,6 +44,9 @@ importers:
       '@jobos/document-parser':
         specifier: workspace:*
         version: link:../../packages/document-parser
+      '@jobos/job-sources':
+        specifier: workspace:*
+        version: link:../../packages/job-sources
       '@jobos/validation':
         specifier: workspace:*
         version: link:../../packages/validation

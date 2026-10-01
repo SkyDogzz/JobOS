@@ -43,6 +43,18 @@ async function main() {
   });
   if (updatedSource.status !== "needs_review") throw new Error("Job source update failed.");
 
+  const parsedPosting = await request("/job-sources/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: "https://boards.greenhouse.io/exampleco/jobs/123",
+      html: `<html><head><meta property="og:title" content="Senior Parser Engineer"><script type="application/ld+json">{"@type":"JobPosting","title":"Senior Parser Engineer","hiringOrganization":{"name":"ParserCo"},"jobLocation":{"address":{"addressLocality":"Remote, US"}},"description":"Build parser adapters with TypeScript. Compensation $140k - $170k."}</script></head><body>Greenhouse</body></html>`
+    })
+  });
+  if (parsedPosting.title !== "Senior Parser Engineer") throw new Error("Job board parser did not extract the title.");
+  if (parsedPosting.companyName !== "ParserCo") throw new Error("Job board parser did not extract the company.");
+  if (parsedPosting.parser !== "greenhouse") throw new Error("Job board parser did not detect Greenhouse.");
+
   const company = await request("/companies", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

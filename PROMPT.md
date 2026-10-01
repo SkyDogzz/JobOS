@@ -283,9 +283,21 @@ Implement v0.4.1 job search and filtering:
 
 Commit: `f2c44a7 Add job search and saved filters`
 
-### v0.4.2 — Job Deduplication
+### v0.4.2 — Job Board Parsing
 
-Implement v0.4.2 job deduplication:
+Implement v0.4.2 job board parsing:
+
+- Add deterministic parser adapters for Greenhouse, Lever, Ashby, Workday-style pages, LinkedIn pasted HTML, and Indeed pasted HTML.
+- Add a `POST /job-sources/parse` endpoint that accepts pasted URL and/or HTML.
+- Extract title, company, location, description, source URL, source name, remote policy, and salary text.
+- Add frontend paste/import review UI before saving the parsed job.
+- Add parser fixtures and integration coverage for representative job boards.
+- Keep checks green.
+- Commit and push the result.
+
+### v0.4.3 — Job Deduplication
+
+Implement v0.4.3 job deduplication:
 
 - Add duplicate detection for imported jobs using source URL, company/title similarity, and normalized description fingerprints.
 - Add merge/update behavior for duplicate imports.
@@ -294,9 +306,9 @@ Implement v0.4.2 job deduplication:
 - Keep checks green.
 - Commit and push the result.
 
-### v0.4.3 — Browser Extension Import Contract
+### v0.4.4 — Browser Extension Import Contract
 
-Implement v0.4.3 browser extension import contract:
+Implement v0.4.4 browser extension import contract:
 
 - Add an authenticated API endpoint for browser extension job imports.
 - Define request/response contracts for importing the current page.
@@ -305,9 +317,9 @@ Implement v0.4.3 browser extension import contract:
 - Keep checks green.
 - Commit and push the result.
 
-### v0.4.4 — Browser Extension Companion App
+### v0.4.5 — Browser Extension Companion App
 
-Implement v0.4.4 browser extension companion app:
+Implement v0.4.5 browser extension companion app:
 
 - Add a minimal extension package or documented scaffold for saving the current job page into JobOS.
 - Add local development instructions for extension authentication and API URL configuration.

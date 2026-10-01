@@ -17,6 +17,7 @@
     "@jobos/config": "workspace:*",
     "@jobos/database": "workspace:*",
     "@jobos/document-parser": "workspace:*",
+    "@jobos/job-sources": "workspace:*",
     "@jobos/ai": "workspace:*",
     "@jobos/validation": "workspace:*",
     "@nestjs/common": "^10.4.4",

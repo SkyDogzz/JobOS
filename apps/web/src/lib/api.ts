@@ -197,6 +197,18 @@ export interface SavedJobFilter {
   filters: Record<string, unknown>;
 }
 
+export interface ParsedJobPosting {
+  title: string;
+  companyName?: string;
+  location?: string;
+  description: string;
+  sourceUrl?: string;
+  sourceName: string;
+  remotePolicy?: string;
+  salaryText?: string;
+  parser: string;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 

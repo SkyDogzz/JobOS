@@ -31,6 +31,12 @@ export const saveJobFilterSchema = z.object({
   filters: jobSearchSchema
 });
 
+export const parseJobPostingSchema = z.object({
+  url: z.string().url().optional(),
+  html: z.string().min(20).optional(),
+  text: z.string().min(20).optional()
+}).refine((value) => value.url || value.html || value.text, "A URL, HTML, or text payload is required.");
+
 export const upsertCompanySchema = z.object({
   name: z.string().min(1),
   website: z.string().url().optional(),
@@ -207,6 +213,7 @@ export const loginSchema = z.object({
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type JobSearchInput = z.infer<typeof jobSearchSchema>;
 export type SaveJobFilterInput = z.infer<typeof saveJobFilterSchema>;
+export type ParseJobPostingInput = z.infer<typeof parseJobPostingSchema>;
 export type UpsertCompanyInput = z.infer<typeof upsertCompanySchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type UpsertJobSourceInput = z.infer<typeof upsertJobSourceSchema>;

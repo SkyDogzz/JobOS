@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { upsertJobSourceSchema } from "@jobos/validation";
+import { parseJobPosting } from "@jobos/job-sources";
+import { parseJobPostingSchema, upsertJobSourceSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { JobSourcesRepository } from "./job-sources.repository.js";
 
@@ -20,5 +21,8 @@ export class JobSourcesService {
     if (!source) throw new NotFoundException("Job source not found.");
     return source;
   }
-}
 
+  parse(body: unknown) {
+    return parseJobPosting(parseBody(parseJobPostingSchema, body));
+  }
+}

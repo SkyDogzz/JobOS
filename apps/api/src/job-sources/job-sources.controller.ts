@@ -15,9 +15,13 @@ export class JobSourcesController {
     return this.sources.create(body);
   }
 
+  @Post("parse")
+  parse(@Body() body: unknown) {
+    return this.sources.parse(body);
+  }
+
   @Patch(":id")
   update(@Param("id") id: string, @Body() body: unknown) {
     return this.sources.update(id, body);
   }
 }
-

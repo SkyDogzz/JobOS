@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, Building2, RadioTower, Users } from "lucide-react";
 import { getCompanies, getContacts, getJobSources } from "../../lib/api";
+import { JobBoardParserForm } from "./job-board-parser-form";
 import { SourceManagementForm } from "./source-management-form";
 
 export default async function SourcesPage() {
@@ -19,6 +20,7 @@ export default async function SourcesPage() {
           Dashboard
         </Link>
         <h1 className="mb-6 text-3xl font-semibold">Sources & Companies</h1>
+        <JobBoardParserForm />
         <SourceManagementForm />
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
           <Panel icon={<RadioTower size={18} />} title="Job Sources" items={sources.map((source) => [source.name, `${source.kind} · ${source.status}`])} />
