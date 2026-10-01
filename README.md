@@ -3293,6 +3293,8 @@ Use pull requests even if initially working alone.
 
 It forces architecture changes to remain reviewable.
 
+Push after each minor/version commit so remote history stays current with every completed roadmap increment.
+
 ---
 
 # 105. Commit convention
