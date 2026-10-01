@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { createAiProvider } from "@jobos/ai";
-import { approveCoverLetterSchema, approveTailoredResumeSchema, generateCoverLettersSchema, tailorResumeSchema } from "@jobos/validation";
+import { approveCoverLetterSchema, approveTailoredResumeSchema, generateCoverLettersSchema, updateGroundingReviewSchema, tailorResumeSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { keywordCoverage, textFromContent } from "../common/scoring.js";
 import { AiRepository } from "./ai.repository.js";
@@ -42,6 +42,7 @@ export class AiService {
       output: { draft, metadata: output.metadata, sourceVersionId: input.resumeVersionId, targetJobId: input.jobId },
       groundedInProfile: output.groundedInProfile
     });
+    await this.ai.createGroundingReviews(artifact.id, coverage.covered.slice(0, 6), { resumeVersionId: input.resumeVersionId, jobId: input.jobId });
     return { artifactId: artifact.id, promptHash, provider: output.provider, model: output.model, draft, diff: { added: draft.tailoring } };
   }
 
@@ -90,6 +91,7 @@ export class AiService {
       },
       groundedInProfile: output.groundedInProfile
     });
+    await this.ai.createGroundingReviews(artifact.id, groundedClaims, { resumeVersionId: input.resumeVersionId, jobId: input.jobId, applicationId: input.applicationId ?? null });
     return { artifactId: artifact.id, promptHash, provider: output.provider, model: output.model, variants };
   }
 
@@ -108,5 +110,19 @@ export class AiService {
       recruiter_friendly: `I would welcome the chance to discuss the ${role} opportunity and the relevant background reflected in my resume: ${evidence}.`
     };
     return `${openings[tone] ?? openings.concise}\n\nI have kept this draft grounded in the attached profile and resume data, and I would tailor the final version around the team's highest-priority requirements.\n\nThank you for your consideration.`;
+  }
+
+  listGroundingReviews() {
+    return this.ai.listGroundingReviews();
+  }
+
+  listGroundingReviewsForArtifact(artifactId: string) {
+    return this.ai.listGroundingReviewsForArtifact(artifactId);
+  }
+
+  async updateGroundingReview(id: string, body: unknown) {
+    const review = await this.ai.updateGroundingReview(id, parseBody(updateGroundingReviewSchema, body));
+    if (!review) throw new NotFoundException("Grounding review not found.");
+    return review;
   }
 }

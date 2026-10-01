@@ -151,6 +151,15 @@ https://example.com/profile`;
   if (coverLetters.variants.length !== 4) throw new Error("Cover letter generation did not return all requested variants.");
   if (!coverLetters.variants.every((variant) => Array.isArray(variant.groundedClaims))) throw new Error("Cover letter variants are missing grounded claims.");
 
+  const groundingReviews = await request(`/ai/artifacts/${coverLetters.artifactId}/grounding-reviews`);
+  if (!Array.isArray(groundingReviews) || groundingReviews.length === 0) throw new Error("Cover letter generation did not create grounding reviews.");
+  const reviewedClaim = await request(`/ai/grounding-reviews/${groundingReviews[0].id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "approved", reviewerNote: "Integration review" })
+  });
+  if (reviewedClaim.status !== "approved") throw new Error("Grounding review decision was not persisted.");
+
   const approvedCoverLetter = await request("/ai/cover-letters/approve", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

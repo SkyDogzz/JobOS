@@ -110,6 +110,15 @@ export const assignDocumentSchema = z.object({
   applicationId: z.string().uuid().nullable()
 });
 
+export const createGroundingReviewSchema = z.object({
+  artifactId: z.string().uuid()
+});
+
+export const updateGroundingReviewSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected", "overridden"]),
+  reviewerNote: z.string().optional()
+});
+
 export const updateApplicationStageSchema = z.object({
   stage: z.enum([
     "wishlist",
@@ -166,6 +175,8 @@ export type GenerateCoverLettersInput = z.infer<typeof generateCoverLettersSchem
 export type ApproveCoverLetterInput = z.infer<typeof approveCoverLetterSchema>;
 export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
 export type AssignDocumentInput = z.infer<typeof assignDocumentSchema>;
+export type CreateGroundingReviewInput = z.infer<typeof createGroundingReviewSchema>;
+export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

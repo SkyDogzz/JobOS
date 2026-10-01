@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
-import { aiArtifacts, applications, candidateProfiles, documents, jobs, resumeVersions, users } from "@jobos/database";
-import type { ApproveCoverLetterInput, ApproveTailoredResumeInput } from "@jobos/validation";
+import { aiArtifacts, applications, candidateProfiles, documents, groundingReviews, jobs, resumeVersions, users } from "@jobos/database";
+import type { ApproveCoverLetterInput, ApproveTailoredResumeInput, UpdateGroundingReviewInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -32,6 +32,40 @@ export class AiRepository {
     return artifact;
   }
 
+  async createGroundingReviews(artifactId: string, claims: string[], evidence: Record<string, unknown>) {
+    if (claims.length === 0) return [];
+    return this.db.insert(groundingReviews).values(claims.map((claim) => ({ artifactId, claim, evidence }))).returning();
+  }
+
+  async listGroundingReviews() {
+    return this.db
+      .select({
+        id: groundingReviews.id,
+        artifactId: groundingReviews.artifactId,
+        claim: groundingReviews.claim,
+        evidence: groundingReviews.evidence,
+        status: groundingReviews.status,
+        reviewerNote: groundingReviews.reviewerNote,
+        createdAt: groundingReviews.createdAt,
+        updatedAt: groundingReviews.updatedAt,
+        purpose: aiArtifacts.purpose,
+        provider: aiArtifacts.provider,
+        model: aiArtifacts.model
+      })
+      .from(groundingReviews)
+      .innerJoin(aiArtifacts, eq(groundingReviews.artifactId, aiArtifacts.id))
+      .orderBy(desc(groundingReviews.createdAt));
+  }
+
+  async listGroundingReviewsForArtifact(artifactId: string) {
+    return this.db.select().from(groundingReviews).where(eq(groundingReviews.artifactId, artifactId)).orderBy(desc(groundingReviews.createdAt));
+  }
+
+  async updateGroundingReview(id: string, input: UpdateGroundingReviewInput) {
+    const [review] = await this.db.update(groundingReviews).set({ ...input, updatedAt: new Date() }).where(eq(groundingReviews.id, id)).returning();
+    return review ?? null;
+  }
+
   async approveTailoredResume(input: ApproveTailoredResumeInput) {
     const [latest] = await this.db
       .select({ versionNumber: resumeVersions.versionNumber })
@@ -59,6 +93,9 @@ export class AiRepository {
   }
 
   async approveCoverLetter(input: ApproveCoverLetterInput) {
+    if (input.variant.groundedClaims.length === 0) {
+      throw new Error("Cover letter approval requires at least one grounded claim.");
+    }
     const context = await this.loadCoverLetterContext(input.jobId, input.resumeVersionId, input.applicationId);
     if (!context) return null;
     const content = {

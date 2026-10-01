@@ -147,6 +147,20 @@ export interface AiArtifactSummary {
   createdAt: string;
 }
 
+export interface GroundingReviewSummary {
+  id: string;
+  artifactId: string;
+  claim: string;
+  evidence: Record<string, unknown>;
+  status: string;
+  reviewerNote: string | null;
+  purpose?: string;
+  provider?: string;
+  model?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 
@@ -222,6 +236,10 @@ export async function getDocumentDetail(id: string) {
 
 export async function getAiArtifacts() {
   return getJson<AiArtifactSummary[]>("/documents/artifacts");
+}
+
+export async function getGroundingReviews() {
+  return getJson<GroundingReviewSummary[]>("/ai/grounding-reviews");
 }
 
 export async function getSession() {

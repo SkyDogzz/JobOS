@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { AiService } from "./ai.service.js";
 
 @Controller("ai")
@@ -23,5 +23,20 @@ export class AiController {
   @Post("cover-letters/approve")
   approveCoverLetter(@Body() body: unknown) {
     return this.ai.approveCoverLetter(body);
+  }
+
+  @Get("grounding-reviews")
+  groundingReviews() {
+    return this.ai.listGroundingReviews();
+  }
+
+  @Get("artifacts/:artifactId/grounding-reviews")
+  groundingReviewsForArtifact(@Param("artifactId") artifactId: string) {
+    return this.ai.listGroundingReviewsForArtifact(artifactId);
+  }
+
+  @Patch("grounding-reviews/:id")
+  updateGroundingReview(@Param("id") id: string, @Body() body: unknown) {
+    return this.ai.updateGroundingReview(id, body);
   }
 }

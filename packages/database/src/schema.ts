@@ -204,6 +204,19 @@ export const aiArtifacts = pgTable("ai_artifacts", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+export const groundingReviews = pgTable("grounding_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  artifactId: uuid("artifact_id").references(() => aiArtifacts.id, { onDelete: "cascade" }).notNull(),
+  claim: text("claim").notNull(),
+  evidence: jsonb("evidence").$type<Record<string, unknown>>().notNull().default({}),
+  status: text("status").notNull().default("pending"),
+  reviewerNote: text("reviewer_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  artifactIdx: index("grounding_reviews_artifact_idx").on(table.artifactId)
+}));
+
 export const applicationEvents = pgTable("application_events", {
   id: uuid("id").defaultRandom().primaryKey(),
   applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),
