@@ -373,6 +373,8 @@ Implement v0.5.2 email sync foundation:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `1d795a9 Add email sync foundation`
+
 ### v0.5.3 — Calendar Integration Foundation
 
 Implement v0.5.3 calendar integration foundation:
