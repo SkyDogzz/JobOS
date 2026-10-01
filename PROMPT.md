@@ -475,6 +475,8 @@ Implement v0.8.0 settings and preferences:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `80f3790 Add settings and preferences`
+
 ### v0.8.1 — Data Export
 
 Implement v0.8.1 data export:
