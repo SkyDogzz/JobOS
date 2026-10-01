@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { FileSearch, Save } from "lucide-react";
-import { apiUrl, type ParsedJobPosting } from "../../lib/api";
+import { FileSearch, GitMerge, Save } from "lucide-react";
+import { apiUrl, type DuplicateJobCandidate, type ParsedJobPosting } from "../../lib/api";
 
 export function JobBoardParserForm() {
   const [parsed, setParsed] = useState<ParsedJobPosting | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateJobCandidate[]>([]);
   const [message, setMessage] = useState("");
 
   async function parse(formData: FormData) {
     setMessage("Parsing...");
+    setDuplicates([]);
     const response = await fetch(`${apiUrl}/job-sources/parse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,8 +25,17 @@ export function JobBoardParserForm() {
       setMessage("Could not parse that posting.");
       return;
     }
-    setParsed(await response.json());
-    setMessage("Review the parsed job before saving.");
+    const parsedJob = await response.json() as ParsedJobPosting;
+    setParsed(parsedJob);
+
+    const duplicateResponse = await fetch(`${apiUrl}/jobs/dedupe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsedJob)
+    });
+    const duplicateJobs = duplicateResponse.ok ? await duplicateResponse.json() as DuplicateJobCandidate[] : [];
+    setDuplicates(duplicateJobs);
+    setMessage(duplicateJobs.length ? "Review possible duplicates before saving." : "Review the parsed job before saving.");
   }
 
   async function save() {
@@ -35,6 +46,17 @@ export function JobBoardParserForm() {
       body: JSON.stringify(parsed)
     });
     setMessage(response.ok ? "Job saved. Refreshing..." : "Could not save parsed job.");
+    if (response.ok) window.location.reload();
+  }
+
+  async function merge(id: string) {
+    if (!parsed) return;
+    const response = await fetch(`${apiUrl}/jobs/${id}/merge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incoming: parsed, strategy: "update_existing" })
+    });
+    setMessage(response.ok ? "Duplicate merged. Refreshing..." : "Could not merge duplicate job.");
     if (response.ok) window.location.reload();
   }
 
@@ -53,6 +75,22 @@ export function JobBoardParserForm() {
       {parsed ? (
         <div className="mt-4">
           <pre className="max-h-80 overflow-auto rounded bg-paper p-3 text-xs">{JSON.stringify(parsed, null, 2)}</pre>
+          {duplicates.length ? (
+            <div className="mt-3 space-y-2">
+              {duplicates.map((job) => (
+                <div key={job.id} className="rounded border border-ink/10 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">{job.title}</p>
+                      <p className="text-xs text-ink/60">{job.companyName ?? "Unknown company"} · {job.duplicateScore}% match</p>
+                    </div>
+                    <button className="inline-flex items-center gap-2 rounded border border-ink/15 px-3 py-2 text-xs font-medium" onClick={() => merge(job.id)} type="button"><GitMerge size={14} />Merge</button>
+                  </div>
+                  <p className="mt-2 text-xs text-ink/60">{job.duplicateReasons.join(", ")}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <button className="mt-3 inline-flex items-center gap-2 rounded border border-ink/15 px-3 py-2 text-sm font-medium" onClick={save} type="button"><Save size={15} />Save parsed job</button>
         </div>
       ) : null}

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { createJobSchema, jobSearchSchema, saveJobFilterSchema } from "@jobos/validation";
+import { createJobSchema, dedupeJobSchema, jobSearchSchema, mergeJobSchema, saveJobFilterSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { JobsRepository } from "./jobs.repository.js";
 
@@ -19,6 +19,17 @@ export class JobsService {
 
   create(body: unknown) {
     return this.jobs.create(parseBody(createJobSchema, body));
+  }
+
+  dedupe(body: unknown) {
+    return this.jobs.findDuplicates(parseBody(dedupeJobSchema, body));
+  }
+
+  async merge(id: string, body: unknown) {
+    const input = parseBody(mergeJobSchema, body);
+    const job = await this.jobs.merge(id, input.incoming, input.strategy);
+    if (!job) throw new NotFoundException("Job not found.");
+    return job;
   }
 
   filters() {

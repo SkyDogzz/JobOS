@@ -75,11 +75,67 @@ async function main() {
       companyName: company.name,
       description: "Validate source attribution.",
       sourceId: source.id,
-      sourceName: source.name
+      sourceName: source.name,
+      sourceUrl: "https://jobs.example.com/attributed-integration-role"
     })
   });
   const attributedDetail = await request(`/jobs/${attributedJob.id}`);
   if (attributedDetail.sourceId !== source.id) throw new Error("Job source attribution was not persisted.");
+
+  const exactDuplicates = await request("/jobs/dedupe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Attributed Integration Role",
+      companyName: company.name,
+      description: "Validate source attribution.",
+      sourceUrl: "https://jobs.example.com/attributed-integration-role",
+      sourceName: source.name
+    })
+  });
+  if (!exactDuplicates.some((item) => item.id === attributedJob.id && item.duplicateReasons.includes("Exact source URL match"))) {
+    throw new Error("Exact job duplicate was not detected.");
+  }
+
+  const fuzzyJob = await request("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Senior Duplicate Engineer",
+      companyName: "FuzzyCo Integration",
+      description: "Build duplicate detection pipelines with TypeScript, scoring, normalization, and review workflows.",
+      location: "Remote"
+    })
+  });
+  const fuzzyDuplicates = await request("/jobs/dedupe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Senior Duplicate Engineer",
+      companyName: "FuzzyCo Integration",
+      description: "Build duplicate detection pipelines with TypeScript normalization scoring and user review workflows.",
+      location: "Remote"
+    })
+  });
+  if (!fuzzyDuplicates.some((item) => item.id === fuzzyJob.id && item.duplicateReasons.includes("Similar description fingerprint"))) {
+    throw new Error("Fuzzy job duplicate was not detected.");
+  }
+
+  const mergedJob = await request(`/jobs/${fuzzyJob.id}/merge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      incoming: {
+        title: "Senior Duplicate Engineer",
+        companyName: "FuzzyCo Integration",
+        description: "Updated duplicate import with richer salary context.",
+        location: "Hybrid",
+        salaryText: "$150k - $175k"
+      },
+      strategy: "update_existing"
+    })
+  });
+  if (mergedJob.location !== "Hybrid" || mergedJob.salaryText !== "$150k - $175k") throw new Error("Duplicate merge did not update the existing job.");
 
   const searchedJobs = await request(`/jobs?q=${encodeURIComponent("Attributed Integration")}&sourceId=${source.id}`);
   if (!searchedJobs.some((item) => item.id === attributedJob.id)) throw new Error("Job search did not return the attributed job.");

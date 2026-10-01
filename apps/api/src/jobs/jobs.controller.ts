@@ -20,6 +20,16 @@ export class JobsController {
     return this.jobs.findById(id);
   }
 
+  @Post("dedupe")
+  dedupe(@Body() body: unknown) {
+    return this.jobs.dedupe(body);
+  }
+
+  @Post(":id/merge")
+  merge(@Param("id") id: string, @Body() body: unknown) {
+    return this.jobs.merge(id, body);
+  }
+
   @Post()
   create(@Body() body: unknown) {
     return this.jobs.create(body);

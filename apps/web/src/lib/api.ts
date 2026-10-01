@@ -209,6 +209,11 @@ export interface ParsedJobPosting {
   parser: string;
 }
 
+export interface DuplicateJobCandidate extends DashboardJob {
+  duplicateScore: number;
+  duplicateReasons: string[];
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 

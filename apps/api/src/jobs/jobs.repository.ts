@@ -80,6 +80,62 @@ export class JobsRepository {
     return job;
   }
 
+  async findDuplicates(input: CreateJobInput) {
+    const rows = await this.list();
+    const incomingTitle = normalize(input.title);
+    const incomingCompany = normalize(input.companyName ?? "");
+    const incomingDescription = fingerprint(input.description);
+    return rows
+      .map((job) => {
+        const reasons: string[] = [];
+        let score = 0;
+        if (input.sourceUrl && job.sourceUrl === input.sourceUrl) {
+          score += 100;
+          reasons.push("Exact source URL match");
+        }
+        const titleScore = similarity(incomingTitle, normalize(job.title));
+        const companyScore = similarity(incomingCompany, normalize(job.companyName ?? ""));
+        if (titleScore >= 0.75 && (!incomingCompany || companyScore >= 0.7)) {
+          score += Math.round((titleScore * 50) + (companyScore * 30));
+          reasons.push("Similar company and title");
+        }
+        const descriptionScore = overlap(incomingDescription, fingerprint(job.description));
+        if (descriptionScore >= 0.45) {
+          score += Math.round(descriptionScore * 60);
+          reasons.push("Similar description fingerprint");
+        }
+        return { ...job, duplicateScore: Math.min(score, 100), duplicateReasons: reasons };
+      })
+      .filter((job) => job.duplicateScore >= 45)
+      .sort((a, b) => b.duplicateScore - a.duplicateScore)
+      .slice(0, 5);
+  }
+
+  async merge(id: string, input: CreateJobInput, strategy: "keep_existing" | "update_existing") {
+    const [existing] = await this.db.select().from(jobs).where(eq(jobs.id, id)).limit(1);
+    if (!existing) return null;
+    if (strategy === "keep_existing") return existing;
+    const companyId = input.companyName ? await this.findOrCreateCompany(input.companyName) : existing.companyId;
+    const sourceId = input.sourceId ?? (input.sourceName ? await this.findOrCreateSource(input.sourceName) : existing.sourceId);
+    const [updated] = await this.db
+      .update(jobs)
+      .set({
+        companyId,
+        sourceId,
+        title: input.title || existing.title,
+        description: input.description || existing.description,
+        location: input.location ?? existing.location,
+        sourceUrl: input.sourceUrl ?? existing.sourceUrl,
+        sourceName: input.sourceName ?? existing.sourceName,
+        remotePolicy: input.remotePolicy ?? existing.remotePolicy,
+        salaryText: input.salaryText ?? existing.salaryText,
+        updatedAt: new Date()
+      })
+      .where(eq(jobs.id, id))
+      .returning();
+    return updated;
+  }
+
   async findById(id: string) {
     const [job] = await this.db
       .select({
@@ -161,4 +217,26 @@ export class JobsRepository {
     const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
     return user.id;
   }
+}
+
+function normalize(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").trim();
+}
+
+function fingerprint(value: string) {
+  const stop = new Set(["the", "and", "for", "with", "you", "our", "this", "that", "will", "are", "job", "role"]);
+  return new Set((normalize(value).match(/[a-z0-9+#.]{3,}/g) ?? []).filter((word) => !stop.has(word)).slice(0, 80));
+}
+
+function similarity(a: string, b: string) {
+  if (!a || !b) return 0;
+  const aWords = new Set(a.split(" ").filter(Boolean));
+  const bWords = new Set(b.split(" ").filter(Boolean));
+  return overlap(aWords, bWords);
+}
+
+function overlap(a: Set<string>, b: Set<string>) {
+  if (a.size === 0 || b.size === 0) return 0;
+  const shared = Array.from(a).filter((word) => b.has(word)).length;
+  return shared / Math.max(a.size, b.size);
 }

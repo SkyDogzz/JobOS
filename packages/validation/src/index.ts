@@ -12,6 +12,13 @@ export const createJobSchema = z.object({
   salaryText: z.string().min(1).optional()
 });
 
+export const dedupeJobSchema = createJobSchema;
+
+export const mergeJobSchema = z.object({
+  incoming: createJobSchema,
+  strategy: z.enum(["keep_existing", "update_existing"]).default("update_existing")
+});
+
 export const jobSearchSchema = z.object({
   q: z.string().optional(),
   companyId: z.string().uuid().optional(),
@@ -211,6 +218,8 @@ export const loginSchema = z.object({
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;
+export type DedupeJobInput = z.infer<typeof dedupeJobSchema>;
+export type MergeJobInput = z.infer<typeof mergeJobSchema>;
 export type JobSearchInput = z.infer<typeof jobSearchSchema>;
 export type SaveJobFilterInput = z.infer<typeof saveJobFilterSchema>;
 export type ParseJobPostingInput = z.infer<typeof parseJobPostingSchema>;
