@@ -308,6 +308,8 @@ Implement v0.4.3 job deduplication:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `886f9e6 Add job deduplication workflow`
+
 ### v0.4.4 — Browser Extension Import Contract
 
 Implement v0.4.4 browser extension import contract:
