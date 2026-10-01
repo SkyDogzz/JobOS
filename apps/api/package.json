@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nest build",
-    "dev": "pnpm build && pnpm start",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && nest build",
+    "dev": "pnpm --dir ../.. turbo build --filter=@jobos/api^... && pnpm build && pnpm start",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/apps/api/src/main.js",
     "test": "pnpm --dir ../.. test:api",
