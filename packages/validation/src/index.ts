@@ -220,6 +220,13 @@ export const createTaskSchema = z.object({
   dueAt: z.string().datetime().optional()
 });
 
+export const updateNotificationPreferencesSchema = z.object({
+  dueSoonDays: z.number().int().min(0).max(30).optional(),
+  taskRemindersEnabled: z.boolean().optional(),
+  followUpSuggestionsEnabled: z.boolean().optional(),
+  deliveryChannel: z.enum(["in_app", "email_placeholder"]).optional()
+});
+
 export const upsertInterviewSchema = z.object({
   applicationId: z.string().uuid(),
   startsAt: z.string().datetime(),
@@ -339,6 +346,7 @@ export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSch
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
 export type UpsertInterviewInput = z.infer<typeof upsertInterviewSchema>;
 export type CreateEmailConnectionInput = z.infer<typeof createEmailConnectionSchema>;
 export type UpdateEmailConnectionInput = z.infer<typeof updateEmailConnectionSchema>;

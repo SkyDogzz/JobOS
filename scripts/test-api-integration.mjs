@@ -598,8 +598,22 @@ https://example.com/profile`;
   const task = await request(`/applications/${application.id}/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title: "Integration task" })
+    body: JSON.stringify({ title: "Integration task", dueAt: new Date(Date.now() + 86400000).toISOString() })
   });
+  const notificationPreferences = await request("/notifications/preferences");
+  if (notificationPreferences.deliveryChannel !== "in_app") throw new Error("Notification preferences were not initialized.");
+  const updatedNotificationPreferences = await request("/notifications/preferences", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dueSoonDays: 5, taskRemindersEnabled: true, followUpSuggestionsEnabled: true })
+  });
+  if (updatedNotificationPreferences.dueSoonDays !== 5) throw new Error("Notification preferences update failed.");
+  const regeneratedNotifications = await request("/notifications/regenerate", { method: "POST" });
+  if (typeof regeneratedNotifications.created !== "number") throw new Error("Notification regeneration did not return a count.");
+  const notifications = await request("/notifications");
+  if (!notifications.some((item) => item.taskId === task.id && item.kind === "task_due_soon")) throw new Error("Task reminder notification was not generated.");
+  const readNotification = await request(`/notifications/${notifications[0].id}/read`, { method: "PATCH" });
+  if (readNotification.status !== "read") throw new Error("Notification read state failed.");
   const completed = await request(`/tasks/${task.id}/complete`, { method: "PATCH" });
   if (completed.status !== "done") throw new Error("Task completion failed.");
 

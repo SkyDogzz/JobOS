@@ -214,6 +214,36 @@ export const tasks = pgTable("tasks", {
   ...timestamps
 });
 
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  dueSoonDays: integer("due_soon_days").default(3).notNull(),
+  taskRemindersEnabled: boolean("task_reminders_enabled").default(true).notNull(),
+  followUpSuggestionsEnabled: boolean("follow_up_suggestions_enabled").default(true).notNull(),
+  deliveryChannel: text("delivery_channel").notNull().default("in_app"),
+  ...timestamps
+}, (table) => ({
+  userIdx: uniqueIndex("notification_preferences_user_idx").on(table.userId)
+}));
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }),
+  taskId: uuid("task_id").references(() => tasks.id, { onDelete: "set null" }),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("pending"),
+  deliveryChannel: text("delivery_channel").notNull().default("in_app"),
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  userStatusIdx: index("notifications_user_status_idx").on(table.userId, table.status)
+}));
+
 export const interviews = pgTable("interviews", {
   id: uuid("id").defaultRandom().primaryKey(),
   applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),

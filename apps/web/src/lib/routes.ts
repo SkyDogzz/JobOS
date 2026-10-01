@@ -15,9 +15,9 @@ export const routes = [
   "/tools/interview-prep",
   "/contacts",
   "/analytics",
+  "/notifications",
   "/settings/profile",
   "/settings/integrations",
   "/settings/notifications",
   "/settings/billing"
 ] as const;
-

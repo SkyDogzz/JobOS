@@ -299,6 +299,27 @@ export interface CalendarEventSummary {
   createdAt: string;
 }
 
+export interface NotificationSummary {
+  id: string;
+  applicationId: string | null;
+  taskId: string | null;
+  kind: string;
+  title: string;
+  body: string;
+  status: string;
+  deliveryChannel: string;
+  scheduledFor: string | null;
+  createdAt: string;
+}
+
+export interface NotificationPreferences {
+  id: string;
+  dueSoonDays: number;
+  taskRemindersEnabled: boolean;
+  followUpSuggestionsEnabled: boolean;
+  deliveryChannel: string;
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -537,6 +558,14 @@ export async function getCalendarSyncJobs() {
 
 export async function getCalendarEvents() {
   return getJson<CalendarEventSummary[]>("/integrations/calendar/events");
+}
+
+export async function getNotifications() {
+  return getJson<NotificationSummary[]>("/notifications");
+}
+
+export async function getNotificationPreferences() {
+  return getJson<NotificationPreferences>("/notifications/preferences");
 }
 
 export async function getFunnelAnalytics(query = "") {
