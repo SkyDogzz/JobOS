@@ -87,6 +87,14 @@ export async function getDashboardData() {
 
 export type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
+export async function getJobs() {
+  return getJson<DashboardJob[]>("/jobs");
+}
+
+export async function getResumes() {
+  return getJson<DashboardResume[]>("/resumes");
+}
+
 export async function getApplicationDetail(id: string) {
   return getJson<ApplicationDetail>(`/applications/${id}`);
 }

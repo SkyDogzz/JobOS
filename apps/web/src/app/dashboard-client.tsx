@@ -204,7 +204,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/45">{group}</p>
               <div className="grid gap-1">
                 {items.map((item) => (
-                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href="#" key={item}>
+                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href={item === "Saved Jobs" ? "/jobs" : item === "CVs" ? "/resumes" : "#"} key={item}>
                     {item}
                   </a>
                 ))}
@@ -266,7 +266,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 function SavedJobsList({ jobs }: { jobs: DashboardJob[] }) {
   return (
     <section className="rounded border border-ink/10 bg-white p-5">
-      <h2 className="mb-4 font-semibold">Saved Jobs</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">Saved Jobs</h2>
+        <Link className="text-sm font-medium text-tide hover:text-ink" href="/jobs">View all</Link>
+      </div>
       {jobs.length === 0 ? <EmptyState text="No saved jobs yet." /> : null}
       <div className="divide-y divide-ink/10">
         {jobs.slice(-6).reverse().map((job) => (
@@ -284,7 +287,10 @@ function SavedJobsList({ jobs }: { jobs: DashboardJob[] }) {
 function ResumeList({ resumes }: { resumes: DashboardResume[] }) {
   return (
     <section className="rounded border border-ink/10 bg-white p-5">
-      <h2 className="mb-4 font-semibold">CV Versions</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-semibold">CV Versions</h2>
+        <Link className="text-sm font-medium text-tide hover:text-ink" href="/resumes">View all</Link>
+      </div>
       {resumes.length === 0 ? <EmptyState text="No CVs yet." /> : null}
       <div className="divide-y divide-ink/10">
         {resumes.slice(-6).reverse().map((resume) => (
