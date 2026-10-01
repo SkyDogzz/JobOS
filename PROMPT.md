@@ -281,6 +281,8 @@ Implement v0.4.1 job search and filtering:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `f2c44a7 Add job search and saved filters`
+
 ### v0.4.2 — Job Deduplication
 
 Implement v0.4.2 job deduplication:
