@@ -2,6 +2,88 @@
 
 This file tracks Codex-ready feature prompts by version. Each minor should land in at least one dedicated commit.
 
+## v2 Roadmap Execution Prompt
+
+Use this prompt to implement the roadmap from the next incomplete v1.x minor through v2.0.0.
+
+```text
+Implement the JobOS roadmap one minor version at a time from PROMPT.md, starting at the first incomplete entry after the latest recorded commit and continuing through v2.0.0.
+
+Operating rules:
+- Work strictly in version order.
+- Complete exactly one minor at a time before starting the next.
+- Preserve existing user changes. Do not reset, revert, overwrite unrelated work, or use destructive git commands.
+- Prefer deterministic/local foundations over real third-party integrations unless credentials and provider setup already exist.
+- Add database migrations when schema changes are needed.
+- Add API integration coverage for new or changed API behavior.
+- Add frontend UI when the roadmap explicitly requires user-facing views.
+- Add or update documentation when the minor changes operator, deployment, setup, privacy, backup, or release behavior.
+- Keep root package.json as the product version and set it to the exact minor being implemented.
+- Do not bump every workspace package version unless the repo clearly starts following that pattern.
+
+Checks:
+- Before every feature commit, run only the checks relevant to the changed surface, plus any checks required by shared changes:
+  - Always run `pnpm typecheck` when TypeScript, schema types, validation, API, worker, shared package, or frontend code changes.
+  - Run `pnpm build` when build config, package scripts, Dockerfiles, deployment files, Next.js pages, Nest modules, shared packages, or production behavior changes.
+  - Run `pnpm test` when tests, tested code paths, shared behavior, validation, repositories, API behavior, workers, or frontend behavior changes.
+  - Run targeted package tests when only one isolated package changed and the root test suite would not add meaningful coverage.
+  - If only documentation or PROMPT.md changed, no code checks are required.
+- If the minor adds or changes API behavior:
+  - start required local services,
+  - run migrations,
+  - start the local API,
+  - run `pnpm test:api` against the live API,
+  - stop the API process afterward.
+- If the minor adds or changes browser/E2E behavior, run the relevant Playwright/E2E command once it exists.
+- If production Docker, deployment, or release behavior changes, run the production-stack smoke command or clearly report why it cannot be run.
+- If a check fails, fix the issue and rerun the relevant failed checks.
+- If a check cannot be fixed safely, stop and report the blocker.
+
+Commit and push discipline:
+- Each minor must have at least one feature commit.
+- After the feature commit, update PROMPT.md with the feature commit hash under that minor.
+- Then make a separate PROMPT.md record commit.
+- Push every commit after it is created.
+- Do not start the next minor until both commits for the current minor have been pushed.
+- Use concise feature commit messages matching the minor, for example:
+  - `Add production stack smoke`
+  - `Harden auth user scoping`
+  - `Add real calendar sync`
+  - `Add intelligent job search copilot`
+- Use PROMPT.md record commit messages in this format:
+  - `Record <minor feature name> commit`
+
+After each minor, report:
+- Version completed.
+- Feature commit hash.
+- PROMPT.md record commit hash.
+- Checks run and final result.
+- Whether live API smoke tests were run.
+- Whether E2E or production-stack smoke tests were run, if applicable.
+- Push status.
+- Working tree status.
+
+When v2.0.0 is complete:
+- Ensure root package.json is `2.0.0`.
+- Run full release checks.
+- Commit, push, and tag `v2.0.0`.
+- Push the tag.
+- Provide a final release summary listing all feature commits, all PROMPT.md record commits, final package.json version, final check results, and remaining risks or manual follow-up.
+```
+
+Things that are easy to forget:
+
+- Run and document a real production-stack smoke before calling a release deployable.
+- Verify auth/user scoping before adding collaboration, teams, billing, or admin features.
+- Keep provider integrations testable with deterministic fakes so checks do not depend on paid services or secrets.
+- Redact secrets and sensitive user content from logs, metrics, exports, support bundles, and error reporting.
+- Add migration rollback notes or recovery guidance for risky schema changes.
+- Update seed/reset fixtures when tests depend on new required fields.
+- Confirm background jobs are idempotent before adding retries.
+- Audit every user-visible mutation, especially copilot/tool actions, sharing, deletion, billing, and admin actions.
+- Preserve backward compatibility for existing local data when adding organizations or tenancy.
+- Push tags as well as commits for v2.0.0.
+
 ## Implemented
 
 ### v0.1.0 — Database-Backed JobOS Foundation
