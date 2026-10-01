@@ -399,6 +399,8 @@ Implement v0.6.0 funnel analytics:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `40bf7d1 Add funnel analytics`
+
 ### v0.6.1 — Source Performance Analytics
 
 Implement v0.6.1 source performance analytics:
