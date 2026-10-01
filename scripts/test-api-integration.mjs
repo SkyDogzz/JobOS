@@ -68,9 +68,18 @@ async function main() {
   const contact = await request("/contacts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ companyId: company.id, name: "Integration Recruiter", title: "Recruiter", email: "recruiter@example.com" })
+    body: JSON.stringify({ companyId: company.id, name: "Integration Recruiter", title: "Recruiter", email: "recruiter@example.com", notes: "Initial recruiter note" })
   });
   if (!contact.id) throw new Error("Contact creation failed.");
+  const followUpAt = new Date(Date.now() + 86400000).toISOString();
+  const updatedContact = await request(`/contacts/${contact.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ companyId: company.id, name: "Integration Recruiter", title: "Senior Recruiter", email: "recruiter@example.com", notes: "Follow up after screen.", followUpAt })
+  });
+  if (updatedContact.title !== "Senior Recruiter" || !updatedContact.followUpAt) throw new Error("Contact update or follow-up reminder failed.");
+  const contactDetail = await request(`/contacts/${contact.id}`);
+  if (contactDetail.companyName !== company.name) throw new Error("Contact detail did not include company context.");
 
   const attributedJob = await request("/jobs", {
     method: "POST",
@@ -86,6 +95,10 @@ async function main() {
   });
   const attributedDetail = await request(`/jobs/${attributedJob.id}`);
   if (attributedDetail.sourceId !== source.id) throw new Error("Job source attribution was not persisted.");
+  if (!attributedDetail.contacts.some((item) => item.id === contact.id)) throw new Error("Job detail did not include company contacts.");
+  const companyDetail = await request(`/companies/${company.id}`);
+  if (!companyDetail.contacts.some((item) => item.id === contact.id)) throw new Error("Company detail did not include contacts.");
+  if (!companyDetail.jobs.some((item) => item.id === attributedJob.id)) throw new Error("Company detail did not include jobs.");
 
   const exactDuplicates = await request("/jobs/dedupe", {
     method: "POST",
@@ -231,6 +244,12 @@ async function main() {
       stage: "saved"
     })
   });
+  const linkedContact = await request(`/contacts/${contact.id}/applications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ applicationId: application.id, relationship: "recruiter", notes: "Primary application contact" })
+  });
+  if (linkedContact.applicationId !== application.id) throw new Error("Contact was not linked to application.");
 
   const [jobs, resumes, applications] = await Promise.all([
     request("/jobs"),
@@ -242,10 +261,23 @@ async function main() {
   if (!resumes.some((item) => item.id === resume.id)) throw new Error("Created resume not found in list.");
   if (!applications.some((item) => item.id === application.id)) throw new Error("Created application not found in list.");
 
+  const applicationContactDetail = await request(`/applications/${application.id}`);
+  if (!applicationContactDetail.contacts.some((item) => item.id === contact.id && item.relationship === "recruiter")) {
+    throw new Error("Application detail did not include linked contact.");
+  }
+
   const resumeDetail = await request(`/resumes/${resume.id}`);
   if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
   if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");
   if (!resumeDetail.applications.some((item) => item.id === application.id)) throw new Error("Resume detail did not include linked applications.");
+
+  const tempContact = await request("/contacts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ companyId: company.id, name: "Temporary Recruiter", email: "temp-recruiter@example.com" })
+  });
+  const deletedContact = await fetch(`${apiUrl}/contacts/${tempContact.id}`, { method: "DELETE" });
+  if (!deletedContact.ok) throw new Error("Contact delete failed.");
 
   const secondVersion = await request(`/resumes/${resume.id}/versions`, {
     method: "POST",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BriefcaseBusiness, FileText, History } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, FileText, History, Users } from "lucide-react";
 import { getApplicationDetail, getApplicationNotes, getApplicationTasks } from "../../../lib/api";
 import { NotesTasksPanel } from "./notes-tasks-panel";
 import { StageControls } from "./stage-controls";
@@ -51,6 +51,23 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
             <section className="rounded border border-ink/10 bg-white p-5">
               <StageControls applicationId={application.id} initialStage={application.stage} />
+            </section>
+
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Users size={18} />
+                <h2 className="font-semibold">Recruiters</h2>
+              </div>
+              {application.contacts.length === 0 ? <p className="text-sm text-ink/55">No contacts linked yet.</p> : null}
+              <div className="divide-y divide-ink/10">
+                {application.contacts.map((contact) => (
+                  <article className="py-3 text-sm" key={contact.id}>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="mt-1 text-ink/55">{contact.relationship ?? "recruiter"} · {contact.email ?? contact.title ?? "No details"}</p>
+                    {contact.followUpAt ? <p className="mt-1 text-xs text-rust">Follow up {new Date(contact.followUpAt).toLocaleDateString()}</p> : null}
+                  </article>
+                ))}
+              </div>
             </section>
 
             <section className="rounded border border-ink/10 bg-white p-5">

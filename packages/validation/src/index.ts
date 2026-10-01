@@ -71,6 +71,13 @@ export const createContactSchema = z.object({
   title: z.string().optional(),
   email: z.string().email().optional(),
   linkedinUrl: z.string().url().optional(),
+  notes: z.string().optional(),
+  followUpAt: z.string().min(1).optional()
+});
+
+export const linkContactSchema = z.object({
+  applicationId: z.string().uuid(),
+  relationship: z.string().min(1).default("recruiter"),
   notes: z.string().optional()
 });
 
@@ -241,6 +248,7 @@ export type SaveJobFilterInput = z.infer<typeof saveJobFilterSchema>;
 export type ParseJobPostingInput = z.infer<typeof parseJobPostingSchema>;
 export type UpsertCompanyInput = z.infer<typeof upsertCompanySchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
+export type LinkContactInput = z.infer<typeof linkContactSchema>;
 export type UpsertJobSourceInput = z.infer<typeof upsertJobSourceSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;

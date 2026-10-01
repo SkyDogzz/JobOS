@@ -93,6 +93,7 @@ export const contacts = pgTable("contacts", {
   email: text("email"),
   linkedinUrl: text("linkedin_url"),
   notes: text("notes"),
+  followUpAt: timestamp("follow_up_at", { withTimezone: true }),
   ...timestamps
 });
 
@@ -171,6 +172,17 @@ export const applications = pgTable("applications", {
   ...timestamps
 }, (table) => ({
   userStageIdx: index("applications_user_stage_idx").on(table.userId, table.stage)
+}));
+
+export const applicationContacts = pgTable("application_contacts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }).notNull(),
+  relationship: text("relationship").notNull().default("recruiter"),
+  notes: text("notes"),
+  ...timestamps
+}, (table) => ({
+  applicationContactIdx: uniqueIndex("application_contacts_application_contact_idx").on(table.applicationId, table.contactId)
 }));
 
 export const documents = pgTable("documents", {

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
-import { applications, companies, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters, users } from "@jobos/database";
+import { applications, companies, contacts, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters, users } from "@jobos/database";
 import type { CreateJobInput, JobSearchInput, SaveJobFilterInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -150,6 +150,7 @@ export class JobsRepository {
         sourceStatus: jobSources.status,
         remotePolicy: jobs.remotePolicy,
         salaryText: jobs.salaryText,
+        companyId: companies.id,
         companyName: companies.name,
         createdAt: jobs.createdAt
       })
@@ -177,7 +178,24 @@ export class JobsRepository {
       .where(eq(jobResumeMatches.jobId, id))
       .orderBy(asc(jobResumeMatches.createdAt));
 
-    return { ...job, matches: matches.reverse() };
+    const jobContacts = job.companyId
+      ? await this.db
+          .select({
+            id: contacts.id,
+            companyId: contacts.companyId,
+            name: contacts.name,
+            title: contacts.title,
+            email: contacts.email,
+            linkedinUrl: contacts.linkedinUrl,
+            notes: contacts.notes,
+            followUpAt: contacts.followUpAt
+          })
+          .from(contacts)
+          .where(eq(contacts.companyId, job.companyId))
+          .orderBy(asc(contacts.name))
+      : [];
+
+    return { ...job, matches: matches.reverse(), contacts: jobContacts };
   }
 
   async listFilters() {

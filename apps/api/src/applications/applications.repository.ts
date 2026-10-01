@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
-import { applicationEvents, applications, atsAnalyses, companies, jobs, users } from "@jobos/database";
+import { applicationContacts, applicationEvents, applications, atsAnalyses, companies, contacts, jobs, users } from "@jobos/database";
 import type { CreateApplicationInput, UpdateApplicationStageInput } from "@jobos/validation";
 import { devUser } from "../common/dev-user.js";
 import { DATABASE } from "../database/database.module.js";
@@ -78,7 +78,27 @@ export class ApplicationsRepository {
           .orderBy(asc(atsAnalyses.createdAt))
       : [];
 
-    return { ...application, events, analyses };
+    const linkedContacts = await this.db
+      .select({
+        id: contacts.id,
+        companyId: contacts.companyId,
+        companyName: companies.name,
+        name: contacts.name,
+        title: contacts.title,
+        email: contacts.email,
+        linkedinUrl: contacts.linkedinUrl,
+        notes: contacts.notes,
+        followUpAt: contacts.followUpAt,
+        relationship: applicationContacts.relationship,
+        linkNotes: applicationContacts.notes
+      })
+      .from(applicationContacts)
+      .innerJoin(contacts, eq(applicationContacts.contactId, contacts.id))
+      .leftJoin(companies, eq(contacts.companyId, companies.id))
+      .where(eq(applicationContacts.applicationId, id))
+      .orderBy(asc(contacts.name));
+
+    return { ...application, events, analyses, contacts: linkedContacts };
   }
 
   async create(input: CreateApplicationInput) {

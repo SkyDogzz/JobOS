@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BriefcaseBusiness } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Users } from "lucide-react";
 import { getJobDetail } from "../../../lib/api";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,6 +37,22 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                   <p className="mt-1 text-sm text-ink/55">{match.resumeTitle ?? match.resumeVersionId}</p>
                 </article>
               ))}
+            </div>
+            <div className="mt-6 border-t border-ink/10 pt-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Users size={17} />
+                <h2 className="font-semibold">Company Contacts</h2>
+              </div>
+              {job.contacts.length === 0 ? <p className="text-sm text-ink/55">No contacts linked to this company.</p> : null}
+              <div className="divide-y divide-ink/10">
+                {job.contacts.map((contact) => (
+                  <article className="py-3 text-sm" key={contact.id}>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="mt-1 text-ink/55">{contact.title ?? "Contact"} · {contact.email ?? "No email"}</p>
+                    {contact.followUpAt ? <p className="mt-1 text-xs text-rust">Follow up {new Date(contact.followUpAt).toLocaleDateString()}</p> : null}
+                  </article>
+                ))}
+              </div>
             </div>
           </aside>
         </div>

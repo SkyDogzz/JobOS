@@ -36,6 +36,7 @@ export interface ApplicationDetail extends DashboardApplication {
     createdAt: string;
   }>;
   analyses: AnalysisSummary[];
+  contacts: ContactSummary[];
 }
 
 export interface ApplicationNote {
@@ -125,6 +126,7 @@ export interface MatchSummary {
 
 export interface JobDetail extends DashboardJob {
   matches: MatchSummary[];
+  contacts: ContactSummary[];
 }
 
 export interface DocumentSummary {
@@ -171,15 +173,29 @@ export interface CompanySummary {
   description: string | null;
 }
 
+export interface CompanyDetail extends CompanySummary {
+  contacts: ContactSummary[];
+  jobs: Array<{
+    id: string;
+    title: string;
+    location: string | null;
+    sourceUrl: string | null;
+    createdAt: string;
+  }>;
+}
+
 export interface ContactSummary {
   id: string;
   companyId: string | null;
-  companyName: string | null;
+  companyName?: string | null;
   name: string;
   title: string | null;
   email: string | null;
   linkedinUrl: string | null;
   notes: string | null;
+  followUpAt?: string | null;
+  relationship?: string;
+  linkNotes?: string | null;
 }
 
 export interface JobSourceSummary {
@@ -297,6 +313,10 @@ export async function getGroundingReviews() {
 
 export async function getCompanies() {
   return getJson<CompanySummary[]>("/companies");
+}
+
+export async function getCompanyDetail(id: string) {
+  return getJson<CompanyDetail>(`/companies/${id}`);
 }
 
 export async function getContacts() {

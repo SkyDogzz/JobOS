@@ -9,7 +9,7 @@ export function SourceManagementForm() {
   async function submit(path: string, formData: FormData) {
     setMessage("Saving...");
     const body: Record<string, string> = {};
-    for (const key of ["name", "kind", "baseUrl", "status", "website", "description", "title", "email"]) {
+    for (const key of ["name", "kind", "baseUrl", "status", "website", "description", "title", "email", "notes", "followUpAt"]) {
       const value = String(formData.get(key) ?? "").trim();
       if (value) body[key] = value;
     }
@@ -49,6 +49,8 @@ export function SourceManagementForm() {
         <input className="mb-3 h-10 w-full rounded border border-ink/15 px-3 text-sm" name="name" placeholder="Contact name" required />
         <input className="mb-3 h-10 w-full rounded border border-ink/15 px-3 text-sm" name="title" placeholder="Title" />
         <input className="mb-3 h-10 w-full rounded border border-ink/15 px-3 text-sm" name="email" placeholder="email@example.com" />
+        <textarea className="mb-3 min-h-16 w-full rounded border border-ink/15 p-3 text-sm" name="notes" placeholder="Recruiter notes" />
+        <input className="mb-3 h-10 w-full rounded border border-ink/15 px-3 text-sm" name="followUpAt" type="datetime-local" />
         <button className="rounded bg-ink px-3 py-2 text-sm font-medium text-white">Save contact</button>
       </form>
       {message ? <p className="text-sm text-ink/60">{message}</p> : null}
