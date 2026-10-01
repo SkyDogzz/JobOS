@@ -227,6 +227,16 @@ export const updateNotificationPreferencesSchema = z.object({
   deliveryChannel: z.enum(["in_app", "email_placeholder"]).optional()
 });
 
+export const updateUserSettingsSchema = z.object({
+  timezone: z.string().min(1).max(80).optional(),
+  preferredLocations: z.array(z.string().min(1)).max(12).optional(),
+  remotePreference: z.enum(["any", "remote", "hybrid", "onsite"]).optional(),
+  minimumSalary: z.string().max(80).nullable().optional(),
+  preferredSources: z.array(z.string().min(1)).max(20).optional(),
+  defaultAiProvider: z.enum(["local", "openai", "anthropic"]).optional(),
+  defaultAiModel: z.string().min(1).max(120).optional()
+});
+
 export const upsertInterviewSchema = z.object({
   applicationId: z.string().uuid(),
   startsAt: z.string().datetime(),
@@ -347,6 +357,7 @@ export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageS
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
+export type UpdateUserSettingsInput = z.infer<typeof updateUserSettingsSchema>;
 export type UpsertInterviewInput = z.infer<typeof upsertInterviewSchema>;
 export type CreateEmailConnectionInput = z.infer<typeof createEmailConnectionSchema>;
 export type UpdateEmailConnectionInput = z.infer<typeof updateEmailConnectionSchema>;

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, BellRing } from "lucide-react";
-import { getNotificationPreferences } from "../../../lib/api";
+import { ArrowLeft, BellRing, Settings } from "lucide-react";
+import { getUserSettings } from "../../../lib/api";
 
 export default async function NotificationSettingsPage() {
-  const preferences = await getNotificationPreferences().catch(() => null);
+  const settings = await getUserSettings().catch(() => null);
+  const preferences = settings?.notificationPreferences;
 
   return (
     <main className="min-h-screen bg-paper px-5 py-6 text-ink sm:px-8 lg:px-10">
@@ -13,9 +14,15 @@ export default async function NotificationSettingsPage() {
           Dashboard
         </Link>
         <section className="mb-8 border-b border-ink/10 pb-6">
-          <div className="flex items-center gap-2">
-            <BellRing size={20} />
-            <h1 className="text-3xl font-semibold">Notification Settings</h1>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <BellRing size={20} />
+              <h1 className="text-3xl font-semibold">Notification Settings</h1>
+            </div>
+            <Link className="inline-flex items-center gap-2 rounded border border-ink/15 px-3 py-2 text-sm font-medium hover:bg-ink/5" href="/settings">
+              <Settings size={16} />
+              Edit all settings
+            </Link>
           </div>
         </section>
         {!preferences ? <p className="rounded border border-rust/20 bg-rust/10 p-4 text-sm text-rust">Notification preferences are unavailable.</p> : null}

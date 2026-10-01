@@ -616,6 +616,26 @@ https://example.com/profile`;
     body: JSON.stringify({ dueSoonDays: 5, taskRemindersEnabled: true, followUpSuggestionsEnabled: true })
   });
   if (updatedNotificationPreferences.dueSoonDays !== 5) throw new Error("Notification preferences update failed.");
+  const settings = await request("/settings");
+  if (settings.timezone !== "UTC" || settings.defaultAiProvider !== "local") throw new Error("User settings were not initialized.");
+  const updatedSettings = await request("/settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      timezone: "America/New_York",
+      preferredLocations: ["Remote", "New York"],
+      remotePreference: "remote",
+      minimumSalary: "$140k",
+      preferredSources: ["referral", "company_page"],
+      defaultAiProvider: "local",
+      defaultAiModel: "deterministic-v2",
+      notificationPreferences: { dueSoonDays: 2, deliveryChannel: "in_app" }
+    })
+  });
+  if (updatedSettings.timezone !== "America/New_York") throw new Error("User settings update failed.");
+  if (!updatedSettings.preferredLocations.includes("Remote")) throw new Error("Job search preferences were not persisted.");
+  if (updatedSettings.defaultAiModel !== "deterministic-v2") throw new Error("AI defaults were not persisted.");
+  if (updatedSettings.notificationPreferences.dueSoonDays !== 2) throw new Error("Settings endpoint did not update notification preferences.");
   const regeneratedNotifications = await request("/notifications/regenerate", { method: "POST" });
   if (typeof regeneratedNotifications.created !== "number") throw new Error("Notification regeneration did not return a count.");
   const notifications = await request("/notifications");

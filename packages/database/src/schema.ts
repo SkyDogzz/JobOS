@@ -226,6 +226,21 @@ export const notificationPreferences = pgTable("notification_preferences", {
   userIdx: uniqueIndex("notification_preferences_user_idx").on(table.userId)
 }));
 
+export const userSettings = pgTable("user_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  timezone: text("timezone").notNull().default("UTC"),
+  preferredLocations: jsonb("preferred_locations").$type<string[]>().notNull().default([]),
+  remotePreference: text("remote_preference").notNull().default("any"),
+  minimumSalary: text("minimum_salary"),
+  preferredSources: jsonb("preferred_sources").$type<string[]>().notNull().default([]),
+  defaultAiProvider: text("default_ai_provider").notNull().default("local"),
+  defaultAiModel: text("default_ai_model").notNull().default("deterministic-v1"),
+  ...timestamps
+}, (table) => ({
+  userIdx: uniqueIndex("user_settings_user_idx").on(table.userId)
+}));
+
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

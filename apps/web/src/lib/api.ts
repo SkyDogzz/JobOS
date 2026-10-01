@@ -332,6 +332,18 @@ export interface NotificationPreferences {
   deliveryChannel: string;
 }
 
+export interface UserSettings {
+  id: string;
+  timezone: string;
+  preferredLocations: string[];
+  remotePreference: string;
+  minimumSalary: string | null;
+  preferredSources: string[];
+  defaultAiProvider: string;
+  defaultAiModel: string;
+  notificationPreferences: NotificationPreferences;
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -584,6 +596,10 @@ export async function getNotifications() {
 
 export async function getNotificationPreferences() {
   return getJson<NotificationPreferences>("/notifications/preferences");
+}
+
+export async function getUserSettings() {
+  return getJson<UserSettings>("/settings");
 }
 
 export async function getFunnelAnalytics(query = "") {
