@@ -1,48 +1,33 @@
-JobOS
+# JobOS
 
-An end-to-end operating system for job searching.
+> An end-to-end operating system for job searching.
 
 JobOS centralizes the entire job-search lifecycle into one application:
 
-job discovery
-
-job aggregation
-
-job saving
-
-CV management
-
-CV versioning
-
-ATS analysis
-
-job ↔ CV matching
-
-CV tailoring
-
-cover-letter generation
-
-application tracking
-
-recruiter/contact management
-
-email synchronization
-
-interview tracking
-
-reminders
-
-analytics
-
-job-search funnel analysis
-
-document generation
-
-AI assistance
+- job discovery
+- job aggregation
+- job saving
+- CV management
+- CV versioning
+- ATS analysis
+- job ↔ CV matching
+- CV tailoring
+- cover-letter generation
+- application tracking
+- recruiter/contact management
+- email synchronization
+- interview tracking
+- reminders
+- analytics
+- job-search funnel analysis
+- document generation
+- AI assistance
 
 Instead of combining a spreadsheet, multiple job boards, several CV files, email, calendar, notes, and AI tools, JobOS provides a single source of truth.
 
-1. Product vision
+---
+
+# 1. Product vision
 
 Most job-search tools solve one isolated problem.
 
@@ -62,8 +47,9 @@ AI tools help rewrite documents.
 
 JobOS connects all of them.
 
-The fundamental object in JobOS is the Application.
+The fundamental object in JobOS is the **Application**.
 
+```text
 Job
  │
  ├── Company
@@ -82,41 +68,39 @@ Job
       ├── Interviews
       ├── Events
       └── Outcome
+```
 
 This creates a complete historical record of every application.
 
-2. Core principles
+---
 
-2.1 Never invent candidate information
+# 2. Core principles
+
+## 2.1 Never invent candidate information
 
 AI-generated content must never fabricate:
 
-companies
-
-employment
-
-degrees
-
-certifications
-
-skills
-
-achievements
-
-dates
-
-responsibilities
-
-technologies
+- companies
+- employment
+- degrees
+- certifications
+- skills
+- achievements
+- dates
+- responsibilities
+- technologies
 
 AI may reformulate existing information but cannot create facts about the user.
 
-2.2 User data is canonical
+---
+
+## 2.2 User data is canonical
 
 The user's profile and CV data are the source of truth.
 
 Generated documents reference structured profile data.
 
+```text
 Candidate Profile
        ↓
 Master Experience Database
@@ -126,59 +110,69 @@ CV
 CV Version
        ↓
 Application
+```
 
-2.3 Preserve history
+---
+
+## 2.3 Preserve history
 
 Never silently overwrite application documents.
 
 Every significant modification creates a version.
 
+```text
 CV
 ├── v1
 ├── v2
 ├── v3
 └── v4
+```
 
 Applications reference the exact version submitted.
 
-2.4 Automate repetitive work
+---
+
+## 2.4 Automate repetitive work
 
 JobOS should progressively eliminate:
 
-copying job descriptions
+- copying job descriptions
+- updating spreadsheets
+- remembering follow-ups
+- checking application status
+- searching email manually
+- choosing between CV versions
+- repeatedly rewriting the same information
 
-updating spreadsheets
+---
 
-remembering follow-ups
+# 3. Technology stack
 
-checking application status
+## Languages
 
-searching email manually
-
-choosing between CV versions
-
-repeatedly rewriting the same information
-
-3. Technology stack
-
-Languages
-
+```text
 TypeScript
 SQL
 HTML/CSS
+```
 
 Optional later:
 
+```text
 Python
+```
 
 Python should only be introduced if ML/data-processing workloads justify it.
 
 Do not introduce Python simply because the product contains AI.
 
-4. High-level stack
+---
 
-Frontend
+# 4. High-level stack
 
+## Frontend
+
+```text
 Next.js
 React
 TypeScript
@@ -187,105 +181,135 @@ shadcn/ui
 TanStack Query
 React Hook Form
 Zod
+```
 
-Backend
+## Backend
 
+```text
 NestJS
 Fastify adapter
 TypeScript
 Zod
 OpenAPI
+```
 
-Database
+## Database
 
+```text
 PostgreSQL
+```
 
-ORM
+## ORM
 
+```text
 Drizzle ORM
+```
 
-Cache / queues
+## Cache / queues
 
+```text
 Redis
 BullMQ
+```
 
-Search
+## Search
 
 Start:
 
+```text
 PostgreSQL Full Text Search
 pg_trgm
+```
 
 Later if required:
 
+```text
 Meilisearch
+```
 
 Do not deploy a dedicated search cluster before PostgreSQL search becomes a measurable limitation.
 
-Object storage
+## Object storage
 
 S3-compatible storage:
 
+```text
 AWS S3
 Cloudflare R2
 MinIO (development)
+```
 
-Authentication
+## Authentication
 
 Use an established authentication implementation rather than designing authentication cryptography internally.
 
 Required capabilities:
 
+```text
 email/password
 email verification
 password reset
 OAuth
 session management
 optional MFA
+```
 
-AI
+## AI
 
 Provider abstraction.
 
+```text
 OpenAI
 Anthropic
 local models
 future providers
+```
 
 The application must not couple business logic directly to one model provider.
 
-Observability
+## Observability
 
+```text
 OpenTelemetry
 Sentry
 Prometheus
 Grafana
 structured JSON logs
+```
 
-Infrastructure
+## Infrastructure
 
 Development:
 
+```text
 Docker Compose
+```
 
 Production:
 
+```text
 Docker
 reverse proxy
 managed PostgreSQL
 managed Redis
 S3-compatible storage
+```
 
 Infrastructure as code later:
 
+```text
 Terraform / OpenTofu
+```
 
-5. Why a modular monolith
+---
+
+# 5. Why a modular monolith
 
 Do NOT begin with microservices.
 
 Initial architecture:
 
+```text
                         ┌───────────────────────┐
                         │      Web Browser      │
                         └───────────┬───────────┘
@@ -337,15 +361,19 @@ Initial architecture:
                       ┌─────────────────────────────┼─────────────────────┐
                       ▼                             ▼                     ▼
                  AI Providers                 Job Sources            Email APIs
+```
 
 This provides most benefits associated with services without introducing distributed-system complexity.
 
 Modules maintain strict boundaries so they can later become independent services.
 
-6. Monorepo structure
+---
 
-Use pnpm workspaces + Turborepo.
+# 6. Monorepo structure
 
+Use `pnpm` workspaces + Turborepo.
+
+```text
 jobos/
 │
 ├── apps/
@@ -388,43 +416,15 @@ jobos/
 ├── pnpm-workspace.yaml
 ├── package.json
 └── README.md
-
-## Repository bootstrap
-
-This repository has been scaffolded as a pnpm + Turborepo monorepo.
-
-### Prerequisites
-
-- Node.js 22
-- pnpm 9
-- Docker with Docker Compose
-
-### Local startup
-
-```bash
-cp .env.example .env
-docker compose up -d postgres redis minio
-pnpm install
-pnpm db:generate
-pnpm db:migrate
-pnpm dev
 ```
 
-### Verification
+---
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
-
-See [docs/bootstrap-spec.md](docs/bootstrap-spec.md) for the repository-level architecture and [docs/codex-implementation-prompts.md](docs/codex-implementation-prompts.md) for the v0.1 to v1.0 implementation sequence.
-
-7. Backend architecture
+# 7. Backend architecture
 
 Each business domain becomes a module.
 
+```text
 apps/api/src/
 │
 ├── auth/
@@ -448,9 +448,11 @@ apps/api/src/
 ├── ai/
 ├── billing/
 └── audit/
+```
 
 Each module follows roughly:
 
+```text
 applications/
 ├── application.controller.ts
 ├── application.service.ts
@@ -459,30 +461,42 @@ applications/
 ├── application.events.ts
 ├── application.types.ts
 └── application.module.ts
+```
 
 Responsibilities must remain separated.
 
 Controllers:
 
+```text
 HTTP
 authentication
 validation
 serialization
+```
 
 Services:
 
+```text
 business logic
+```
 
 Repositories:
 
+```text
 database access
+```
 
 Workers:
 
+```text
 expensive asynchronous operations
+```
 
-8. Frontend architecture
+---
 
+# 8. Frontend architecture
+
+```text
 apps/web/src/
 │
 ├── app/
@@ -506,15 +520,19 @@ apps/web/src/
 ├── lib/
 ├── stores/
 └── types/
+```
 
 Business-specific components belong to features.
 
-Generic reusable components belong to components/ui.
+Generic reusable components belong to `components/ui`.
 
-9. Main navigation
+---
+
+# 9. Main navigation
 
 Desktop sidebar:
 
+```text
 ⌂ Dashboard
 
 SEARCH
@@ -551,11 +569,15 @@ SETTINGS
 ├── Notifications
 ├── Billing
 └── Privacy
+```
 
-10. Dashboard
+---
+
+# 10. Dashboard
 
 Example:
 
+```text
 Good morning, Thomas.
 
 ────────────────────────────────────────────
@@ -592,8 +614,11 @@ Backend Engineer
 Systems Engineer
 C++ Developer
 Embedded Software Engineer
+```
 
-11. Database design
+---
+
+# 11. Database design
 
 PostgreSQL is the canonical database.
 
@@ -601,8 +626,11 @@ Every user-owned entity must contain ownership information.
 
 Prefer UUIDv7-compatible identifiers.
 
-12. Users
+---
 
+# 12. Users
+
+```sql
 users
 
 id
@@ -611,9 +639,13 @@ email_verified_at
 created_at
 updated_at
 deleted_at
+```
 
-13. Profiles
+---
 
+# 13. Profiles
+
+```sql
 profiles
 
 id
@@ -634,13 +666,17 @@ linkedin_url
 
 created_at
 updated_at
+```
 
-14. Candidate experience database
+---
+
+# 14. Candidate experience database
 
 The CV should not be the only place containing career information.
 
 Store canonical experiences separately.
 
+```sql
 experiences
 
 id
@@ -660,9 +696,11 @@ description
 
 created_at
 updated_at
+```
 
 Achievements:
 
+```sql
 experience_achievements
 
 id
@@ -670,18 +708,24 @@ experience_id
 
 content
 position
+```
 
 Technologies:
 
+```sql
 experience_skills
 
 experience_id
 skill_id
+```
 
 This structured information can later generate multiple CV variants.
 
-15. Education
+---
 
+# 15. Education
+
+```sql
 education
 
 id
@@ -695,17 +739,23 @@ start_date
 end_date
 
 description
+```
 
-16. Skills
+---
 
+# 16. Skills
+
+```sql
 skills
 
 id
 normalized_name
 category
+```
 
 Examples:
 
+```text
 C
 C++
 Rust
@@ -717,9 +767,11 @@ React
 TypeScript
 TCP/IP
 OpenGL
+```
 
 Candidate relation:
 
+```sql
 user_skills
 
 user_id
@@ -728,13 +780,17 @@ skill_id
 level
 years_experience
 last_used_at
+```
 
-Do not rely entirely on years_experience.
+Do not rely entirely on `years_experience`.
 
 It is often ambiguous.
 
-17. Companies
+---
 
+# 17. Companies
+
+```sql
 companies
 
 id
@@ -758,19 +814,25 @@ logo_url
 
 created_at
 updated_at
+```
 
 Company deduplication is important.
 
 These should ideally resolve to one company:
 
+```text
 Google
 Google LLC
 google
 GOOGLE
 google.com
+```
 
-18. Jobs
+---
 
+# 18. Jobs
+
+```sql
 jobs
 
 id
@@ -806,9 +868,13 @@ content_hash
 
 created_at
 updated_at
+```
 
-19. Job sources
+---
 
+# 19. Job sources
+
+```sql
 job_sources
 
 id
@@ -823,9 +889,11 @@ configuration
 
 created_at
 updated_at
+```
 
 Possible types:
 
+```text
 API
 RSS
 ATS
@@ -833,19 +901,25 @@ CAREER_PAGE
 MANUAL
 EXTENSION
 IMPORT
+```
 
-20. Job deduplication
+---
+
+# 20. Job deduplication
 
 The same job may exist on:
 
+```text
 company website
 LinkedIn
 Indeed
 Welcome to the Jungle
 aggregator
+```
 
 Create:
 
+```sql
 job_sources_instances
 
 id
@@ -857,9 +931,11 @@ url
 
 first_seen_at
 last_seen_at
+```
 
 Deduplication signals:
 
+```text
 company domain
 normalized company
 normalized title
@@ -867,11 +943,15 @@ location
 description similarity
 external identifiers
 canonical URL
+```
 
 Never deduplicate exclusively on job title.
 
-21. Saved jobs
+---
 
+# 21. Saved jobs
+
+```sql
 saved_jobs
 
 id
@@ -883,18 +963,24 @@ status
 notes
 
 created_at
+```
 
 Statuses:
 
+```text
 SAVED
 IGNORED
 APPLIED
 ARCHIVED
+```
 
-22. Applications
+---
+
+# 22. Applications
 
 This is the heart of JobOS.
 
+```sql
 applications
 
 id
@@ -917,13 +1003,17 @@ cover_letter_document_id
 
 created_at
 updated_at
+```
 
-23. Application statuses
+---
+
+# 23. Application statuses
 
 Use configurable stages eventually.
 
 Initial defaults:
 
+```text
 DRAFT
 SAVED
 APPLIED
@@ -939,13 +1029,17 @@ ACCEPTED
 REJECTED
 WITHDRAWN
 GHOSTED
+```
 
 Do not store only the current state.
 
 Store history.
 
-24. Application events
+---
 
+# 24. Application events
+
+```sql
 application_events
 
 id
@@ -960,9 +1054,11 @@ metadata
 
 occurred_at
 created_at
+```
 
 Examples:
 
+```text
 APPLICATION_CREATED
 APPLICATION_SUBMITTED
 STATUS_CHANGED
@@ -974,11 +1070,15 @@ NOTE_CREATED
 FOLLOW_UP_SENT
 OFFER_RECEIVED
 REJECTION_RECEIVED
+```
 
 This produces the application timeline.
 
-25. CV architecture
+---
 
+# 25. CV architecture
+
+```sql
 resumes
 
 id
@@ -991,17 +1091,23 @@ target_role
 
 created_at
 updated_at
+```
 
 Example:
 
+```text
 Software Engineer — EN
 Systems/C++ — EN
 Backend — EN
 Software Engineer — FR
 Embedded — EN
+```
 
-26. CV versions
+---
 
+# 26. CV versions
+
+```sql
 resume_versions
 
 id
@@ -1015,19 +1121,25 @@ source_file_id
 generated_file_id
 
 created_at
+```
 
 Never modify historical versions.
 
 Creating a significant modification produces:
 
+```text
 v1 → v2
+```
 
-27. Structured CV format
+---
+
+# 27. Structured CV format
 
 Internally store CVs as JSON.
 
 Example:
 
+```json
 {
     "basics": {},
     "summary": "",
@@ -1038,9 +1150,11 @@ Example:
     "certifications": [],
     "languages": []
 }
+```
 
 Then render:
 
+```text
 JSON
  ↓
 template
@@ -1048,31 +1162,42 @@ template
 HTML
  ↓
 PDF
+```
 
 This makes CV generation deterministic and versionable.
 
-28. File storage
+---
+
+# 28. File storage
 
 Database:
 
+```text
 metadata
 ownership
 relationships
 hash
 MIME type
 size
+```
 
 Object storage:
 
+```text
 actual bytes
+```
 
 Never store large PDFs directly inside PostgreSQL unless there is a compelling reason.
 
 Example object key:
 
+```text
 users/{userId}/resumes/{resumeId}/{versionId}/resume.pdf
+```
 
-29. ATS scanner
+---
+
+# 29. ATS scanner
 
 The ATS scanner must NOT pretend to reproduce every commercial ATS.
 
@@ -1082,6 +1207,7 @@ Instead, analyze concrete properties.
 
 Categories:
 
+```text
 Parsing
 Structure
 Contact information
@@ -1091,9 +1217,13 @@ Skills
 Keywords
 Formatting
 Job alignment
+```
 
-30. ATS parsing pipeline
+---
 
+# 30. ATS parsing pipeline
+
+```text
 Upload PDF/DOCX
       ↓
 Validate
@@ -1113,11 +1243,15 @@ Analyze formatting
 Compare with job
       ↓
 Generate findings
+```
 
-31. ATS findings
+---
+
+# 31. ATS findings
 
 Example:
 
+```json
 {
     "type": "missing_keyword",
     "severity": "medium",
@@ -1127,21 +1261,27 @@ Example:
         "resume": false
     }
 }
+```
 
 Another:
 
+```json
 {
     "type": "missing_section",
     "severity": "high",
     "section": "experience"
 }
+```
 
-32. ATS scoring
+---
+
+# 32. ATS scoring
 
 If a score is displayed, make it explainable.
 
 Example:
 
+```text
 Parsing             95
 Structure           90
 Job terminology     72
@@ -1149,19 +1289,23 @@ Skills alignment    81
 Experience signals  78
 ──────────────────────
 Overall             83
+```
 
 Every point deduction should correspond to findings.
 
 Avoid fake precision such as claiming:
 
-You have an 83% chance of passing ATS.
+> You have an 83% chance of passing ATS.
 
 JobOS cannot know that.
 
-33. Job ↔ CV matching
+---
+
+# 33. Job ↔ CV matching
 
 Pipeline:
 
+```text
 Job description
       ↓
 normalize
@@ -1180,11 +1324,15 @@ compare
 candidate profile + CV
       ↓
 match report
+```
 
-34. Matching output
+---
+
+# 34. Matching output
 
 Example:
 
+```text
 Strong matches
 
 ✓ C++
@@ -1207,23 +1355,31 @@ Potential terminology mismatch
 "REST API development"
 vs
 "HTTP backend services"
+```
 
 Important distinction:
 
+```text
 missing from CV
+```
 
 does NOT necessarily mean:
 
+```text
 candidate does not know it
+```
 
 The UI must distinguish these.
 
-35. Matching engine
+---
+
+# 35. Matching engine
 
 Do not rely solely on an LLM.
 
 Use a hybrid pipeline.
 
+```text
 deterministic extraction
 +
 skill dictionary
@@ -1235,59 +1391,81 @@ PostgreSQL matching
 embeddings when useful
 +
 LLM semantic analysis
+```
 
 Example:
 
+```text
 JS
 Javascript
 JavaScript
 ECMAScript
+```
 
 normalize to:
 
+```text
 javascript
+```
 
 Likewise:
 
+```text
 Postgres
 PostgreSQL
+```
 
-36. AI architecture
+---
+
+# 36. AI architecture
 
 Create an abstraction:
 
+```text
 packages/ai/
+```
 
 Interface concept:
 
+```ts
 interface AIProvider {
     generateText(...): Promise<...>;
     generateStructured<T>(...): Promise<T>;
 }
+```
 
 Implementations:
 
+```text
 OpenAIProvider
 AnthropicProvider
 LocalProvider
+```
 
 Business code should request:
 
+```text
 analyzeJob()
 tailorResume()
 extractSkills()
 generateCoverLetter()
+```
 
 not:
 
+```text
 callSpecificModel()
+```
 
-37. Structured AI outputs
+---
+
+# 37. Structured AI outputs
 
 Never parse random prose when structured data is required.
 
 Require schema-validated output.
 
+```text
 LLM
  ↓
 JSON
@@ -1295,36 +1473,48 @@ JSON
 Zod validation
  ↓
 business logic
+```
 
 Invalid output:
 
+```text
 retry / repair / fail safely
+```
 
-38. Prompt versioning
+---
+
+# 38. Prompt versioning
 
 Prompts are production code.
 
 Store:
 
+```text
 prompt name
 version
 model
 parameters
 schema
 created_at
+```
 
 Example:
 
+```text
 job_skill_extraction:v3
 resume_tailoring:v7
 email_classification:v4
+```
 
 This makes AI regressions debuggable.
 
-39. AI auditability
+---
+
+# 39. AI auditability
 
 For important transformations store:
 
+```text
 model
 provider
 prompt version
@@ -1334,27 +1524,36 @@ latency
 token usage
 estimated cost
 timestamp
+```
 
 Avoid storing unnecessary sensitive prompt content indefinitely.
 
-40. CV tailoring
+---
+
+# 40. CV tailoring
 
 Input:
 
+```text
 job
 candidate profile
 selected resume version
+```
 
 Output:
 
+```text
 suggestions
+```
 
 NOT immediate destructive modification.
 
 Example:
 
+```diff
 - Developed network applications in C++.
 + Developed Linux networking applications in C++ using TCP/IP.
+```
 
 Only allow this if the underlying profile supports the added information.
 
@@ -1362,12 +1561,17 @@ User approves changes.
 
 Then:
 
+```text
 Create CV version
+```
 
-41. Hallucination protection
+---
+
+# 41. Hallucination protection
 
 Before accepting generated CV content:
 
+```text
 generated claim
       ↓
 claim extraction
@@ -1375,40 +1579,52 @@ claim extraction
 compare against candidate knowledge base
       ↓
 supported?
+```
 
 Possible results:
 
+```text
 SUPPORTED
 REFORMULATION
 UNVERIFIED
 CONTRADICTORY
+```
 
 Unverified claims require explicit user confirmation.
 
-42. Cover letters
+---
+
+# 42. Cover letters
 
 Generation uses:
 
+```text
 candidate profile
 company
 job
 selected CV
 user preferences
+```
 
 Allow styles:
 
+```text
 concise
 standard
 technical
 startup
 formal
+```
 
 Keep historical versions associated with applications.
 
-43. Application pipeline
+---
+
+# 43. Application pipeline
 
 Kanban:
 
+```text
 Saved
   │
   ▼
@@ -1429,15 +1645,19 @@ Final
   ├── Offer
   │
   └── Rejected
+```
 
-Drag-and-drop creates an application_event.
+Drag-and-drop creates an `application_event`.
 
 Do not simply mutate status.
 
-44. Application timeline
+---
+
+# 44. Application timeline
 
 Example:
 
+```text
 SEP 21
 
 09:34
@@ -1462,9 +1682,13 @@ SEP 30
 
 16:42
 Moved to technical interview
+```
 
-45. Contacts / recruiter CRM
+---
 
+# 45. Contacts / recruiter CRM
+
+```sql
 contacts
 
 id
@@ -1483,30 +1707,39 @@ notes
 
 created_at
 updated_at
+```
 
 Relations:
 
+```sql
 application_contacts
 
 application_id
 contact_id
 relationship
+```
 
 Relationships:
 
+```text
 RECRUITER
 HIRING_MANAGER
 INTERVIEWER
 REFERRAL
 EMPLOYEE
 OTHER
+```
 
-46. Email integration
+---
+
+# 46. Email integration
 
 Eventually support:
 
+```text
 Gmail
 Microsoft Outlook
+```
 
 OAuth only.
 
@@ -1514,6 +1747,7 @@ Never request the user's raw email password.
 
 Architecture:
 
+```text
 Email provider
       ↓
 sync adapter
@@ -1525,11 +1759,15 @@ classification
 application matcher
       ↓
 application event
+```
 
-47. Email classification
+---
+
+# 47. Email classification
 
 Possible classes:
 
+```text
 APPLICATION_CONFIRMATION
 RECRUITER_MESSAGE
 INTERVIEW_REQUEST
@@ -1538,26 +1776,34 @@ REJECTION
 OFFER
 FOLLOW_UP
 UNKNOWN
+```
 
 Classification should contain confidence.
 
+```json
 {
     "type": "INTERVIEW_REQUEST",
     "confidence": 0.94
 }
+```
 
 Low confidence:
 
+```text
 do not mutate application automatically
+```
 
 Ask the user instead.
 
-48. Email privacy
+---
+
+# 48. Email privacy
 
 Store the minimum required data.
 
 Where possible:
 
+```text
 provider message ID
 thread ID
 sender
@@ -1565,27 +1811,37 @@ subject
 timestamp
 classification
 short extracted metadata
+```
 
 Avoid indefinitely duplicating complete mailboxes.
 
 Users must be able to disconnect integrations and delete imported data.
 
-49. Calendar integration
+---
+
+# 49. Calendar integration
 
 Support:
 
+```text
 Google Calendar
 Microsoft Calendar
+```
 
 Interview events can create:
 
+```text
 interview record
 application event
 reminder
 calendar event
+```
 
-50. Interviews
+---
 
+# 50. Interviews
+
+```sql
 interviews
 
 id
@@ -1603,9 +1859,11 @@ notes
 
 created_at
 updated_at
+```
 
 Types:
 
+```text
 RECRUITER
 HIRING_MANAGER
 TECHNICAL
@@ -1615,29 +1873,39 @@ PAIR_PROGRAMMING
 TAKE_HOME_REVIEW
 FINAL
 OTHER
+```
 
-51. Interview preparation
+---
+
+# 51. Interview preparation
 
 For each interview:
 
+```text
 job description
 company information
 candidate CV
 interview type
+```
 
 Generate:
 
+```text
 likely topics
 questions
 CV areas likely to be discussed
 technical revision checklist
 questions to ask interviewer
 STAR story suggestions
+```
 
 Again: no invented company facts.
 
-52. Tasks
+---
 
+# 52. Tasks
+
+```sql
 tasks
 
 id
@@ -1653,55 +1921,73 @@ due_at
 completed_at
 
 created_at
+```
 
 Examples:
 
+```text
 Apply
 Follow up
 Prepare interview
 Send thank-you
 Complete take-home
 Check response
+```
 
-53. Follow-up engine
+---
+
+# 53. Follow-up engine
 
 Rules:
 
+```text
 application submitted
       ↓
 no response for N days
       ↓
 suggest follow-up
+```
 
 Do not automatically spam recruiters.
 
 Default behavior:
 
+```text
 remind user
+```
 
 Optional automation should always be deliberate.
 
-54. Notifications
+---
+
+# 54. Notifications
 
 Channels:
 
+```text
 in-app
 email
 push later
+```
 
 Examples:
 
+```text
 Interview tomorrow
 Follow-up due
 Application inactive
 New matching jobs
 CV analysis complete
 Import complete
+```
 
-55. Analytics
+---
+
+# 55. Analytics
 
 Core metrics:
 
+```text
 applications
 responses
 interviews
@@ -1709,9 +1995,11 @@ technical interviews
 offers
 rejections
 withdrawals
+```
 
 Funnels:
 
+```text
 Applied
   ↓
 Response
@@ -1723,44 +2011,60 @@ Interview
 Technical
   ↓
 Offer
+```
 
-56. CV analytics
+---
+
+# 56. CV analytics
 
 Because applications reference exact CV versions:
 
+```text
 CV                 Applied   Responses   Interviews
 
 Systems EN v3        31         10           5
 Backend EN v2        22          4           2
 General EN v5        18          2           1
+```
 
 Present this as historical descriptive data, not proof of causality.
 
 Many variables affect outcomes.
 
-57. Source analytics
+---
 
+# 57. Source analytics
+
+```text
 Source               Applications   Responses
 
 Company website           22           8
 LinkedIn                  31           6
 Indeed                    17           2
 Referral                   5           4
+```
 
-58. Application autopsy
+---
+
+# 58. Application autopsy
 
 One of the key features.
 
 Instead of:
 
+```text
 You were rejected.
+```
 
 Analyze:
 
+```text
 where applications tend to end.
+```
 
 Example:
 
+```text
 100 applications
 
 100 Applied
@@ -1774,25 +2078,33 @@ Example:
 4 final interviews
  ↓
 2 offers
+```
 
 JobOS can surface:
 
+```text
 Your largest observed drop-off is between
 Applied → Response.
+```
 
 It can then suggest relevant tools without claiming a causal explanation.
 
-59. Job discovery
+---
+
+# 59. Job discovery
 
 Sources should implement a common interface.
 
+```ts
 interface JobSource {
     search(query: JobSearchQuery): Promise<JobSourceResult[]>;
     fetch(id: string): Promise<JobSourceResult | null>;
 }
+```
 
 Possible adapters:
 
+```text
 Greenhouse
 Lever
 Ashby
@@ -1801,41 +2113,55 @@ public APIs
 RSS feeds
 manual URLs
 browser extension
+```
 
 Respect each source's terms, robots policies, API restrictions, and applicable law.
 
 Do not build the business around fragile circumvention of anti-bot systems.
 
-60. ATS platform connectors
+---
+
+# 60. ATS platform connectors
 
 A particularly useful source is company ATS career pages.
 
 Adapters:
 
+```text
 GreenhouseAdapter
 LeverAdapter
 AshbyAdapter
 WorkableAdapter
 SmartRecruitersAdapter
+```
 
 Each adapter converts external data into:
 
+```text
 NormalizedJob
+```
 
-61. Browser extension
+---
+
+# 61. Browser extension
 
 Build after the core product.
 
+```text
 apps/extension/
+```
 
 Chrome/Firefox WebExtension.
 
 Button:
 
+```text
 Save to JobOS
+```
 
 Extract:
 
+```text
 title
 company
 description
@@ -1843,15 +2169,21 @@ location
 salary
 URL
 source
+```
 
 Then:
 
+```text
 POST /jobs/import
+```
 
 The user reviews extracted data before saving when extraction confidence is poor.
 
-62. Job ingestion architecture
+---
 
+# 62. Job ingestion architecture
+
+```text
 SOURCE
   ↓
 FETCH
@@ -1869,15 +2201,19 @@ ENRICHMENT
 DATABASE
   ↓
 SEARCH INDEX
+```
 
 Keep raw source data temporarily for debugging where permitted.
 
-63. Background workers
+---
+
+# 63. Background workers
 
 Heavy tasks belong outside HTTP requests.
 
 Queues:
 
+```text
 job-import
 job-normalization
 job-deduplication
@@ -1895,20 +2231,26 @@ email-classification
 notifications
 
 analytics
+```
 
-64. BullMQ
+---
+
+# 64. BullMQ
 
 Redis-backed BullMQ provides:
 
+```text
 retry
 backoff
 delayed jobs
 concurrency
 failure handling
 job inspection
+```
 
 Example:
 
+```text
 API
 
 POST /ats/analyze
@@ -1940,38 +2282,52 @@ database update
         ↓
 
 frontend notification
+```
 
 Never keep an HTTP request open for a 45-second AI operation.
 
-65. Idempotency
+---
+
+# 65. Idempotency
 
 Workers must tolerate retries.
 
 Bad:
 
+```text
 retry email sync
 → create duplicate emails
+```
 
 Good:
 
+```text
 provider_message_id UNIQUE
+```
 
 Same principle for:
 
+```text
 jobs
 notifications
 application events
 billing events
 webhooks
+```
 
-66. API design
+---
+
+# 66. API design
 
 Prefix:
 
+```text
 /api/v1
+```
 
 Examples:
 
+```text
 GET    /api/v1/jobs
 GET    /api/v1/jobs/:id
 
@@ -1996,40 +2352,54 @@ GET    /api/v1/ats/analyses/:id
 POST   /api/v1/matches
 
 GET    /api/v1/analytics/funnel
+```
 
-67. API contracts
+---
+
+# 67. API contracts
 
 Keep shared contracts in:
 
+```text
 packages/contracts
+```
 
 Never manually maintain separate frontend/backend representations.
 
 Use:
 
+```text
 Zod
+```
 
 for runtime validation where appropriate.
 
 Generate OpenAPI documentation from the API.
 
-68. Pagination
+---
+
+# 68. Pagination
 
 Never return 10,000 jobs.
 
 Prefer cursor pagination.
 
+```json
 {
     "data": [],
     "nextCursor": "..."
 }
+```
 
-Avoid deep OFFSET pagination on large tables.
+Avoid deep `OFFSET` pagination on large tables.
 
-69. Filtering
+---
+
+# 69. Filtering
 
 Job filters:
 
+```text
 query
 location
 remote
@@ -2040,51 +2410,66 @@ company
 skills
 source
 published date
+```
 
 Applications:
 
+```text
 status
 company
 date
 CV
 source
 contact
+```
 
-70. Search
+---
+
+# 70. Search
 
 Phase 1:
 
 PostgreSQL:
 
+```text
 tsvector
 GIN indexes
 pg_trgm
+```
 
 Search:
 
+```text
 title
 company
 description
 skills
 location
+```
 
 Only introduce Meilisearch/OpenSearch after measuring a real limitation.
 
-71. Caching
+---
+
+# 71. Caching
 
 Redis is NOT the source of truth.
 
 Cache:
 
+```text
 frequent searches
 company enrichment
 expensive statistics
 rate-limit counters
 temporary OAuth state
+```
 
 Never depend on cached data for permanent application state.
 
-72. Authentication architecture
+---
+
+# 72. Authentication architecture
 
 Use secure HTTP-only cookies.
 
@@ -2092,32 +2477,45 @@ Prefer server-managed sessions for the web application.
 
 Cookie:
 
+```text
 HttpOnly
 Secure
 SameSite
+```
 
-Do not store long-lived authentication tokens in localStorage.
+Do not store long-lived authentication tokens in `localStorage`.
 
-73. Authorization
+---
+
+# 73. Authorization
 
 Authentication answers:
 
+```text
 Who are you?
+```
 
 Authorization answers:
 
+```text
 Can you access this resource?
+```
 
 Every user-owned database query must enforce ownership.
 
 Never rely solely on:
 
+```text
 frontend hiding buttons
+```
 
-74. Security
+---
+
+# 74. Security
 
 Minimum security baseline:
 
+```text
 TLS everywhere
 secure cookies
 CSRF protection where applicable
@@ -2131,28 +2529,37 @@ dependency scanning
 audit logs
 database backups
 encrypted storage
+```
 
-75. File upload security
+---
+
+# 75. File upload security
 
 CV uploads are hostile input.
 
 Validate:
 
+```text
 size
 MIME
 magic bytes
 extension
 parser limits
+```
 
 Do not trust:
 
+```text
 resume.pdf
+```
 
-simply because the filename ends with .pdf.
+simply because the filename ends with `.pdf`.
 
 Set strict parser timeouts and memory limits.
 
-76. SSRF protection
+---
+
+# 76. SSRF protection
 
 Job URL importing introduces SSRF risk.
 
@@ -2160,16 +2567,20 @@ Never allow backend fetches to arbitrary network destinations without validation
 
 Block:
 
+```text
 localhost
 127.0.0.0/8
 private IPv4 ranges
 link-local
 IPv6 local/private ranges
 cloud metadata endpoints
+```
 
 Resolve DNS safely and protect against DNS rebinding.
 
-77. XSS protection
+---
+
+# 77. XSS protection
 
 Job descriptions contain third-party HTML.
 
@@ -2177,47 +2588,64 @@ Never render arbitrary imported HTML directly.
 
 Sanitize or transform it into a safe representation.
 
-78. Rate limiting
+---
+
+# 78. Rate limiting
 
 Different limits by endpoint.
 
 Examples:
 
+```text
 login
 password reset
 AI generation
 URL import
 job search
 document upload
+```
 
 AI endpoints especially need quotas because they cost money.
 
-79. Secrets
+---
+
+# 79. Secrets
 
 Never commit:
 
+```text
 API keys
 OAuth secrets
 database credentials
 JWT/session secrets
 S3 credentials
+```
 
 Development:
 
+```text
 .env
+```
 
 Production:
 
+```text
 secret manager
+```
 
 Commit:
 
+```text
 .env.example
+```
 
-80. Audit log
+---
+
+# 80. Audit log
 
 Important security-sensitive actions:
 
+```sql
 audit_logs
 
 id
@@ -2233,37 +2661,47 @@ ip_hash
 user_agent
 
 created_at
+```
 
 Examples:
 
+```text
 LOGIN
 PASSWORD_CHANGED
 INTEGRATION_CONNECTED
 INTEGRATION_DISCONNECTED
 DATA_EXPORT_REQUESTED
 ACCOUNT_DELETED
+```
 
-81. Privacy
+---
+
+# 81. Privacy
 
 This application processes extremely sensitive professional information.
 
 Users must have:
 
+```text
 data export
 account deletion
 integration disconnection
 document deletion
 AI privacy controls
 email synchronization controls
+```
 
 Document data retention explicitly.
 
-82. GDPR
+---
+
+# 82. GDPR
 
 For European users, design around GDPR requirements from the beginning.
 
 Document:
 
+```text
 data categories
 processing purposes
 retention periods
@@ -2272,13 +2710,17 @@ legal bases
 user rights
 deletion procedures
 export procedures
+```
 
 Avoid collecting data simply because it might become useful later.
 
-83. Billing
+---
+
+# 83. Billing
 
 Possible model:
 
+```text
 FREE
 
 application tracking
@@ -2286,7 +2728,9 @@ limited CVs
 manual jobs
 basic ATS
 basic analytics
+```
 
+```text
 PRO
 
 unlimited CVs
@@ -2296,15 +2740,21 @@ email integration
 advanced analytics
 interview preparation
 automations
+```
 
 Potential price:
 
+```text
 €9–15/month
+```
 
 Consider allowing users to pause subscriptions while not job searching.
 
-84. Subscription data
+---
 
+# 84. Subscription data
+
+```sql
 subscriptions
 
 id
@@ -2322,39 +2772,49 @@ current_period_end
 
 created_at
 updated_at
+```
 
 Never trust billing state sent by the browser.
 
 Billing provider webhooks update subscription state.
 
-85. Feature flags
+---
+
+# 85. Feature flags
 
 Introduce feature flags early.
 
 Examples:
 
+```text
 gmail_sync
 ai_tailoring
 browser_extension
 job_recommendations
 advanced_analytics
+```
 
 This makes progressive rollout substantially easier.
 
-86. Observability
+---
+
+# 86. Observability
 
 Every production request gets:
 
+```text
 request ID
 user ID when appropriate
 route
 status
 duration
+```
 
 Logs are structured JSON.
 
 Example:
 
+```json
 {
     "level": "info",
     "requestId": "...",
@@ -2363,19 +2823,25 @@ Example:
     "status": 201,
     "durationMs": 42
 }
+```
 
 Never log:
 
+```text
 passwords
 OAuth tokens
 full CV content
 complete email bodies
 API keys
+```
 
-87. Metrics
+---
+
+# 87. Metrics
 
 Prometheus metrics:
 
+```text
 http_requests_total
 http_request_duration_seconds
 
@@ -2391,54 +2857,76 @@ job_import_total
 job_import_failures_total
 
 email_sync_total
+```
 
-88. Error monitoring
+---
+
+# 88. Error monitoring
 
 Use Sentry for:
 
+```text
 frontend crashes
 backend exceptions
 worker failures
 performance traces
+```
 
 Attach:
 
+```text
 request ID
 release
 environment
+```
 
 Avoid attaching sensitive candidate content.
 
-89. Health endpoints
+---
 
+# 89. Health endpoints
+
+```text
 GET /health/live
 GET /health/ready
+```
 
-live:
+`live`:
 
+```text
 process alive?
+```
 
-ready:
+`ready`:
 
+```text
 database available?
 redis available?
 required dependencies available?
+```
 
-90. Testing strategy
+---
+
+# 90. Testing strategy
 
 Use several layers.
 
+```text
 Unit
 Integration
 API
 End-to-end
+```
 
 Do not attempt to solve everything with E2E tests.
 
-91. Unit tests
+---
+
+# 91. Unit tests
 
 Test:
 
+```text
 normalizers
 matching rules
 status transitions
@@ -2446,42 +2934,58 @@ salary parsing
 skill normalization
 deduplication
 permissions
+```
 
-92. Integration tests
+---
+
+# 92. Integration tests
 
 Use real ephemeral services when possible.
 
+```text
 PostgreSQL
 Redis
+```
 
 Test:
 
+```text
 repositories
 transactions
 queues
 database constraints
+```
 
-93. API tests
+---
+
+# 93. API tests
 
 Test:
 
+```text
 authentication
 authorization
 validation
 pagination
 rate limiting
 error responses
+```
 
 Especially:
 
+```text
 User A cannot access User B's application.
+```
 
-94. E2E
+---
+
+# 94. E2E
 
 Use Playwright.
 
 Critical flows:
 
+```text
 register
 login
 
@@ -2500,17 +3004,23 @@ run ATS analysis
 view analytics
 
 delete account
+```
 
-95. AI tests
+---
+
+# 95. AI tests
 
 AI functionality requires its own evaluation suite.
 
 Create fixtures:
 
+```text
 tests/ai/
+```
 
 Cases:
 
+```text
 backend engineer
 C++ systems developer
 junior developer
@@ -2519,23 +3029,29 @@ French CV
 English CV
 poorly formatted CV
 missing experience
+```
 
 Validate:
 
+```text
 schema correctness
 skill extraction
 hallucination rate
 claim preservation
 language
+```
 
 Do not rely on "looks good to me."
 
-96. Database migrations
+---
+
+# 96. Database migrations
 
 All schema changes go through migrations.
 
 Never manually change production schemas.
 
+```text
 migration
  ↓
 code
@@ -2545,22 +3061,30 @@ review
 CI
  ↓
 deployment
+```
 
-97. Backups
+---
+
+# 97. Backups
 
 Production PostgreSQL requires:
 
+```text
 automatic backups
 point-in-time recovery
 retention policy
 restore testing
+```
 
 A backup that has never been restored is not proven to work.
 
-98. Docker development
+---
+
+# 98. Docker development
 
 Services:
 
+```yaml
 services:
 
   postgres:
@@ -2574,52 +3098,74 @@ services:
   worker:
 
   web:
+```
 
 Developers should be able to run:
 
+```bash
 docker compose up -d
 pnpm install
 pnpm dev
+```
 
-99. Local development
+---
+
+# 99. Local development
 
 Requirements:
 
+```text
 Node.js
 pnpm
 Docker
 Git
+```
 
 Clone:
 
+```bash
 git clone <repository>
 cd jobos
+```
 
 Install:
 
+```bash
 corepack enable
 pnpm install
+```
 
 Environment:
 
+```bash
 cp .env.example .env
+```
 
 Infrastructure:
 
+```bash
 docker compose up -d postgres redis minio
+```
 
 Migrations:
 
+```bash
 pnpm db:migrate
+```
 
 Development:
 
+```bash
 pnpm dev
+```
 
-100. Environment variables
+---
+
+# 100. Environment variables
 
 Example:
 
+```env
 NODE_ENV=development
 
 DATABASE_URL=
@@ -2646,13 +3192,17 @@ MICROSOFT_CLIENT_ID=
 MICROSOFT_CLIENT_SECRET=
 
 SENTRY_DSN=
+```
 
-Never provide real secrets in .env.example.
+Never provide real secrets in `.env.example`.
 
-101. CI
+---
+
+# 101. CI
 
 GitHub Actions pipeline:
 
+```text
 install
  ↓
 lint
@@ -2666,13 +3216,17 @@ integration tests
 build
  ↓
 security checks
+```
 
 Pull requests cannot merge if required checks fail.
 
-102. CD
+---
+
+# 102. CD
 
 Production:
 
+```text
 merge main
    ↓
 CI
@@ -2686,48 +3240,66 @@ migration
 deployment
    ↓
 health checks
+```
 
 Use immutable image tags:
 
+```text
 jobos-api:<git-sha>
+```
 
 not only:
 
+```text
 latest
+```
 
-103. Environments
+---
+
+# 103. Environments
 
 Maintain:
 
+```text
 development
 staging
 production
+```
 
 Never use production user data for local development.
 
-104. Git workflow
+---
+
+# 104. Git workflow
 
 Branches:
 
+```text
 main
 feature/*
 fix/*
 refactor/*
+```
 
 Example:
 
+```text
 feature/application-pipeline
 feature/ats-parser
 fix/job-deduplication
+```
 
 Use pull requests even if initially working alone.
 
 It forces architecture changes to remain reviewable.
 
-105. Commit convention
+---
+
+# 105. Commit convention
 
 Use Conventional Commits.
 
+```text
 feat:
 fix:
 refactor:
@@ -2736,67 +3308,91 @@ test:
 build:
 ci:
 chore:
+```
 
 Example:
 
+```text
 feat(applications): add pipeline status history
+```
 
-106. Code quality
+---
+
+# 106. Code quality
 
 Required:
 
+```text
 ESLint
 Prettier
 TypeScript strict mode
+```
 
 Avoid:
 
+```ts
 any
+```
 
 unless explicitly justified.
 
 Enable:
 
+```json
 {
     "strict": true,
     "noUncheckedIndexedAccess": true
 }
+```
 
-107. Database constraints
+---
+
+# 107. Database constraints
 
 Never rely exclusively on application validation.
 
 Use:
 
+```text
 NOT NULL
 FOREIGN KEY
 UNIQUE
 CHECK
+```
 
 where appropriate.
 
 Example:
 
+```text
 provider_message_id UNIQUE
+```
 
 is far more reliable than hoping the worker never duplicates an email.
 
-108. Transactions
+---
+
+# 108. Transactions
 
 Operations that must happen together belong in transactions.
 
 Example:
 
+```text
 change application status
 +
 create application event
+```
 
 must be atomic.
 
-109. Events
+---
+
+# 109. Events
 
 Internal domain events:
 
+```text
 application.created
 application.status_changed
 
@@ -2807,109 +3403,145 @@ resume.version_created
 email.classified
 
 job.imported
+```
 
 Initially these can remain inside the monolith.
 
 Later they provide natural service boundaries.
 
-110. Architecture evolution
+---
+
+# 110. Architecture evolution
 
 Start:
 
+```text
 MODULAR MONOLITH
+```
 
 If scale requires:
 
+```text
               API
                │
        ┌───────┼─────────┐
        ▼       ▼         ▼
     Core    Ingestion    AI
              Service   Service
+```
 
 Likely extraction candidates:
 
+```text
 job ingestion
 email synchronization
 AI/document processing
 notifications
+```
 
 Do NOT extract them until there is an operational reason.
 
-111. Performance targets
+---
+
+# 111. Performance targets
 
 Initial objectives:
 
+```text
 normal API p95       < 300 ms
 search p95           < 500 ms
 dashboard p95        < 800 ms
 
 async expensive operations:
 progress displayed
+```
 
 Do not make the UI wait synchronously for AI.
 
-112. Accessibility
+---
+
+# 112. Accessibility
 
 Target:
 
+```text
 WCAG 2.2 AA
+```
 
 Support:
 
+```text
 keyboard navigation
 screen readers
 visible focus
 semantic HTML
 sufficient contrast
 reduced motion
+```
 
 Kanban must be usable without drag-and-drop.
 
-113. Responsive design
+---
+
+# 113. Responsive design
 
 Primary:
 
+```text
 desktop
+```
 
 But core workflows must work on mobile:
 
+```text
 check applications
 save job
 read job
 update status
 view interview
 complete task
+```
 
-114. Design language
+---
+
+# 114. Design language
 
 JobOS should feel like a professional productivity tool rather than a generic AI wrapper.
 
 Think:
 
+```text
 Linear
 Notion
 Raycast
 GitHub
 modern CRM
+```
 
 Characteristics:
 
+```text
 dense but readable
 keyboard friendly
 fast
 minimal animation
 excellent dark mode
 clear hierarchy
+```
 
-115. Command palette
+---
+
+# 115. Command palette
 
 Add:
 
+```text
 Ctrl/Cmd + K
+```
 
 Commands:
 
+```text
 New application
 Add job
 Search jobs
@@ -2918,36 +3550,48 @@ Create CV
 Run ATS scan
 Add interview
 Add contact
+```
 
 Power users should be able to navigate extremely quickly.
 
-116. Global search
+---
+
+# 116. Global search
 
 Search:
 
+```text
 jobs
 applications
 companies
 contacts
 CVs
 notes
+```
 
 Shortcut:
 
+```text
 /
+```
 
 or:
 
+```text
 Cmd/Ctrl + K
+```
 
-117. MVP
+---
+
+# 117. MVP
 
 Do NOT implement everything immediately.
 
-MVP 0 — Foundation
+## MVP 0 — Foundation
 
 Build:
 
+```text
 monorepo
 database
 authentication
@@ -2955,11 +3599,15 @@ UI shell
 CI
 Docker
 logging
+```
 
-118. MVP 1 — Application tracker
+---
+
+# 118. MVP 1 — Application tracker
 
 Build:
 
+```text
 companies
 jobs
 manual job creation
@@ -2969,13 +3617,17 @@ application timeline
 notes
 tasks
 dashboard
+```
 
 At this point JobOS is already usable.
 
-119. MVP 2 — CV system
+---
+
+# 119. MVP 2 — CV system
 
 Build:
 
+```text
 profile
 experiences
 education
@@ -2984,99 +3636,137 @@ CV storage
 CV versions
 PDF upload
 document extraction
+```
 
-120. MVP 3 — ATS
+---
+
+# 120. MVP 3 — ATS
 
 Build:
 
+```text
 CV parsing
 section detection
 keyword extraction
 format checks
 ATS findings
 job comparison
+```
 
 Avoid AI initially where deterministic analysis works.
 
-121. MVP 4 — AI matching
+---
+
+# 121. MVP 4 — AI matching
 
 Build:
 
+```text
 skill extraction
 job requirement extraction
 CV matching
 semantic analysis
 CV improvement suggestions
+```
 
-122. MVP 5 — CV tailoring
+---
+
+# 122. MVP 5 — CV tailoring
 
 Build:
 
+```text
 tailoring suggestions
 diff interface
 claim verification
 approval workflow
 new CV version
 PDF generation
+```
 
-123. MVP 6 — Job ingestion
+---
+
+# 123. MVP 6 — Job ingestion
 
 Start with:
 
+```text
 manual URL
 browser extension
 a few ATS sources
+```
 
 Then:
 
+```text
 search
 filters
 deduplication
 saved jobs
+```
 
-124. MVP 7 — Email
+---
+
+# 124. MVP 7 — Email
 
 Build:
 
+```text
 Gmail OAuth
 email matching
 classification
 application events
+```
 
 Then Outlook.
 
-125. MVP 8 — Interviews
+---
+
+# 125. MVP 8 — Interviews
 
 Build:
 
+```text
 calendar
 interviews
 preparation
 reminders
+```
 
-126. MVP 9 — Analytics
+---
+
+# 126. MVP 9 — Analytics
 
 Build:
 
+```text
 funnel
 CV performance
 source performance
 response time
 stage drop-off
 application autopsy
+```
 
-127. MVP 10 — Monetization
+---
+
+# 127. MVP 10 — Monetization
 
 Only after the product provides repeatable value:
 
+```text
 billing
 plans
 usage limits
 AI quotas
 subscription management
+```
 
-128. Recommended implementation order
+---
 
+# 128. Recommended implementation order
+
+```text
 01 repository
 02 monorepo
 03 Docker environment
@@ -3118,11 +3808,15 @@ subscription management
 
 31 observability improvements
 32 scaling
+```
 
-129. First database indexes
+---
+
+# 129. First database indexes
 
 Important candidates:
 
+```text
 applications(user_id, status)
 applications(user_id, created_at)
 
@@ -3136,17 +3830,21 @@ application_events(application_id, occurred_at)
 resume_versions(resume_id, version)
 
 contacts(user_id, company_id)
+```
 
 Search-specific GIN indexes should be added to normalized searchable job fields.
 
-Use EXPLAIN ANALYZE.
+Use `EXPLAIN ANALYZE`.
 
 Do not blindly create indexes.
 
-130. Important invariants
+---
+
+# 130. Important invariants
 
 These rules should eventually have automated tests.
 
+```text
 An application belongs to exactly one user.
 
 A user cannot access another user's application.
@@ -3168,11 +3866,15 @@ Jobs may have multiple external sources.
 Deleting an integration revokes its credentials.
 
 Webhook processing is idempotent.
+```
 
-131. What NOT to build initially
+---
+
+# 131. What NOT to build initially
 
 Do not start with:
 
+```text
 Kubernetes
 Kafka
 microservices
@@ -3183,13 +3885,17 @@ native mobile application
 20 job scrapers
 your own LLM
 complex recommendation ML
+```
 
 None of these determine whether people want JobOS.
 
-132. Initial infrastructure
+---
+
+# 132. Initial infrastructure
 
 A perfectly credible early production architecture:
 
+```text
                     INTERNET
                        │
                        ▼
@@ -3209,13 +3915,17 @@ A perfectly credible early production architecture:
                               ┌────────────┼───────────┐
                               ▼            ▼           ▼
                               S3          AI APIs    External APIs
+```
 
 This can support a substantial number of users before architectural changes become necessary.
 
-133. Future architecture
+---
+
+# 133. Future architecture
 
 Only after proven demand:
 
+```text
                         API Gateway
                             │
        ┌────────────────────┼────────────────────┐
@@ -3228,25 +3938,33 @@ Only after proven demand:
           ┌─────────────────┼─────────────────┐
           ▼                 ▼                 ▼
        AI Workers       Email Workers    Analytics Workers
+```
 
 Possible event infrastructure:
 
+```text
 Kafka
 NATS
 RabbitMQ
+```
 
 But only introduce it when BullMQ + PostgreSQL no longer satisfy actual requirements.
 
-134. Product moat
+---
+
+# 134. Product moat
 
 The moat is NOT:
 
+```text
 "We use AI."
+```
 
 Anyone can call an LLM API.
 
 The valuable dataset is the user's structured job-search history:
 
+```text
 profile
 +
 skills
@@ -3264,13 +3982,17 @@ communications
 interviews
 +
 outcomes
+```
 
 This creates increasingly useful contextual intelligence.
 
-135. Long-term intelligent layer
+---
+
+# 135. Long-term intelligent layer
 
 Eventually JobOS understands:
 
+```text
 what jobs the user targets
 what CVs they use
 what skills those jobs request
@@ -3278,100 +4000,126 @@ where applications progress
 where applications stop
 which companies responded
 what interview stages occur
+```
 
 This enables useful observations such as:
 
+```text
 "PostgreSQL appears in 37% of your saved backend roles
 but isn't currently mentioned in your backend CV."
+```
 
 or:
 
+```text
 "12 applications have had no activity for more than
 10 days."
+```
 
 These are concrete observations derived from user data rather than generic AI advice.
 
-136. Potential future features
+---
 
-Career profile
+# 136. Potential future features
+
+## Career profile
 
 Persistent structured career knowledge base.
 
-Skill gap analysis
+## Skill gap analysis
 
 Compare:
 
+```text
 desired jobs
 vs
 current profile
+```
 
-Company intelligence
+## Company intelligence
 
 Track:
 
+```text
 applications
 contacts
 previous interviews
 notes
 job history
+```
 
-Duplicate detection
+## Duplicate detection
 
 Warn:
 
+```text
 You applied to this company 4 months ago.
+```
 
-Salary tracking
+## Salary tracking
 
 Store:
 
+```text
 listed salary
 expected salary
 offer
+```
 
-Offer comparison
+## Offer comparison
 
 Compare offers across:
 
+```text
 salary
 bonus
 equity
 remote policy
 location
 benefits
+```
 
 without pretending subjective preferences have a universal score.
 
-Networking CRM
+## Networking CRM
 
 Track:
 
+```text
 recruiters
 employees
 referrals
 conversations
 follow-ups
+```
 
-Job alerts
+## Job alerts
 
 Saved searches:
 
+```text
 C++ AND Linux
 France OR Remote
 Junior/Mid
+```
 
-Data export
+## Data export
 
+```text
 JSON
 CSV
 PDF
+```
 
 No vendor lock-in.
 
-137. Browser extension architecture
+---
+
+# 137. Browser extension architecture
 
 Eventually:
 
+```text
 jobos-extension/
 │
 ├── manifest.json
@@ -3379,30 +4127,40 @@ jobos-extension/
 ├── content/
 ├── popup/
 └── extractors/
+```
 
 Generic extraction:
 
+```text
 JSON-LD JobPosting
+```
 
 first.
 
 Then domain-specific extractors.
 
+```text
 Greenhouse
 Lever
 Ashby
 etc.
+```
 
 Fallback:
 
+```text
 DOM + user confirmation
+```
 
-138. Import confidence
+---
+
+# 138. Import confidence
 
 Imported information should carry confidence.
 
 Example:
 
+```json
 {
     "title": {
         "value": "Software Engineer",
@@ -3413,25 +4171,32 @@ Example:
         "confidence": 0
     }
 }
+```
 
 Low-confidence extraction should be reviewable.
 
-139. Job expiration
+---
+
+# 139. Job expiration
 
 Jobs disappear.
 
 Track:
 
+```text
 first_seen_at
 last_seen_at
 expires_at
 source_status
+```
 
 Never delete a job simply because the original listing disappears.
 
 Applications need historical job information.
 
-140. Job snapshots
+---
+
+# 140. Job snapshots
 
 When an application is submitted, create a snapshot.
 
@@ -3439,6 +4204,7 @@ Why?
 
 The employer may modify or remove the posting later.
 
+```sql
 application_job_snapshots
 
 application_id
@@ -3450,24 +4216,32 @@ salary
 location
 
 captured_at
+```
 
 This preserves exactly what the candidate applied to.
 
-141. Document snapshots
+---
+
+# 141. Document snapshots
 
 Similarly:
 
+```text
 application
  ├── job snapshot
  ├── CV version
  └── cover letter version
+```
 
 Years later, the user can reconstruct the complete application.
 
-142. Application creation workflow
+---
+
+# 142. Application creation workflow
 
 Ideal UX:
 
+```text
 User opens job
        ↓
 Apply
@@ -3489,13 +4263,17 @@ User applies externally
 Mark submitted
        ↓
 Application timeline begins
+```
 
 Later integrations can automate parts of this, but JobOS should avoid uncontrolled automated mass application.
 
-143. Repository documentation
+---
+
+# 143. Repository documentation
 
 Maintain:
 
+```text
 docs/
 ├── architecture.md
 ├── database.md
@@ -3507,40 +4285,54 @@ docs/
 ├── development.md
 ├── deployment.md
 └── adr/
+```
 
-144. Architecture Decision Records
+---
+
+# 144. Architecture Decision Records
 
 Important decisions belong in:
 
+```text
 docs/adr/
+```
 
 Example:
 
+```text
 0001-modular-monolith.md
 0002-postgresql.md
 0003-bullmq.md
 0004-structured-resume-format.md
 0005-ai-provider-abstraction.md
+```
 
 Format:
 
+```text
 Context
 Decision
 Alternatives
 Consequences
+```
 
 This prevents future contributors from asking:
 
-Why the hell did we do this?
+> Why the hell did we do this?
 
-145. Definition of Done
+---
+
+# 145. Definition of Done
 
 A feature is not finished when:
 
+```text
 "it works on my machine"
+```
 
 It is finished when:
 
+```text
 implementation complete
 types correct
 validation implemented
@@ -3554,11 +4346,15 @@ accessible
 logging added
 documentation updated
 migration included if necessary
+```
 
-146. First milestone
+---
+
+# 146. First milestone
 
 The first genuinely useful release should contain:
 
+```text
 authentication
 
 profile
@@ -3585,33 +4381,47 @@ CVs
 tasks
 
 basic dashboard
+```
 
 Call it:
 
+```text
 v0.1.0
+```
 
 Do not wait for AI.
 
-147. Second milestone
+---
 
+# 147. Second milestone
+
+```text
 v0.2.0
 
 CV parsing
 CV versions
 ATS scanner
 job/CV matching
+```
 
-148. Third milestone
+---
 
+# 148. Third milestone
+
+```text
 v0.3.0
 
 AI provider
 CV tailoring
 cover letters
 diff/approval system
+```
 
-149. Fourth milestone
+---
 
+# 149. Fourth milestone
+
+```text
 v0.4.0
 
 job import
@@ -3619,9 +4429,13 @@ ATS job sources
 browser extension
 search
 deduplication
+```
 
-150. Fifth milestone
+---
 
+# 150. Fifth milestone
+
+```text
 v0.5.0
 
 Gmail
@@ -3629,18 +4443,26 @@ email classification
 contacts
 interviews
 calendar
+```
 
-151. Sixth milestone
+---
 
+# 151. Sixth milestone
+
+```text
 v0.6.0
 
 advanced analytics
 application autopsy
 CV statistics
 source statistics
+```
 
-152. Public beta
+---
 
+# 152. Public beta
+
+```text
 v0.9.0
 
 security review
@@ -3652,15 +4474,21 @@ rate limiting
 monitoring
 backup verification
 onboarding
+```
 
 Then:
 
+```text
 v1.0.0
+```
 
-153. Development philosophy
+---
+
+# 153. Development philosophy
 
 For every feature ask:
 
+```text
 Does this reduce the amount of manual work required to find a job?
 
 Does this improve information the user can act on?
@@ -3674,13 +4502,17 @@ Can the user correct it?
 Can the user export it?
 
 Can the user delete it?
+```
 
 If the answer to most of these is no, reconsider the feature.
 
-154. Final architecture philosophy
+---
+
+# 154. Final architecture philosophy
 
 Start simple:
 
+```text
 Next.js
     +
 NestJS/Fastify
@@ -3690,6 +4522,7 @@ PostgreSQL
 Redis/BullMQ
     +
 S3
+```
 
 Keep boundaries strong.
 
@@ -3711,22 +4544,25 @@ Measure before scaling.
 
 Do not build distributed infrastructure before the product needs distributed infrastructure.
 
-155. The final product
+---
+
+# 155. The final product
 
 The end goal is not:
 
-another job board.
+> another job board.
 
 Nor:
 
-another ATS scanner.
+> another ATS scanner.
 
 Nor:
 
-another AI CV generator.
+> another AI CV generator.
 
 The end goal is:
 
+```text
                          ┌─────────────┐
                          │   PROFILE   │
                          └──────┬──────┘
@@ -3762,45 +4598,61 @@ JOB SOURCES ───────────────► JOB DISCOVERY
                                 ▼
                       BETTER INFORMATION
                        FOR THE NEXT SEARCH
+```
 
-One system containing the complete history and context of a person's job search.
+**One system containing the complete history and context of a person's job search.**
 
 That is JobOS.
 
-License
+---
+
+# License
 
 Choose before public release.
 
 For a proprietary SaaS:
 
+```text
 All Rights Reserved
+```
 
 Keep the repository private initially if the product itself is intended to become commercial.
 
-Status
+---
 
+# Status
+
+```text
 🧪 Pre-alpha
+```
 
 Current objective:
 
+```text
 v0.1.0 — Application Tracking Foundation
+```
 
 First implementation target:
 
+```text
 pnpm install
 pnpm dev
+```
 
 and have a fully functional local environment containing:
 
+```text
 web
 api
 worker
 postgres
 redis
 object storage
+```
 
 From there, build vertically:
 
+```text
 Job
  ↓
 Application
@@ -3814,8 +4666,11 @@ Matching
 Automation
  ↓
 Analytics
+```
 
 One production-quality slice at a time.
 
-JobOS — Your job search, as a system.~
-# JobOS
+---
+
+**JobOS — Your job search, as a system.**
+
