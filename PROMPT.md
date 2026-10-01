@@ -438,6 +438,8 @@ Implement v0.6.3 document performance analytics:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `c80b626 Add document performance analytics`
+
 ### v0.7.0 — Notifications and Reminders
 
 Implement v0.7.0 notifications and reminders:
