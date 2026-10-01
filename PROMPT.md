@@ -425,6 +425,8 @@ Implement v0.6.2 interview and task analytics:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `ade0441 Add interview and task analytics`
+
 ### v0.6.3 — Document Performance Analytics
 
 Implement v0.6.3 document performance analytics:
