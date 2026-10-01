@@ -144,6 +144,18 @@ export interface MatchSummary {
   createdAt: string;
 }
 
+export interface AuditEventSummary {
+  id: string;
+  eventType: string;
+  relatedEntity: string;
+  relatedEntityId: string;
+  applicationId: string | null;
+  title: string;
+  description: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface JobDetail extends DashboardJob {
   matches: MatchSummary[];
   contacts: ContactSummary[];
@@ -431,20 +443,22 @@ async function getJson<T>(path: string): Promise<T> {
 
 export async function getDashboardData() {
   try {
-    const [jobs, applications, resumes, matches] = await Promise.all([
+    const [jobs, applications, resumes, matches, activity] = await Promise.all([
       getJson<DashboardJob[]>("/jobs"),
       getJson<DashboardApplication[]>("/applications"),
       getJson<DashboardResume[]>("/resumes"),
-      getJson<MatchSummary[]>("/matches")
+      getJson<MatchSummary[]>("/matches"),
+      getJson<AuditEventSummary[]>("/audit/events")
     ]);
 
-    return { jobs, applications, resumes, matches, apiAvailable: true };
+    return { jobs, applications, resumes, matches, activity, apiAvailable: true };
   } catch {
     return {
       jobs: [] as DashboardJob[],
       applications: [] as DashboardApplication[],
       resumes: [] as DashboardResume[],
       matches: [] as MatchSummary[],
+      activity: [] as AuditEventSummary[],
       apiAvailable: false
     };
   }
@@ -482,6 +496,10 @@ export async function getApplicationTasks(id: string) {
 
 export async function getApplicationInterviews(id: string) {
   return getJson<ApplicationInterview[]>(`/applications/${id}/interviews`);
+}
+
+export async function getAuditEvents(query = "") {
+  return getJson<AuditEventSummary[]>(`/audit/events${query}`);
 }
 
 export async function getInterviews() {

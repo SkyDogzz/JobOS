@@ -559,6 +559,14 @@ https://example.com/profile`;
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
   if (!Array.isArray(detail.analyses)) throw new Error("Application detail did not include ATS analyses.");
+  const auditEvents = await request("/audit/events");
+  if (!auditEvents.some((item) => item.applicationId === application.id && item.eventType === "created")) {
+    throw new Error("Audit feed did not include application creation.");
+  }
+  const filteredAuditEvents = await request(`/audit/events?applicationId=${application.id}&relatedEntity=application`);
+  if (!filteredAuditEvents.every((item) => item.applicationId === application.id && item.relatedEntity === "application")) {
+    throw new Error("Audit feed filters did not constrain application events.");
+  }
 
   const updated = await request(`/applications/${application.id}/stage`, {
     method: "PATCH",

@@ -3,8 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, ChartNoAxesCombined, CheckCircle2, FileText, Loader2, Plus, Search, XCircle } from "lucide-react";
-import type { DashboardApplication, DashboardData, DashboardJob, DashboardResume } from "../lib/api";
+import { BriefcaseBusiness, ChartNoAxesCombined, CheckCircle2, FileText, History, Loader2, Plus, Search, XCircle } from "lucide-react";
+import type { AuditEventSummary, DashboardApplication, DashboardData, DashboardJob, DashboardResume } from "../lib/api";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -34,6 +34,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   const [applications, setApplications] = useState(initialData.applications);
   const [resumes, setResumes] = useState(initialData.resumes);
   const matches = initialData.matches ?? [];
+  const activity = initialData.activity ?? [];
   const [apiAvailable, setApiAvailable] = useState(initialData.apiAvailable);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle", message: "" });
   const [pendingForm, setPendingForm] = useState<"job" | "resume" | "application" | null>(null);
@@ -259,9 +260,31 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
           <Pipeline applications={applications} onStageChange={updateApplicationStage} />
           <Funnel jobs={jobs} applications={applications} resumes={resumes} />
+          <ActivityFeed activity={activity} />
         </div>
       </section>
     </main>
+  );
+}
+
+function ActivityFeed({ activity }: { activity: AuditEventSummary[] }) {
+  return (
+    <section className="rounded border border-ink/10 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <History size={18} />
+        <h2 className="font-semibold">Activity Feed</h2>
+      </div>
+      {activity.length === 0 ? <EmptyState text="No activity yet." /> : null}
+      <div className="divide-y divide-ink/10">
+        {activity.slice(0, 6).map((event) => (
+          <article className="py-3 text-sm" key={`${event.relatedEntity}:${event.id}`}>
+            <p className="font-medium">{event.title}</p>
+            <p className="mt-1 text-ink/55">{event.description}</p>
+            <p className="mt-1 text-xs uppercase text-ink/40">{event.eventType.replaceAll("_", " ")} · {new Date(event.createdAt).toLocaleString()}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

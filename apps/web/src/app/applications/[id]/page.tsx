@@ -1,18 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BriefcaseBusiness, FileText, History, Users } from "lucide-react";
-import { getApplicationDetail, getApplicationInterviews, getApplicationNotes, getApplicationTasks } from "../../../lib/api";
+import { getApplicationDetail, getApplicationInterviews, getApplicationNotes, getApplicationTasks, getAuditEvents } from "../../../lib/api";
 import { InterviewsPanel } from "./interviews-panel";
 import { NotesTasksPanel } from "./notes-tasks-panel";
 import { StageControls } from "./stage-controls";
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [application, notes, tasks, interviews] = await Promise.all([
+  const [application, notes, tasks, interviews, activity] = await Promise.all([
     getApplicationDetail(id).catch(() => null),
     getApplicationNotes(id).catch(() => []),
     getApplicationTasks(id).catch(() => []),
-    getApplicationInterviews(id).catch(() => [])
+    getApplicationInterviews(id).catch(() => []),
+    getAuditEvents(`?applicationId=${id}`).catch(() => [])
   ]);
 
   if (!application) {
@@ -91,12 +92,13 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             <History size={18} />
             <h2 className="font-semibold">Timeline</h2>
           </div>
-          {application.events.length === 0 ? <p className="text-sm text-ink/55">No events yet.</p> : null}
+          {activity.length === 0 ? <p className="text-sm text-ink/55">No events yet.</p> : null}
           <div className="space-y-3">
-            {application.events.map((event) => (
+            {activity.map((event) => (
               <article className="rounded border border-ink/10 bg-paper p-3 text-sm" key={event.id}>
-                <p className="font-medium">{event.kind}</p>
-                <p className="mt-1 text-ink/55">{new Date(event.createdAt).toLocaleString()}</p>
+                <p className="font-medium">{event.title}</p>
+                <p className="mt-1 text-ink/55">{event.description}</p>
+                <p className="mt-1 text-xs uppercase text-ink/40">{event.eventType.replaceAll("_", " ")} · {new Date(event.createdAt).toLocaleString()}</p>
               </article>
             ))}
           </div>
