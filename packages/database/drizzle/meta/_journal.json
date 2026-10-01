@@ -57,6 +57,13 @@
       "when": 1790847000000,
       "tag": "0007_contacts_recruiters",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790850000000,
+      "tag": "0008_interviews",
+      "breakpoints": true
     }
   ]
 }

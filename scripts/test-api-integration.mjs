@@ -266,6 +266,50 @@ async function main() {
     throw new Error("Application detail did not include linked contact.");
   }
 
+  const interviewStartsAt = new Date(Date.now() + 172800000).toISOString();
+  const interview = await request("/interviews", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      applicationId: application.id,
+      startsAt: interviewStartsAt,
+      format: "video",
+      location: "https://meet.example.com/integration",
+      participants: ["Integration Recruiter", "Hiring Manager"],
+      preparationNotes: "Review integration flow and saved job context."
+    })
+  });
+  if (interview.applicationId !== application.id || interview.participants.length !== 2) throw new Error("Interview creation failed.");
+  const applicationInterviews = await request(`/applications/${application.id}/interviews`);
+  if (!applicationInterviews.some((item) => item.id === interview.id)) throw new Error("Application interview list did not include the scheduled interview.");
+  const allInterviews = await request("/interviews");
+  if (!allInterviews.some((item) => item.id === interview.id)) throw new Error("Interview list did not include the scheduled interview.");
+  const generatedTasks = await request(`/applications/${application.id}/tasks`);
+  if (!generatedTasks.some((item) => item.title.includes("Prepare for video interview"))) {
+    throw new Error("Interview scheduling did not generate a preparation task.");
+  }
+  const updatedInterview = await request(`/interviews/${interview.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      applicationId: application.id,
+      startsAt: interviewStartsAt,
+      format: "video",
+      location: "https://meet.example.com/integration",
+      participants: ["Integration Recruiter", "Hiring Manager"],
+      preparationNotes: "Review integration flow and saved job context.",
+      outcome: "Moved to final round"
+    })
+  });
+  if (updatedInterview.outcome !== "Moved to final round") throw new Error("Interview update did not persist outcome.");
+  const tempInterview = await request("/interviews", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ applicationId: application.id, startsAt: new Date(Date.now() + 259200000).toISOString(), format: "phone" })
+  });
+  const deletedInterview = await fetch(`${apiUrl}/interviews/${tempInterview.id}`, { method: "DELETE" });
+  if (!deletedInterview.ok) throw new Error("Interview delete failed.");
+
   const resumeDetail = await request(`/resumes/${resume.id}`);
   if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
   if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");

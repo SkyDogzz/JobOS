@@ -220,6 +220,18 @@ export const createTaskSchema = z.object({
   dueAt: z.string().datetime().optional()
 });
 
+export const upsertInterviewSchema = z.object({
+  applicationId: z.string().uuid(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime().optional(),
+  format: z.string().optional(),
+  location: z.string().optional(),
+  participants: z.array(z.string().min(1)).default([]),
+  preparationNotes: z.string().optional(),
+  outcome: z.string().optional(),
+  notes: z.string().optional()
+});
+
 export const upsertCandidateProfileSchema = z.object({
   headline: z.string().optional(),
   summary: z.string().optional(),
@@ -268,6 +280,7 @@ export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSch
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpsertInterviewInput = z.infer<typeof upsertInterviewSchema>;
 export type UpsertCandidateProfileInput = z.infer<typeof upsertCandidateProfileSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

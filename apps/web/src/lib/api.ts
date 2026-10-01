@@ -55,6 +55,23 @@ export interface ApplicationTask {
   createdAt: string;
 }
 
+export interface ApplicationInterview {
+  id: string;
+  applicationId: string;
+  startsAt: string;
+  endsAt: string | null;
+  format: string | null;
+  location: string | null;
+  participants: string[];
+  preparationNotes: string | null;
+  outcome: string | null;
+  notes: string | null;
+  jobTitle: string;
+  companyName: string | null;
+  stage: string;
+  createdAt: string;
+}
+
 export interface CandidateProfile {
   id: string;
   headline: string | null;
@@ -289,6 +306,18 @@ export async function getApplicationNotes(id: string) {
 
 export async function getApplicationTasks(id: string) {
   return getJson<ApplicationTask[]>(`/applications/${id}/tasks`);
+}
+
+export async function getApplicationInterviews(id: string) {
+  return getJson<ApplicationInterview[]>(`/applications/${id}/interviews`);
+}
+
+export async function getInterviews() {
+  return getJson<ApplicationInterview[]>("/interviews");
+}
+
+export async function getApplications() {
+  return getJson<DashboardApplication[]>("/applications");
 }
 
 export async function getCandidateProfile() {

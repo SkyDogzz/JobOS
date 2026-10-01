@@ -221,6 +221,9 @@ export const interviews = pgTable("interviews", {
   endsAt: timestamp("ends_at", { withTimezone: true }),
   format: text("format"),
   location: text("location"),
+  participants: jsonb("participants").$type<string[]>().notNull().default([]),
+  preparationNotes: text("preparation_notes"),
+  outcome: text("outcome"),
   notes: text("notes"),
   ...timestamps
 });

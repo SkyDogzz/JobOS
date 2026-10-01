@@ -205,7 +205,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink/45">{group}</p>
               <div className="grid gap-1">
                 {items.map((item) => (
-                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href={item === "Saved Jobs" ? "/jobs" : item === "CVs" ? "/resumes" : item === "Contacts" ? "/sources" : item === "Tools" ? "/documents" : "#"} key={item}>
+                  <a className="rounded px-3 py-2 text-sm font-medium text-ink/75 hover:bg-paper" href={navHref(item)} key={item}>
                     {item}
                   </a>
                 ))}
@@ -280,6 +280,19 @@ function MatchSuggestions({ matches }: { matches: Array<{ id: string; jobId?: st
       </div>
     </section>
   );
+}
+
+function navHref(item: string) {
+  const routes: Record<string, string> = {
+    "Saved Jobs": "/jobs",
+    Applications: "/",
+    Interviews: "/interviews",
+    CVs: "/resumes",
+    Documents: "/documents",
+    Companies: "/sources",
+    Contacts: "/sources"
+  };
+  return routes[item] ?? "#";
 }
 
 function SavedJobsList({ jobs }: { jobs: DashboardJob[] }) {

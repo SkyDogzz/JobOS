@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BriefcaseBusiness, FileText, History, Users } from "lucide-react";
-import { getApplicationDetail, getApplicationNotes, getApplicationTasks } from "../../../lib/api";
+import { getApplicationDetail, getApplicationInterviews, getApplicationNotes, getApplicationTasks } from "../../../lib/api";
+import { InterviewsPanel } from "./interviews-panel";
 import { NotesTasksPanel } from "./notes-tasks-panel";
 import { StageControls } from "./stage-controls";
 
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [application, notes, tasks] = await Promise.all([
+  const [application, notes, tasks, interviews] = await Promise.all([
     getApplicationDetail(id).catch(() => null),
     getApplicationNotes(id).catch(() => []),
-    getApplicationTasks(id).catch(() => [])
+    getApplicationTasks(id).catch(() => []),
+    getApplicationInterviews(id).catch(() => [])
   ]);
 
   if (!application) {
@@ -82,6 +84,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
         </div>
 
         <NotesTasksPanel applicationId={application.id} initialNotes={notes} initialTasks={tasks} />
+        <InterviewsPanel applicationId={application.id} initialInterviews={interviews} />
 
         <section className="mt-4 rounded border border-ink/10 bg-white p-5">
           <div className="mb-4 flex items-center gap-2">
