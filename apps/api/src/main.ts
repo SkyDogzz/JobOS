@@ -17,7 +17,11 @@ async function bootstrap() {
     .setDescription("Job search operating system API")
     .setVersion("0.1.0")
     .build();
-  SwaggerModule.setup("openapi", app, SwaggerModule.createDocument(app, openApiConfig));
+  try {
+    SwaggerModule.setup("openapi", app, SwaggerModule.createDocument(app, openApiConfig));
+  } catch (error) {
+    console.warn("OpenAPI setup skipped:", error instanceof Error ? error.message : error);
+  }
 
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port, "0.0.0.0");

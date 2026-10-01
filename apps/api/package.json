@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
+    "dev": "pnpm build && pnpm start",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/apps/api/src/main.js",
     "test": "pnpm --dir ../.. test:api",
