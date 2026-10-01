@@ -19,4 +19,9 @@ export class AnalyticsController {
   operations(@Query() query: Record<string, string | undefined>) {
     return this.analytics.operations(query);
   }
+
+  @Get("documents")
+  documents(@Query() query: Record<string, string | undefined>) {
+    return this.analytics.documents(query);
+  }
 }

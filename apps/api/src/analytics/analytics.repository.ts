@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
-import { applications, companies, interviews, jobs, jobSources, tasks } from "@jobos/database";
+import { aiArtifacts, applications, companies, documents, interviews, jobs, jobSources, resumes, resumeVersions, tasks } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -138,6 +138,59 @@ export class AnalyticsRepository {
     };
   }
 
+  async documents(filters: AnalyticsFilters = {}) {
+    const applicationRows = (await this.applicationRows()).filter((row) => matchesFilters(row, filters));
+    const applicationIds = new Set(applicationRows.map((row) => row.id));
+    const applicationById = new Map(applicationRows.map((row) => [row.id, row]));
+    const resumeUsage = new Map<string, { resumeVersionId: string; resumeTitle: string; versionNumber: number; applicationCount: number; activeCount: number; successfulCount: number; stageCounts: Record<string, number> }>();
+    const resumeRows = await this.resumeUsageRows();
+
+    for (const row of resumeRows) {
+      if (!applicationIds.has(row.applicationId)) continue;
+      const existing = resumeUsage.get(row.resumeVersionId) ?? {
+        resumeVersionId: row.resumeVersionId,
+        resumeTitle: `${row.resumeName} v${row.versionNumber}: ${row.versionTitle}`,
+        versionNumber: row.versionNumber,
+        applicationCount: 0,
+        activeCount: 0,
+        successfulCount: 0,
+        stageCounts: {}
+      };
+      existing.applicationCount += 1;
+      existing.activeCount += terminalStages.has(row.stage) ? 0 : 1;
+      existing.successfulCount += row.stage === "offer" || row.stage === "accepted" ? 1 : 0;
+      existing.stageCounts[row.stage] = (existing.stageCounts[row.stage] ?? 0) + 1;
+      resumeUsage.set(row.resumeVersionId, existing);
+    }
+
+    const documentRows = (await this.documentRows()).filter((row) => row.applicationId && applicationIds.has(row.applicationId));
+    const documentGroups = new Map<string, typeof documentRows>();
+    for (const row of documentRows) {
+      documentGroups.set(row.kind, [...(documentGroups.get(row.kind) ?? []), row]);
+    }
+
+    const artifacts = await this.artifactRows();
+
+    return {
+      filters,
+      resumeVersions: [...resumeUsage.values()].sort((a, b) => b.successfulCount - a.successfulCount || b.applicationCount - a.applicationCount || a.resumeTitle.localeCompare(b.resumeTitle)),
+      documents: [...documentGroups.entries()].map(([kind, items]) => {
+        const successful = items.filter((row) => {
+          const application = row.applicationId ? applicationById.get(row.applicationId) : null;
+          return application?.stage === "offer" || application?.stage === "accepted";
+        }).length;
+        return {
+          kind,
+          documentCount: items.length,
+          linkedApplicationCount: new Set(items.map((row) => row.applicationId).filter(Boolean)).size,
+          successfulApplicationCount: successful,
+          successRate: rate(successful, items.length)
+        };
+      }).sort((a, b) => b.documentCount - a.documentCount || a.kind.localeCompare(b.kind)),
+      artifacts: summarizeArtifacts(artifacts)
+    };
+  }
+
   private applicationRows() {
     return this.db
       .select({
@@ -181,6 +234,42 @@ export class AnalyticsRepository {
       })
       .from(tasks);
   }
+
+  private resumeUsageRows() {
+    return this.db
+      .select({
+        applicationId: applications.id,
+        stage: applications.stage,
+        resumeVersionId: resumeVersions.id,
+        versionNumber: resumeVersions.versionNumber,
+        versionTitle: resumeVersions.title,
+        resumeName: resumes.name
+      })
+      .from(applications)
+      .innerJoin(resumeVersions, eq(applications.resumeVersionId, resumeVersions.id))
+      .innerJoin(resumes, eq(resumeVersions.resumeId, resumes.id));
+  }
+
+  private documentRows() {
+    return this.db
+      .select({
+        id: documents.id,
+        applicationId: documents.applicationId,
+        kind: documents.kind
+      })
+      .from(documents);
+  }
+
+  private artifactRows() {
+    return this.db
+      .select({
+        id: aiArtifacts.id,
+        purpose: aiArtifacts.purpose,
+        provider: aiArtifacts.provider,
+        model: aiArtifacts.model
+      })
+      .from(aiArtifacts);
+  }
 }
 
 type ApplicationRow = Awaited<ReturnType<AnalyticsRepository["applicationRows"]>>[number];
@@ -219,4 +308,15 @@ function summarizeOutcomes(rows: Array<{ outcome: string | null }>) {
   return [...counts.entries()]
     .map(([outcome, count]) => ({ outcome, count }))
     .sort((a, b) => b.count - a.count || a.outcome.localeCompare(b.outcome));
+}
+
+function summarizeArtifacts(rows: Array<{ purpose: string; provider: string; model: string }>) {
+  const groups = new Map<string, { purpose: string; provider: string; model: string; count: number }>();
+  for (const row of rows) {
+    const key = `${row.purpose}:${row.provider}:${row.model}`;
+    const existing = groups.get(key) ?? { purpose: row.purpose, provider: row.provider, model: row.model, count: 0 };
+    existing.count += 1;
+    groups.set(key, existing);
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count || a.purpose.localeCompare(b.purpose));
 }

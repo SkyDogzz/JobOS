@@ -1,6 +1,6 @@
 {
   "name": "jobos",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "private": true,
   "description": "An end-to-end operating system for job searching.",
   "packageManager": "pnpm@9.12.3",

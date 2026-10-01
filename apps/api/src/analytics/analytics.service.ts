@@ -34,4 +34,14 @@ export class AnalyticsService {
       sourceId: query.sourceId
     });
   }
+
+  documents(query: Record<string, string | undefined>) {
+    return this.analytics.documents({
+      companyId: query.companyId,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
+      resumeVersionId: query.resumeVersionId,
+      sourceId: query.sourceId
+    });
+  }
 }

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft, ChartNoAxesCombined } from "lucide-react";
-import { getFunnelAnalytics, getOperationsAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
+import { getDocumentPerformanceAnalytics, getFunnelAnalytics, getOperationsAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
 
 export default async function AnalyticsPage() {
-  const [funnel, sourcePerformance, operations] = await Promise.all([
+  const [funnel, sourcePerformance, operations, documentPerformance] = await Promise.all([
     getFunnelAnalytics().catch(() => null),
     getSourcePerformanceAnalytics().catch(() => null),
-    getOperationsAnalytics().catch(() => null)
+    getOperationsAnalytics().catch(() => null),
+    getDocumentPerformanceAnalytics().catch(() => null)
   ]);
 
   return (
@@ -91,6 +92,52 @@ export default async function AnalyticsPage() {
                   </dl>
                 ) : null}
               </div>
+            </section>
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h2 className="font-semibold">Document Performance</h2>
+                <span className="text-sm text-ink/55">{documentPerformance?.resumeVersions.length ?? 0} resume versions</span>
+              </div>
+              {!documentPerformance ? <p className="text-sm text-ink/60">No document performance data yet.</p> : null}
+              {documentPerformance ? (
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <div className="space-y-3">
+                    {documentPerformance.resumeVersions.slice(0, 5).map((version) => (
+                      <article key={version.resumeVersionId} className="rounded border border-ink/10 bg-paper p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-medium">{version.resumeTitle}</h3>
+                          <span className="text-sm font-medium">{version.successfulCount} wins</span>
+                        </div>
+                        <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                          <Rate label="Apps" value={version.applicationCount} suffix="" />
+                          <Rate label="Active" value={version.activeCount} suffix="" />
+                          <Rate label="Success" value={version.successfulCount} suffix="" />
+                        </dl>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    {documentPerformance.documents.map((document) => (
+                      <article key={document.kind} className="rounded border border-ink/10 bg-paper p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <h3 className="font-medium capitalize">{document.kind.replace("_", " ")}</h3>
+                          <span className="text-sm font-medium">{document.successRate}% success</span>
+                        </div>
+                        <dl className="grid grid-cols-3 gap-2 text-sm">
+                          <Rate label="Docs" value={document.documentCount} suffix="" />
+                          <Rate label="Linked" value={document.linkedApplicationCount} suffix="" />
+                          <Rate label="Wins" value={document.successfulApplicationCount} suffix="" />
+                        </dl>
+                      </article>
+                    ))}
+                    {documentPerformance.artifacts.map((artifact) => (
+                      <p key={`${artifact.purpose}:${artifact.provider}:${artifact.model}`} className="rounded bg-paper px-3 py-2 text-sm text-ink/65">
+                        {artifact.count} {artifact.purpose.replace("_", " ")} artifacts via {artifact.provider}/{artifact.model}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </section>
             <section className="rounded border border-ink/10 bg-white p-5">
               <div className="mb-4 flex items-center justify-between gap-4">

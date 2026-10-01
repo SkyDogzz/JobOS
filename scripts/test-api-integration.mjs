@@ -580,6 +580,13 @@ https://example.com/profile`;
   if (typeof operationsAnalytics.tasks.completionRate !== "number") {
     throw new Error("Task analytics did not return completion metrics.");
   }
+  const documentAnalytics = await request("/analytics/documents");
+  if (!Array.isArray(documentAnalytics.resumeVersions)) {
+    throw new Error("Document performance analytics did not return resume version usage.");
+  }
+  if (!Array.isArray(documentAnalytics.documents)) {
+    throw new Error("Document performance analytics did not return document usage.");
+  }
 
   const note = await request(`/applications/${application.id}/notes`, {
     method: "POST",

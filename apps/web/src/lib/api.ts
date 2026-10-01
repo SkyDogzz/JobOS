@@ -350,6 +350,31 @@ export interface OperationsAnalytics {
   };
 }
 
+export interface DocumentPerformanceAnalytics {
+  resumeVersions: Array<{
+    resumeVersionId: string;
+    resumeTitle: string;
+    versionNumber: number;
+    applicationCount: number;
+    activeCount: number;
+    successfulCount: number;
+    stageCounts: Record<string, number>;
+  }>;
+  documents: Array<{
+    kind: string;
+    documentCount: number;
+    linkedApplicationCount: number;
+    successfulApplicationCount: number;
+    successRate: number;
+  }>;
+  artifacts: Array<{
+    purpose: string;
+    provider: string;
+    model: string;
+    count: number;
+  }>;
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -524,6 +549,10 @@ export async function getSourcePerformanceAnalytics(query = "") {
 
 export async function getOperationsAnalytics(query = "") {
   return getJson<OperationsAnalytics>(`/analytics/operations${query}`);
+}
+
+export async function getDocumentPerformanceAnalytics(query = "") {
+  return getJson<DocumentPerformanceAnalytics>(`/analytics/documents${query}`);
 }
 
 export { apiUrl };
