@@ -295,6 +295,8 @@ Implement v0.4.2 job board parsing:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `3d72f43 Add job board parsing workflow`
+
 ### v0.4.3 — Job Deduplication
 
 Implement v0.4.3 job deduplication:
