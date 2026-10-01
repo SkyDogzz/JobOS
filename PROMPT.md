@@ -164,6 +164,8 @@ Implement v0.2.1 resume parser:
 - Keep checks green.
 - Commit the result.
 
+Commit: `a11e9f0 Add resume intelligence workflows`
+
 ### v0.2.2 — ATS Scanner
 
 Implement v0.2.2 ATS scanner:
@@ -175,6 +177,8 @@ Implement v0.2.2 ATS scanner:
 - Keep checks green.
 - Commit the result.
 
+Commit: `a11e9f0 Add resume intelligence workflows`
+
 ### v0.2.3 — Job/CV Matching
 
 Implement v0.2.3 job/CV matching:
@@ -184,6 +188,8 @@ Implement v0.2.3 job/CV matching:
 - Add dashboard and job detail UI for best resume version suggestions.
 - Keep checks green.
 - Commit the result.
+
+Commit: `a11e9f0 Add resume intelligence workflows`
 
 ### v0.3.0 — AI Provider Layer
 
@@ -196,6 +202,8 @@ Implement v0.3.0 AI provider layer:
 - Keep checks green.
 - Commit the result.
 
+Commit: `a11e9f0 Add resume intelligence workflows`
+
 ### v0.3.1 — CV Tailoring
 
 Implement v0.3.1 CV tailoring:
@@ -206,6 +214,8 @@ Implement v0.3.1 CV tailoring:
 - Persist prompt hash, source version, target job, and output metadata.
 - Keep checks green.
 - Commit the result.
+
+Commit: `a11e9f0 Add resume intelligence workflows`
 
 ### v0.3.2 — Cover Letters
 
