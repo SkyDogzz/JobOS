@@ -23,6 +23,10 @@ async function main() {
     console.log("API integration tests skipped: API is not running.");
     return;
   }
+  const metrics = await request("/health/metrics");
+  if (metrics.version !== "0.9.0" || typeof metrics.monitoring.rateLimitMax !== "number") {
+    throw new Error("Health metrics did not expose monitoring data.");
+  }
 
   const job = await request("/jobs", {
     method: "POST",

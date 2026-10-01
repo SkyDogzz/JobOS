@@ -16,6 +16,7 @@ export const routes = [
   "/contacts",
   "/analytics",
   "/notifications",
+  "/onboarding",
   "/settings",
   "/settings/export",
   "/settings/profile",

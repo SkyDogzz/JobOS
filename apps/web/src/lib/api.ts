@@ -359,6 +359,14 @@ export interface AccountExportSummary {
   aiArtifacts: AiArtifactSummary[];
 }
 
+export interface HealthMetrics {
+  service: string;
+  version: string;
+  uptimeSeconds: number;
+  memory: { rss: number; heapUsed: number; heapTotal: number };
+  monitoring: { rateLimitWindowMs: number; rateLimitMax: number };
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -619,6 +627,10 @@ export async function getUserSettings() {
 
 export async function getAccountExportSummary() {
   return getJson<AccountExportSummary>("/account/export");
+}
+
+export async function getHealthMetrics() {
+  return getJson<HealthMetrics>("/health/metrics");
 }
 
 export async function getFunnelAnalytics(query = "") {
