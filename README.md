@@ -4639,6 +4639,33 @@ pnpm install
 pnpm dev
 ```
 
+## Local development workflow
+
+```bash
+docker compose up -d postgres redis
+pnpm db:migrate
+pnpm dev
+```
+
+One-command local startup:
+
+```bash
+pnpm dev:local
+```
+
+Demo data:
+
+```bash
+pnpm reset:demo
+pnpm seed:demo
+```
+
+API integration smoke test:
+
+```bash
+pnpm test:api
+```
+
 and have a fully functional local environment containing:
 
 ```text
@@ -4673,4 +4700,3 @@ One production-quality slice at a time.
 ---
 
 **JobOS — Your job search, as a system.**
-

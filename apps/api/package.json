@@ -8,7 +8,7 @@
     "dev": "nest start --watch",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/apps/api/src/main.js",
-    "test": "echo \"No API tests yet\"",
+    "test": "pnpm --dir ../.. test:api",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

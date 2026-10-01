@@ -227,11 +227,51 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
 
         <div className="mt-8 grid gap-4 xl:grid-cols-2">
+          <SavedJobsList jobs={jobs} />
+          <ResumeList resumes={resumes} />
+        </div>
+
+        <div className="mt-8 grid gap-4 xl:grid-cols-2">
           <Pipeline applications={applications} />
           <Funnel jobs={jobs} applications={applications} resumes={resumes} />
         </div>
       </section>
     </main>
+  );
+}
+
+function SavedJobsList({ jobs }: { jobs: DashboardJob[] }) {
+  return (
+    <section className="rounded border border-ink/10 bg-white p-5">
+      <h2 className="mb-4 font-semibold">Saved Jobs</h2>
+      {jobs.length === 0 ? <EmptyState text="No saved jobs yet." /> : null}
+      <div className="divide-y divide-ink/10">
+        {jobs.slice(-6).reverse().map((job) => (
+          <article className="py-3" key={job.id}>
+            <p className="font-medium">{job.title}</p>
+            <p className="mt-1 text-sm text-ink/60">{job.companyName ?? "No company"} · {job.location ?? "No location"}</p>
+            <p className="mt-2 line-clamp-2 text-sm text-ink/55">{job.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ResumeList({ resumes }: { resumes: DashboardResume[] }) {
+  return (
+    <section className="rounded border border-ink/10 bg-white p-5">
+      <h2 className="mb-4 font-semibold">CV Versions</h2>
+      {resumes.length === 0 ? <EmptyState text="No CVs yet." /> : null}
+      <div className="divide-y divide-ink/10">
+        {resumes.slice(-6).reverse().map((resume) => (
+          <article className="py-3" key={resume.versionId ?? resume.id}>
+            <p className="font-medium">{resume.name}</p>
+            <p className="mt-1 text-sm text-ink/60">{resume.versionTitle ?? "No version title"}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
