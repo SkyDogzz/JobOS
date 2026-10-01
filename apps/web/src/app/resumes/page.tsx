@@ -20,7 +20,7 @@ export default async function ResumesPage() {
         <div className="grid gap-3">
           {resumes.map((resume) => (
             <article className="rounded border border-ink/10 bg-white p-5" key={resume.versionId ?? resume.id}>
-              <p className="text-lg font-semibold">{resume.name}</p>
+              <Link className="text-lg font-semibold hover:text-tide" href={`/resumes/${resume.id}`}>{resume.name}</Link>
               <p className="mt-1 text-sm text-ink/60">{resume.versionTitle ?? "No version title"}</p>
               <p className="mt-3 text-xs text-ink/45">Version ID: {resume.versionId ?? "none"}</p>
             </article>
@@ -30,4 +30,3 @@ export default async function ResumesPage() {
     </main>
   );
 }
-

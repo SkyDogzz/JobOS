@@ -74,6 +74,29 @@ export interface DashboardResume {
   versionTitle: string | null;
 }
 
+export interface ResumeDetail {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  versions: Array<{
+    id: string;
+    resumeId: string;
+    versionNumber: number;
+    title: string;
+    content: Record<string, unknown>;
+    createdAt: string;
+  }>;
+  applications: Array<{
+    id: string;
+    stage: string;
+    resumeVersionId: string | null;
+    jobTitle: string;
+    companyName: string | null;
+    createdAt: string;
+  }>;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, { cache: "no-store" });
 
@@ -111,6 +134,10 @@ export async function getJobs() {
 
 export async function getResumes() {
   return getJson<DashboardResume[]>("/resumes");
+}
+
+export async function getResumeDetail(id: string) {
+  return getJson<ResumeDetail>(`/resumes/${id}`);
 }
 
 export async function getApplicationDetail(id: string) {

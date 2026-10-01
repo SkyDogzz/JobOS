@@ -33,6 +33,11 @@ export const createResumeSchema = z.object({
   content: z.record(z.unknown()).default({})
 });
 
+export const createResumeVersionSchema = z.object({
+  title: z.string().min(1),
+  content: z.record(z.unknown()).default({})
+});
+
 export const updateApplicationStageSchema = z.object({
   stage: z.enum([
     "wishlist",
@@ -78,6 +83,7 @@ export const loginSchema = z.object({
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
+export type CreateResumeVersionInput = z.infer<typeof createResumeVersionSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

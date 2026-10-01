@@ -61,6 +61,21 @@ async function main() {
   if (!resumes.some((item) => item.id === resume.id)) throw new Error("Created resume not found in list.");
   if (!applications.some((item) => item.id === application.id)) throw new Error("Created application not found in list.");
 
+  const resumeDetail = await request(`/resumes/${resume.id}`);
+  if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
+  if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");
+  if (!resumeDetail.applications.some((item) => item.id === application.id)) throw new Error("Resume detail did not include linked applications.");
+
+  const secondVersion = await request(`/resumes/${resume.id}/versions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Integration CV v2",
+      content: { summary: "Second immutable version." }
+    })
+  });
+  if (secondVersion.versionNumber !== 2) throw new Error("Resume version creation did not increment version number.");
+
   const detail = await request(`/applications/${application.id}`);
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
