@@ -347,6 +347,8 @@ Implement v0.5.0 contacts and recruiters:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `c787aad Add contacts and recruiter workflows`
+
 ### v0.5.1 — Interviews
 
 Implement v0.5.1 interviews:
