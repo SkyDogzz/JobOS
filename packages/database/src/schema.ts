@@ -228,6 +228,48 @@ export const interviews = pgTable("interviews", {
   ...timestamps
 });
 
+export const emailIntegrationConnections = pgTable("email_integration_connections", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  provider: text("provider").notNull(),
+  accountEmail: text("account_email").notNull(),
+  status: text("status").notNull().default("placeholder"),
+  syncState: jsonb("sync_state").$type<Record<string, unknown>>().notNull().default({}),
+  excludeBodies: boolean("exclude_bodies").default(true).notNull(),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  ...timestamps
+});
+
+export const emailSyncJobs = pgTable("email_sync_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  connectionId: uuid("connection_id").references(() => emailIntegrationConnections.id, { onDelete: "cascade" }).notNull(),
+  status: text("status").notNull().default("queued"),
+  cursor: text("cursor"),
+  error: text("error"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  ...timestamps
+});
+
+export const emailMessages = pgTable("email_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  connectionId: uuid("connection_id").references(() => emailIntegrationConnections.id, { onDelete: "cascade" }).notNull(),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "set null" }),
+  providerMessageId: text("provider_message_id").notNull(),
+  threadId: text("thread_id"),
+  fromAddress: text("from_address"),
+  toAddresses: jsonb("to_addresses").$type<string[]>().notNull().default([]),
+  subject: text("subject"),
+  snippet: text("snippet"),
+  body: text("body"),
+  classification: text("classification").notNull().default("unclassified"),
+  classificationReason: text("classification_reason"),
+  receivedAt: timestamp("received_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => ({
+  providerMessageIdx: uniqueIndex("email_messages_connection_provider_message_idx").on(table.connectionId, table.providerMessageId)
+}));
+
 export const aiArtifacts = pgTable("ai_artifacts", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

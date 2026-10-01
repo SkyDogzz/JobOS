@@ -310,6 +310,52 @@ async function main() {
   const deletedInterview = await fetch(`${apiUrl}/interviews/${tempInterview.id}`, { method: "DELETE" });
   if (!deletedInterview.ok) throw new Error("Interview delete failed.");
 
+  const emailConnection = await request("/integrations/email/connections", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "gmail", accountEmail: "integration-inbox@example.com", excludeBodies: true })
+  });
+  if (!emailConnection.id || emailConnection.excludeBodies !== true) throw new Error("Email connection creation failed.");
+  const emailSyncJob = await request("/integrations/email/sync-jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connectionId: emailConnection.id, cursor: "integration-cursor" })
+  });
+  if (emailSyncJob.status !== "queued") throw new Error("Email sync placeholder was not queued.");
+  const emailMessage = await request("/integrations/email/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      connectionId: emailConnection.id,
+      applicationId: application.id,
+      providerMessageId: `integration-message-${Date.now()}`,
+      fromAddress: "recruiter@example.com",
+      toAddresses: ["integration-inbox@example.com"],
+      subject: "Interview invitation",
+      snippet: "We would like to schedule an interview.",
+      body: "Sensitive message body",
+      receivedAt: new Date().toISOString()
+    })
+  });
+  if (emailMessage.body !== null) throw new Error("Email privacy control did not exclude message body storage.");
+  if (emailMessage.classification !== "interview") throw new Error("Email metadata classification failed.");
+  const reviewedEmail = await request(`/integrations/email/messages/${emailMessage.id}/classification`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ classification: "application_related", classificationReason: "Linked to integration application.", applicationId: application.id })
+  });
+  if (reviewedEmail.classification !== "application_related" || reviewedEmail.applicationId !== application.id) {
+    throw new Error("Email classification review failed.");
+  }
+  const [emailConnections, emailJobs, emailMessages] = await Promise.all([
+    request("/integrations/email/connections"),
+    request("/integrations/email/sync-jobs"),
+    request("/integrations/email/messages")
+  ]);
+  if (!emailConnections.some((item) => item.id === emailConnection.id)) throw new Error("Email connection was not listed.");
+  if (!emailJobs.some((item) => item.id === emailSyncJob.id)) throw new Error("Email sync job was not listed.");
+  if (!emailMessages.some((item) => item.id === emailMessage.id)) throw new Error("Email message was not listed.");
+
   const resumeDetail = await request(`/resumes/${resume.id}`);
   if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
   if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");

@@ -289,8 +289,13 @@ function navHref(item: string) {
     Interviews: "/interviews",
     CVs: "/resumes",
     Documents: "/documents",
+    "Interview Prep": "/interviews",
     Companies: "/sources",
-    Contacts: "/sources"
+    Contacts: "/sources",
+    Analytics: "/",
+    Tasks: "/",
+    "ATS Scanner": "/documents",
+    "Job Matcher": "/jobs"
   };
   return routes[item] ?? "#";
 }

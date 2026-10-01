@@ -224,6 +224,42 @@ export interface JobSourceSummary {
   notes: string | null;
 }
 
+export interface EmailConnectionSummary {
+  id: string;
+  provider: string;
+  accountEmail: string;
+  status: string;
+  excludeBodies: boolean;
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
+export interface EmailSyncJobSummary {
+  id: string;
+  connectionId: string;
+  status: string;
+  cursor: string | null;
+  error: string | null;
+  provider: string;
+  accountEmail: string;
+  createdAt: string;
+}
+
+export interface EmailMessageSummary {
+  id: string;
+  connectionId: string;
+  applicationId: string | null;
+  providerMessageId: string;
+  fromAddress: string | null;
+  subject: string | null;
+  snippet: string | null;
+  body: string | null;
+  classification: string;
+  classificationReason: string | null;
+  receivedAt: string | null;
+  createdAt: string;
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -362,6 +398,18 @@ export async function getSavedJobFilters() {
 
 export async function getSession() {
   return getJson<SessionUser | null>("/auth/session");
+}
+
+export async function getEmailConnections() {
+  return getJson<EmailConnectionSummary[]>("/integrations/email/connections");
+}
+
+export async function getEmailSyncJobs() {
+  return getJson<EmailSyncJobSummary[]>("/integrations/email/sync-jobs");
+}
+
+export async function getEmailMessages() {
+  return getJson<EmailMessageSummary[]>("/integrations/email/messages");
 }
 
 export { apiUrl };

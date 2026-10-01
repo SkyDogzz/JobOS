@@ -232,6 +232,39 @@ export const upsertInterviewSchema = z.object({
   notes: z.string().optional()
 });
 
+export const createEmailConnectionSchema = z.object({
+  provider: z.string().min(1),
+  accountEmail: z.string().email(),
+  status: z.string().min(1).default("placeholder"),
+  excludeBodies: z.boolean().default(true)
+});
+
+export const updateEmailConnectionSchema = createEmailConnectionSchema.partial();
+
+export const createEmailSyncJobSchema = z.object({
+  connectionId: z.string().uuid(),
+  cursor: z.string().optional()
+});
+
+export const createEmailMessageSchema = z.object({
+  connectionId: z.string().uuid(),
+  applicationId: z.string().uuid().optional(),
+  providerMessageId: z.string().min(1),
+  threadId: z.string().optional(),
+  fromAddress: z.string().email().optional(),
+  toAddresses: z.array(z.string().email()).default([]),
+  subject: z.string().optional(),
+  snippet: z.string().optional(),
+  body: z.string().optional(),
+  receivedAt: z.string().datetime().optional()
+});
+
+export const classifyEmailMessageSchema = z.object({
+  classification: z.enum(["application_related", "recruiter", "interview", "offer", "rejection", "other"]),
+  classificationReason: z.string().optional(),
+  applicationId: z.string().uuid().nullable().optional()
+});
+
 export const upsertCandidateProfileSchema = z.object({
   headline: z.string().optional(),
   summary: z.string().optional(),
@@ -281,6 +314,11 @@ export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageS
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpsertInterviewInput = z.infer<typeof upsertInterviewSchema>;
+export type CreateEmailConnectionInput = z.infer<typeof createEmailConnectionSchema>;
+export type UpdateEmailConnectionInput = z.infer<typeof updateEmailConnectionSchema>;
+export type CreateEmailSyncJobInput = z.infer<typeof createEmailSyncJobSchema>;
+export type CreateEmailMessageInput = z.infer<typeof createEmailMessageSchema>;
+export type ClassifyEmailMessageInput = z.infer<typeof classifyEmailMessageSchema>;
 export type UpsertCandidateProfileInput = z.infer<typeof upsertCandidateProfileSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
