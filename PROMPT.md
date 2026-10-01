@@ -386,6 +386,8 @@ Implement v0.5.3 calendar integration foundation:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `d902280 Add calendar integration foundation`
+
 ### v0.6.0 — Funnel Analytics
 
 Implement v0.6.0 funnel analytics:
