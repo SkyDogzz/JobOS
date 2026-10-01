@@ -501,6 +501,8 @@ Implement v0.8.2 account deletion and privacy controls:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `c762f16 Add account privacy controls`
+
 ### v0.9.0 — Public Beta Hardening
 
 Implement v0.9.0 public beta hardening:
