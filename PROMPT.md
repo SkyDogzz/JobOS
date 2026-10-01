@@ -529,3 +529,240 @@ Implement v1.0.0 production release:
 - Commit and tag the result.
 
 Commit: `0a6ec12 Add production release foundation`
+
+## Roadmap to v2.0.0
+
+### v1.1.0 — Production Stack Smoke
+
+Implement v1.1.0 production stack smoke:
+
+- Build and run `docker-compose.prod.yml` end to end.
+- Add a production smoke script that verifies health, migrations, API integration tests, and web boot.
+- Fix production Dockerfiles and environment wiring uncovered by the smoke.
+- Document the exact release operator flow for build, migrate, smoke, rollback, and shutdown.
+- Keep checks green.
+- Commit the result.
+
+### v1.1.1 — Auth and User Scoping Hardening
+
+Implement v1.1.1 auth and user scoping hardening:
+
+- Replace dev-user assumptions in repositories with authenticated user context.
+- Add route guards for user-owned resources.
+- Ensure jobs, applications, resumes, contacts, documents, settings, notifications, and exports are scoped to the current user.
+- Add integration coverage proving one user cannot read or mutate another user's data.
+- Keep checks green.
+- Commit the result.
+
+### v1.1.2 — End-to-End UI Test Suite
+
+Implement v1.1.2 end-to-end UI test suite:
+
+- Add Playwright coverage for onboarding, auth, dashboard, manual import, application detail, settings, export, and document approval flows.
+- Add deterministic seed/reset setup for browser tests.
+- Run E2E tests in CI-friendly headless mode.
+- Document how to run and debug UI tests locally.
+- Keep checks green.
+- Commit the result.
+
+### v1.2.0 — Real Calendar Sync
+
+Implement v1.2.0 real calendar sync:
+
+- Add a provider-backed calendar connection flow using existing calendar placeholders.
+- Sync interview and follow-up events from a configured calendar provider.
+- Detect conflicts and stale/cancelled calendar events.
+- Add UI for connection status, last sync, conflict review, and manual resync.
+- Add integration coverage with deterministic provider fakes.
+- Keep checks green.
+- Commit the result.
+
+### v1.2.1 — Real Email Sync
+
+Implement v1.2.1 real email sync:
+
+- Add a provider-backed email connection flow using existing email placeholders.
+- Sync message metadata and optional bodies according to privacy settings.
+- Classify application-related messages and link them to applications.
+- Add UI for inbox review, classification correction, and sync status.
+- Add integration coverage with deterministic provider fakes.
+- Keep checks green.
+- Commit the result.
+
+### v1.3.0 — Provider AI Integrations
+
+Implement v1.3.0 provider AI integrations:
+
+- Wire OpenAI and Anthropic providers behind the existing AI abstraction.
+- Keep local deterministic generation as the default fallback.
+- Add encrypted provider key storage or documented environment-only key mode.
+- Record provider, model, prompt hash, policy checks, and grounding evidence for every generated artifact.
+- Add provider fake tests plus opt-in live provider smoke tests.
+- Keep checks green.
+- Commit the result.
+
+### v1.3.1 — Generation Quality Review
+
+Implement v1.3.1 generation quality review:
+
+- Add rubric-based review for tailored CVs and cover letters.
+- Score specificity, evidence coverage, role fit, claim risk, and tone.
+- Add side-by-side diff, reviewer notes, and approve/reject history.
+- Surface risky or unsupported claims before document approval.
+- Add integration coverage for review scoring and approval blocking.
+- Keep checks green.
+- Commit the result.
+
+### v1.4.0 — Collaboration and Sharing
+
+Implement v1.4.0 collaboration and sharing:
+
+- Add shareable application packets for mentors, recruiters, or trusted reviewers.
+- Support read-only share links with expiration and revocation.
+- Add reviewer comments on applications, resumes, and generated documents.
+- Audit all sharing, viewing, commenting, and revocation actions.
+- Add integration coverage for permissions and expiry.
+- Keep checks green.
+- Commit the result.
+
+### v1.4.1 — Document Export and Templates
+
+Implement v1.4.1 document export and templates:
+
+- Add PDF, DOCX, and Markdown export for resumes and cover letters.
+- Add editable document templates with deterministic rendering.
+- Add preview and download UI for generated and approved documents.
+- Preserve generation metadata outside exported user-facing content.
+- Add integration and rendering coverage for exports.
+- Keep checks green.
+- Commit the result.
+
+### v1.5.0 — Job Discovery Automation
+
+Implement v1.5.0 job discovery automation:
+
+- Add scheduled job-source checks for saved companies, job boards, and configured searches.
+- Import candidate jobs into a review queue instead of auto-saving everything.
+- Add source reliability, duplicate, and relevance scoring.
+- Add UI for approving, dismissing, or snoozing discovered jobs.
+- Add integration coverage with deterministic source fixtures.
+- Keep checks green.
+- Commit the result.
+
+### v1.5.1 — Browser Extension Full Workflow
+
+Implement v1.5.1 browser extension full workflow:
+
+- Upgrade the extension scaffold into a complete import workflow.
+- Add authentication/session handling for the extension.
+- Show duplicate warnings, parsed fields, and save status in the extension popup.
+- Add extension build, validation, and fixture-based smoke coverage.
+- Keep checks green.
+- Commit the result.
+
+### v1.6.0 — Search Strategy Planner
+
+Implement v1.6.0 search strategy planner:
+
+- Add weekly goals for applications, networking, follow-ups, interviews, and resume iterations.
+- Recommend next actions based on funnel analytics and stale applications.
+- Add calendar/task generation for planned work.
+- Add dashboard views for plan progress and missed commitments.
+- Add integration coverage for planner recommendations.
+- Keep checks green.
+- Commit the result.
+
+### v1.6.1 — Offer and Compensation Tracker
+
+Implement v1.6.1 offer and compensation tracker:
+
+- Add offer records with compensation, equity, benefits, deadlines, and negotiation notes.
+- Compare offers against job preferences and market assumptions.
+- Add decision matrix UI for active offers.
+- Add reminder generation for deadlines and negotiation follow-ups.
+- Add integration coverage for offer lifecycle flows.
+- Keep checks green.
+- Commit the result.
+
+### v1.7.0 — Observability and Operations
+
+Implement v1.7.0 observability and operations:
+
+- Add OpenTelemetry tracing across API requests, database operations, and AI generation workflows.
+- Add Sentry error reporting with redaction of sensitive payloads.
+- Add Prometheus counters and histograms for API latency, job imports, generation, syncs, and failures.
+- Add operational dashboards or documented Grafana panels.
+- Add smoke coverage for metrics and redaction behavior.
+- Keep checks green.
+- Commit the result.
+
+### v1.7.1 — Background Worker Reliability
+
+Implement v1.7.1 background worker reliability:
+
+- Implement durable queues for email sync, calendar sync, notifications, analytics refresh, and document generation.
+- Add retries, dead-letter handling, idempotency keys, and job status visibility.
+- Add worker dashboard views for recent jobs and failures.
+- Add integration coverage for retry and idempotency behavior.
+- Keep checks green.
+- Commit the result.
+
+### v1.8.0 — Billing and Subscription Foundation
+
+Implement v1.8.0 billing and subscription foundation:
+
+- Add billing plans, subscription status, limits, and entitlement checks.
+- Support a deterministic local billing fake plus optional Stripe integration.
+- Gate premium AI/provider/sync features behind entitlements.
+- Add account settings UI for plan and usage.
+- Add integration coverage for entitlement enforcement.
+- Keep checks green.
+- Commit the result.
+
+### v1.8.1 — Usage Limits and Cost Controls
+
+Implement v1.8.1 usage limits and cost controls:
+
+- Track AI generations, provider calls, sync volume, document exports, and discovered job imports.
+- Add configurable usage limits and admin/operator overrides.
+- Show usage warnings before expensive or limited actions.
+- Add audit events for limit hits and overrides.
+- Add integration coverage for usage accounting.
+- Keep checks green.
+- Commit the result.
+
+### v1.9.0 — Team and Multi-Tenant Readiness
+
+Implement v1.9.0 team and multi-tenant readiness:
+
+- Add organizations, memberships, roles, and team settings.
+- Support personal and team workspaces.
+- Scope resources by owner workspace with migration paths for existing personal data.
+- Add role-based permissions for viewing, editing, exporting, and deleting data.
+- Add integration coverage for tenant isolation.
+- Keep checks green.
+- Commit the result.
+
+### v1.9.1 — Admin and Support Tools
+
+Implement v1.9.1 admin and support tools:
+
+- Add admin views for user lookup, audit trails, sync health, and failed background jobs.
+- Add support-safe impersonation or diagnostic bundles with strict audit logging.
+- Add privacy-preserving support export bundles.
+- Add integration coverage for admin permissions and audit events.
+- Keep checks green.
+- Commit the result.
+
+### v2.0.0 — Intelligent Job Search Copilot
+
+Implement v2.0.0 intelligent job search copilot:
+
+- Add a conversational copilot that can inspect the user's jobs, resumes, applications, analytics, documents, and settings.
+- Let the copilot propose actions, drafts, follow-ups, and weekly plans while requiring approval before mutations.
+- Ground every recommendation in stored user data, job data, or explicit user preferences.
+- Add tool-call audit logs, approval history, and rollback-friendly mutation records.
+- Add UI for copilot chat, pending actions, accepted actions, and rejected recommendations.
+- Add integration and E2E coverage for grounded recommendations and approval-gated actions.
+- Run full release checks.
+- Commit and tag the result.
