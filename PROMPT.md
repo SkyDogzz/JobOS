@@ -488,6 +488,8 @@ Implement v0.8.1 data export:
 - Keep checks green.
 - Commit and push the result.
 
+Commit: `cc19983 Add data export`
+
 ### v0.8.2 — Account Deletion and Privacy Controls
 
 Implement v0.8.2 account deletion and privacy controls:
