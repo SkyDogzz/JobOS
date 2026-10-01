@@ -14,4 +14,14 @@ export class AnalyticsService {
       sourceId: query.sourceId
     });
   }
+
+  sources(query: Record<string, string | undefined>) {
+    return this.analytics.sources({
+      companyId: query.companyId,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
+      resumeVersionId: query.resumeVersionId,
+      sourceId: query.sourceId
+    });
+  }
 }

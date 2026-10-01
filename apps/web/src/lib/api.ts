@@ -310,6 +310,23 @@ export interface FunnelAnalytics {
   };
 }
 
+export interface SourcePerformanceAnalytics {
+  totalSources: number;
+  sources: Array<{
+    sourceId: string | null;
+    sourceName: string;
+    sourceStatus: string | null;
+    sourceNotes: string | null;
+    applicationCount: number;
+    responseRate: number;
+    interviewRate: number;
+    offerRate: number;
+    rejectionRate: number;
+    rankScore: number;
+    qualityNote: string;
+  }>;
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -476,6 +493,10 @@ export async function getCalendarEvents() {
 
 export async function getFunnelAnalytics(query = "") {
   return getJson<FunnelAnalytics>(`/analytics/funnel${query}`);
+}
+
+export async function getSourcePerformanceAnalytics(query = "") {
+  return getJson<SourcePerformanceAnalytics>(`/analytics/sources${query}`);
 }
 
 export { apiUrl };

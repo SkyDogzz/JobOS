@@ -9,4 +9,9 @@ export class AnalyticsController {
   funnel(@Query() query: Record<string, string | undefined>) {
     return this.analytics.funnel(query);
   }
+
+  @Get("sources")
+  sources(@Query() query: Record<string, string | undefined>) {
+    return this.analytics.sources(query);
+  }
 }

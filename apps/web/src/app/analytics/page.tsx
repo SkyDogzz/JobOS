@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, ChartNoAxesCombined } from "lucide-react";
-import { getFunnelAnalytics } from "../../lib/api";
+import { getFunnelAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
 
 export default async function AnalyticsPage() {
-  const funnel = await getFunnelAnalytics().catch(() => null);
+  const [funnel, sourcePerformance] = await Promise.all([
+    getFunnelAnalytics().catch(() => null),
+    getSourcePerformanceAnalytics().catch(() => null)
+  ]);
 
   return (
     <main className="min-h-screen bg-paper px-5 py-6 text-ink sm:px-8 lg:px-10">
@@ -45,10 +48,50 @@ export default async function AnalyticsPage() {
                 ))}
               </div>
             </section>
+            <section className="rounded border border-ink/10 bg-white p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h2 className="font-semibold">Source Performance</h2>
+                <span className="text-sm text-ink/55">{sourcePerformance?.totalSources ?? 0} ranked sources</span>
+              </div>
+              {!sourcePerformance?.sources.length ? <p className="text-sm text-ink/60">No source performance data yet.</p> : null}
+              <div className="grid gap-3">
+                {sourcePerformance?.sources.map((source) => (
+                  <article key={source.sourceId ?? source.sourceName} className="rounded border border-ink/10 bg-paper p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-medium">{source.sourceName}</h3>
+                        <p className="mt-1 text-sm text-ink/60">{source.qualityNote}</p>
+                        {source.sourceNotes ? <p className="mt-1 text-sm text-ink/55">Notes: {source.sourceNotes}</p> : null}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-semibold">{source.rankScore}</p>
+                        <p className="text-xs uppercase tracking-wide text-ink/55">quality rank</p>
+                      </div>
+                    </div>
+                    <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-5">
+                      <Rate label="Apps" value={source.applicationCount} suffix="" />
+                      <Rate label="Response" value={source.responseRate} />
+                      <Rate label="Interview" value={source.interviewRate} />
+                      <Rate label="Offer" value={source.offerRate} />
+                      <Rate label="Reject" value={source.rejectionRate} />
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
         ) : null}
       </div>
     </main>
+  );
+}
+
+function Rate({ label, value, suffix = "%" }: { label: string; value: number; suffix?: string }) {
+  return (
+    <div>
+      <dt className="text-ink/55">{label}</dt>
+      <dd className="font-medium">{value}{suffix}</dd>
+    </div>
   );
 }
 

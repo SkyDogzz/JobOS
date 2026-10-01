@@ -6,6 +6,8 @@ import type { JobOsDatabase } from "../database/database.types.js";
 
 const stages = ["wishlist", "saved", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn", "accepted"];
 const terminalStages = new Set(["rejected", "withdrawn", "accepted"]);
+const responseStages = new Set(["screening", "interviewing", "offer", "rejected", "withdrawn", "accepted"]);
+const interviewStages = new Set(["interviewing", "offer", "rejected", "withdrawn", "accepted"]);
 
 export interface AnalyticsFilters {
   sourceId?: string;
@@ -50,6 +52,48 @@ export class AnalyticsRepository {
     };
   }
 
+  async sources(filters: AnalyticsFilters = {}) {
+    const rows = (await this.applicationRows()).filter((row) => matchesFilters(row, filters));
+    const groups = new Map<string, ApplicationRow[]>();
+
+    for (const row of rows) {
+      const key = row.sourceId ?? `source-name:${row.sourceName ?? "Unknown"}`;
+      groups.set(key, [...(groups.get(key) ?? []), row]);
+    }
+
+    const sources = [...groups.values()]
+      .map((items) => {
+        const first = items[0];
+        const total = items.length;
+        const responseCount = items.filter((row) => responseStages.has(row.stage)).length;
+        const interviewCount = items.filter((row) => interviewStages.has(row.stage)).length;
+        const offerCount = items.filter((row) => row.stage === "offer" || row.stage === "accepted").length;
+        const rejectionCount = items.filter((row) => row.stage === "rejected").length;
+        const rankScore = Math.round((responseCount / total) * 35 + (interviewCount / total) * 30 + (offerCount / total) * 25 - (rejectionCount / total) * 10);
+
+        return {
+          sourceId: first.sourceId,
+          sourceName: first.sourceName ?? "Unknown",
+          sourceStatus: first.sourceStatus,
+          sourceNotes: first.sourceNotes,
+          applicationCount: total,
+          responseRate: rate(responseCount, total),
+          interviewRate: rate(interviewCount, total),
+          offerRate: rate(offerCount, total),
+          rejectionRate: rate(rejectionCount, total),
+          rankScore: Math.max(0, Math.min(100, rankScore)),
+          qualityNote: qualityNote(responseCount, interviewCount, offerCount, rejectionCount, total)
+        };
+      })
+      .sort((a, b) => b.rankScore - a.rankScore || b.applicationCount - a.applicationCount || a.sourceName.localeCompare(b.sourceName));
+
+    return {
+      filters,
+      totalSources: sources.length,
+      sources
+    };
+  }
+
   private applicationRows() {
     return this.db
       .select({
@@ -61,7 +105,9 @@ export class AnalyticsRepository {
         companyId: companies.id,
         companyName: companies.name,
         sourceId: jobSources.id,
-        sourceName: jobSources.name
+        sourceName: jobSources.name,
+        sourceStatus: jobSources.status,
+        sourceNotes: jobSources.notes
       })
       .from(applications)
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
@@ -83,4 +129,16 @@ function matchesFilters(row: ApplicationRow, filters: AnalyticsFilters) {
 
 function ageDays(date: Date, now: number) {
   return Math.max(0, Math.floor((now - date.getTime()) / 86400000));
+}
+
+function rate(count: number, total: number) {
+  return total ? Math.round((count / total) * 100) : 0;
+}
+
+function qualityNote(responseCount: number, interviewCount: number, offerCount: number, rejectionCount: number, total: number) {
+  if (offerCount > 0) return "Strong source: produced offer-stage outcomes.";
+  if (interviewCount / total >= 0.5) return "High quality: interviews are converting from this source.";
+  if (responseCount / total >= 0.5) return "Responsive source: replies or later-stage movement are common.";
+  if (rejectionCount / total >= 0.5) return "Watch closely: rejection rate is elevated.";
+  return "Needs more data before ranking confidently.";
 }

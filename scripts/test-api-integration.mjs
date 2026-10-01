@@ -225,6 +225,21 @@ async function main() {
   const savedFilters = await request("/jobs/filters");
   if (!savedFilters.some((item) => item.id === savedFilter.id)) throw new Error("Saved job filter was not listed.");
 
+  const sourceAnalyticsApplication = await request("/applications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jobId: attributedJob.id,
+      stage: "interviewing"
+    })
+  });
+  if (sourceAnalyticsApplication.stage !== "interviewing") throw new Error("Source analytics fixture application was not created.");
+  const sourcePerformance = await request("/analytics/sources");
+  const integrationSourcePerformance = sourcePerformance.sources.find((item) => item.sourceId === source.id);
+  if (!integrationSourcePerformance) throw new Error("Source performance analytics did not include the integration source.");
+  if (integrationSourcePerformance.interviewRate < 1) throw new Error("Source performance analytics did not calculate interview rate.");
+  if (!integrationSourcePerformance.qualityNote) throw new Error("Source performance analytics did not include source quality notes.");
+
   const resume = await request("/resumes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
