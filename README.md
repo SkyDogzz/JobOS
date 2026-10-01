@@ -2226,6 +2226,8 @@ Response contract:
 
 `status` is `created` for new jobs and `updated` when an existing job has the same source URL. Duplicate candidates include match scores and reasons so the extension can show a confirmation UI later without changing the API contract.
 
+The companion extension scaffold lives in `apps/extension`. Load that directory as an unpacked browser extension, set the API URL, and use the same bearer token configured for `EXTENSION_IMPORT_TOKEN`. Local development can use `jobos-dev-extension-token`.
+
 ---
 
 # 62. Job ingestion architecture

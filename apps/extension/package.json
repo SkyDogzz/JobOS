@@ -1,0 +1,12 @@
+{
+  "name": "@jobos/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/validate-extension.mjs",
+    "lint": "node scripts/validate-extension.mjs",
+    "test": "node ../../scripts/test-extension-fixtures.mjs",
+    "typecheck": "node scripts/validate-extension.mjs"
+  }
+}

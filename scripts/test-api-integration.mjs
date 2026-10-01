@@ -1,4 +1,9 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
 const apiUrl = process.env.API_URL ?? "http://localhost:4000";
+const extensionToken = process.env.EXTENSION_IMPORT_TOKEN ?? "jobos-dev-extension-token";
+const extensionFixturesDir = new URL("../apps/extension/fixtures", import.meta.url);
 
 async function request(path, options) {
   const response = await fetch(`${apiUrl}${path}`, options);
@@ -147,25 +152,26 @@ async function main() {
   });
   if (unauthorizedImport.status !== 401) throw new Error("Extension import endpoint did not require authentication.");
 
+  const extensionPageUrl = `https://boards.greenhouse.io/extensionco/jobs/${Date.now()}`;
   const extensionImport = await request("/jobs/import", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
     body: JSON.stringify({
       contractVersion: "0.4.4",
-      pageUrl: "https://boards.greenhouse.io/extensionco/jobs/12345",
+      pageUrl: extensionPageUrl,
       html: `<html><head><meta property="og:title" content="Extension Import Engineer"><script type="application/ld+json">{"@type":"JobPosting","title":"Extension Import Engineer","hiringOrganization":{"name":"ExtensionCo"},"jobLocation":{"address":{"addressLocality":"Remote"}},"description":"Import current browser pages into JobOS with deterministic contracts."}</script></head><body>Extension payload</body></html>`,
       sourceName: "browser_extension"
     })
   });
   if (extensionImport.status !== "created") throw new Error("Extension import did not create a job.");
-  if (extensionImport.parsed.sourceUrl !== "https://boards.greenhouse.io/extensionco/jobs/12345") throw new Error("Extension import did not preserve the page URL.");
+  if (extensionImport.parsed.sourceUrl !== extensionPageUrl) throw new Error("Extension import did not preserve the page URL.");
 
   const extensionUpdate = await request("/jobs/import", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
     body: JSON.stringify({
       contractVersion: "0.4.4",
-      pageUrl: "https://boards.greenhouse.io/extensionco/jobs/12345",
+      pageUrl: extensionPageUrl,
       title: "Extension Import Engineer",
       companyName: "ExtensionCo",
       description: "Updated browser extension import with salary.",
@@ -176,6 +182,23 @@ async function main() {
   if (extensionUpdate.status !== "updated") throw new Error("Extension import did not update a duplicate source URL.");
   if (extensionUpdate.job.id !== extensionImport.job.id) throw new Error("Extension import update created a duplicate job.");
   if (extensionUpdate.job.salaryText !== "$130k - $160k") throw new Error("Extension import update did not persist changed fields.");
+
+  for (const file of readdirSync(extensionFixturesDir).filter((name) => name.endsWith(".json")).sort()) {
+    const payload = JSON.parse(readFileSync(join(extensionFixturesDir.pathname, file), "utf8"));
+    const fixtureImport = await request("/jobs/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${extensionToken}` },
+      body: JSON.stringify(payload)
+    });
+    if (!["created", "updated"].includes(fixtureImport.status)) throw new Error(`${file} extension fixture import failed.`);
+    const fixtureUpdate = await request("/jobs/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${extensionToken}` },
+      body: JSON.stringify(payload)
+    });
+    if (fixtureUpdate.status !== "updated") throw new Error(`${file} extension fixture did not update on repeat import.`);
+    if (fixtureUpdate.job.id !== fixtureImport.job.id) throw new Error(`${file} extension fixture created a duplicate job.`);
+  }
 
   const searchedJobs = await request(`/jobs?q=${encodeURIComponent("Attributed Integration")}&sourceId=${source.id}`);
   if (!searchedJobs.some((item) => item.id === attributedJob.id)) throw new Error("Job search did not return the attributed job.");

@@ -1,0 +1,7 @@
+{
+  "contractVersion": "0.4.4",
+  "pageUrl": "https://boards.greenhouse.io/fixtureco/jobs/greenhouse-123",
+  "html": "<html><head><script type=\"application/ld+json\">{\"@type\":\"JobPosting\",\"title\":\"Greenhouse Fixture Engineer\",\"hiringOrganization\":{\"name\":\"FixtureCo\"},\"jobLocation\":{\"address\":{\"addressLocality\":\"Remote\"}},\"description\":\"Build fixture based extension imports with deterministic parser coverage.\"}</script></head><body>Greenhouse job</body></html>",
+  "sourceName": "browser_extension",
+  "capturedAt": "2026-10-01T00:00:00.000Z"
+}

@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "JobOS Importer",
+  "version": "0.4.5",
+  "description": "Save the current job page into JobOS.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://localhost:4000/*", "http://localhost:4010/*", "https://*/*"],
+  "action": {
+    "default_title": "Save to JobOS",
+    "default_popup": "popup.html"
+  }
+}
