@@ -575,6 +575,22 @@ https://example.com/profile`;
     body: JSON.stringify({ jobId: job.id, resumeVersionId: parsedVersion.id })
   });
   if (!tailored.promptHash || !tailored.draft) throw new Error("Tailoring did not return a draft with metadata.");
+  if (!tailored.qualityReview?.rubric || !tailored.qualityReview.riskLevel) throw new Error("Tailoring did not return a quality review.");
+
+  const riskyResumeApproval = await fetch(`${apiUrl}/ai/tailor-resume/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: sessionCookie },
+    body: JSON.stringify({
+      resumeId: resume.id,
+      title: "Risky tailored integration CV",
+      draft: tailored.draft,
+      sourceVersionId: parsedVersion.id,
+      jobId: job.id,
+      promptHash: tailored.promptHash,
+      metadata: { qualityReview: { riskLevel: "high" } }
+    })
+  });
+  if (riskyResumeApproval.ok) throw new Error("High-risk resume approval was not blocked.");
 
   const approved = await request("/ai/tailor-resume/approve", {
     method: "POST",
@@ -586,7 +602,7 @@ https://example.com/profile`;
       sourceVersionId: parsedVersion.id,
       jobId: job.id,
       promptHash: tailored.promptHash,
-      metadata: { provider: tailored.provider, model: tailored.model }
+      metadata: { provider: tailored.provider, model: tailored.model, qualityReview: tailored.qualityReview }
     })
   });
   if (approved.content.metadata.source !== "cv_tailoring") throw new Error("Approved tailoring did not create a tailored resume version.");
@@ -603,6 +619,7 @@ https://example.com/profile`;
   });
   if (coverLetters.variants.length !== 4) throw new Error("Cover letter generation did not return all requested variants.");
   if (!coverLetters.variants.every((variant) => Array.isArray(variant.groundedClaims))) throw new Error("Cover letter variants are missing grounded claims.");
+  if (!coverLetters.variants.every((variant) => variant.qualityReview?.rubric)) throw new Error("Cover letter variants are missing quality reviews.");
 
   const groundingReviews = await request(`/ai/artifacts/${coverLetters.artifactId}/grounding-reviews`);
   if (!Array.isArray(groundingReviews) || groundingReviews.length === 0) throw new Error("Cover letter generation did not create grounding reviews.");
@@ -624,7 +641,7 @@ https://example.com/profile`;
       resumeVersionId: parsedVersion.id,
       artifactId: coverLetters.artifactId,
       promptHash: coverLetters.promptHash,
-      metadata: { provider: coverLetters.provider, model: coverLetters.model }
+      metadata: { provider: coverLetters.provider, model: coverLetters.model, qualityReview: coverLetters.variants[0].qualityReview }
     })
   });
   if (approvedCoverLetter.kind !== "cover_letter") throw new Error("Approved cover letter was not persisted as a cover letter document.");

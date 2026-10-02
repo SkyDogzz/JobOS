@@ -148,7 +148,8 @@ export const approveTailoredResumeSchema = z.object({
   sourceVersionId: z.string().uuid(),
   jobId: z.string().uuid(),
   promptHash: z.string().min(1),
-  metadata: z.record(z.unknown()).default({})
+  metadata: z.record(z.unknown()).default({}),
+  overrideHighRisk: z.boolean().default(false)
 });
 
 export const coverLetterToneSchema = z.enum(["concise", "narrative", "technical", "recruiter_friendly"]);
@@ -173,7 +174,8 @@ export const approveCoverLetterSchema = z.object({
   resumeVersionId: z.string().uuid(),
   artifactId: z.string().uuid(),
   promptHash: z.string().min(1),
-  metadata: z.record(z.unknown()).default({})
+  metadata: z.record(z.unknown()).default({}),
+  overrideHighRisk: z.boolean().default(false)
 });
 
 export const documentFiltersSchema = z.object({
