@@ -16,6 +16,7 @@ export function SourceManagementForm() {
     const response = await fetch(`${apiUrl}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body)
     });
     setMessage(response.ok ? "Saved. Refreshing..." : "Could not save.");

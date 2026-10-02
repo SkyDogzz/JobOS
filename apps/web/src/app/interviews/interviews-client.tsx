@@ -32,6 +32,7 @@ export function InterviewsClient({
       const response = await fetch(`${apiUrl}/interviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           applicationId: String(formData.get("applicationId") ?? ""),
           startsAt: new Date(startsAt).toISOString(),

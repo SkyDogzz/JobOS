@@ -57,6 +57,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
     const response = await fetch(`${apiUrl}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(payload)
     });
 
@@ -176,6 +177,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       await fetch(`${apiUrl}/applications/${applicationId}/stage`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ stage })
       }).then((response) => {
         if (!response.ok) throw new Error("Could not update stage.");

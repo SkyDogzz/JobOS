@@ -15,6 +15,10 @@ export default async function ExportSettingsPage() {
         <section className="mb-8 border-b border-ink/10 pb-6">
           <h1 className="text-3xl font-semibold">Data Export</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink/60">Machine-readable account bundle for profile, jobs, applications, documents, tasks, and generated artifacts.</p>
+          <a className="mt-4 inline-flex w-fit items-center gap-2 rounded bg-ink px-4 py-2 text-sm font-semibold text-white" href={`${apiUrl}/account/export`}>
+            <Download size={16} />
+            Download JSON
+          </a>
         </section>
         {!bundle ? <p className="rounded border border-rust/20 bg-rust/10 p-4 text-sm text-rust">Export data is unavailable.</p> : null}
         {bundle ? (
@@ -24,10 +28,6 @@ export default async function ExportSettingsPage() {
               <Metric label="Applications" value={bundle.applications.length} />
               <Metric label="Documents" value={bundle.documents.length} />
             </div>
-            <a className="inline-flex w-fit items-center gap-2 rounded bg-ink px-4 py-2 text-sm font-semibold text-white" href={`${apiUrl}/account/export`}>
-              <Download size={16} />
-              Download JSON
-            </a>
             <section className="rounded border border-ink/10 bg-white p-5">
               <div className="mb-3 flex items-center gap-2">
                 <ShieldCheck size={18} />

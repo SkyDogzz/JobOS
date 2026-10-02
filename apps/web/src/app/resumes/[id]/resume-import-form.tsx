@@ -15,6 +15,7 @@ export function ResumeImportForm({ resumeId }: { resumeId: string }) {
     const response = await fetch(`${apiUrl}/resumes/parse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ text })
     });
     if (!response.ok) {
@@ -30,6 +31,7 @@ export function ResumeImportForm({ resumeId }: { resumeId: string }) {
     const response = await fetch(`${apiUrl}/resumes/${resumeId}/versions/from-parse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ title, parsed, originalText: text })
     });
     setMessage(response.ok ? "Saved parsed CV version. Refreshing..." : "Could not save parsed version.");

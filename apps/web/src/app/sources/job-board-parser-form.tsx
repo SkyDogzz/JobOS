@@ -15,6 +15,7 @@ export function JobBoardParserForm() {
     const response = await fetch(`${apiUrl}/job-sources/parse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         url: String(formData.get("url") ?? "") || undefined,
         html: String(formData.get("html") ?? "") || undefined,
@@ -31,6 +32,7 @@ export function JobBoardParserForm() {
     const duplicateResponse = await fetch(`${apiUrl}/jobs/dedupe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(parsedJob)
     });
     const duplicateJobs = duplicateResponse.ok ? await duplicateResponse.json() as DuplicateJobCandidate[] : [];
@@ -43,6 +45,7 @@ export function JobBoardParserForm() {
     const response = await fetch(`${apiUrl}/jobs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(parsed)
     });
     setMessage(response.ok ? "Job saved. Refreshing..." : "Could not save parsed job.");
@@ -54,6 +57,7 @@ export function JobBoardParserForm() {
     const response = await fetch(`${apiUrl}/jobs/${id}/merge`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ incoming: parsed, strategy: "update_existing" })
     });
     setMessage(response.ok ? "Duplicate merged. Refreshing..." : "Could not merge duplicate job.");

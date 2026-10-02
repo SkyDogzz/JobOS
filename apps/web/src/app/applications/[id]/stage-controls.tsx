@@ -22,6 +22,7 @@ export function StageControls({ applicationId, initialStage }: { applicationId: 
       const response = await fetch(`${apiUrl}/applications/${applicationId}/stage`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ stage: nextStage })
       });
 

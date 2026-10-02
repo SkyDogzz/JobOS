@@ -34,6 +34,7 @@ export function NotesTasksPanel({
       const response = await fetch(`${apiUrl}/applications/${applicationId}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ body: String(formData.get("body") ?? "") })
       });
       if (!response.ok) throw new Error("Could not create note.");
@@ -55,6 +56,7 @@ export function NotesTasksPanel({
       const response = await fetch(`${apiUrl}/applications/${applicationId}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ title: String(formData.get("title") ?? "") })
       });
       if (!response.ok) throw new Error("Could not create task.");
@@ -74,7 +76,7 @@ export function NotesTasksPanel({
     const previous = tasks;
     setTasks((current) => current.map((task) => task.id === taskId ? { ...task, status: "done" } : task));
     try {
-      const response = await fetch(`${apiUrl}/tasks/${taskId}/complete`, { method: "PATCH" });
+      const response = await fetch(`${apiUrl}/tasks/${taskId}/complete`, { method: "PATCH", credentials: "include" });
       if (!response.ok) throw new Error("Could not complete task.");
       setMessage("Task completed.");
       refresh();

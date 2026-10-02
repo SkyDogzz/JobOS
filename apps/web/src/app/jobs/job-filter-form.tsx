@@ -29,6 +29,7 @@ export function JobFilterForm({ companies, sources }: { companies: CompanySummar
     const response = await fetch(`${apiUrl}/jobs/filters`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ name, filters })
     });
     setMessage(response.ok ? "Filter saved." : "Could not save filter.");

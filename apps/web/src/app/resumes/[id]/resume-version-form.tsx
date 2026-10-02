@@ -23,6 +23,7 @@ export function ResumeVersionForm({ resumeId }: { resumeId: string }) {
       const response = await fetch(`${apiUrl}/resumes/${resumeId}/versions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           title: String(formData.get("title") ?? ""),
           content: {

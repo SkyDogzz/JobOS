@@ -77,6 +77,7 @@ export function ManualImportForm({ existingJobs }: { existingJobs: DashboardJob[
       const response = await fetch(`${apiUrl}/jobs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload)
       });
 
