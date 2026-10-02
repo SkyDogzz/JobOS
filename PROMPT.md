@@ -679,6 +679,8 @@ Implement v1.2.1 real email sync:
 - Keep checks green.
 - Commit the result.
 
+Commit: `f06449f Add real email sync`
+
 ### v1.3.0 — Provider AI Integrations
 
 Implement v1.3.0 provider AI integrations:
