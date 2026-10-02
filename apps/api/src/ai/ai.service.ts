@@ -16,6 +16,8 @@ export class AiService {
 
     const provider = createAiProvider({
       provider: (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local",
+      openaiApiKey: process.env.OPENAI_API_KEY,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       openaiModel: process.env.OPENAI_MODEL,
       anthropicModel: process.env.ANTHROPIC_MODEL,
       localModel: process.env.LOCAL_AI_MODEL
@@ -39,7 +41,15 @@ export class AiService {
       model: output.model,
       purpose: "resume_tailoring",
       promptHash,
-      output: { draft, metadata: output.metadata, sourceVersionId: input.resumeVersionId, targetJobId: input.jobId },
+      output: {
+        draft,
+        metadata: output.metadata,
+        providerOutput: output.output,
+        policyChecks: output.metadata.policyChecks,
+        groundingEvidence: output.metadata.groundingEvidence,
+        sourceVersionId: input.resumeVersionId,
+        targetJobId: input.jobId
+      },
       groundedInProfile: output.groundedInProfile
     });
     await this.ai.createGroundingReviews(artifact.id, coverage.covered.slice(0, 6), { resumeVersionId: input.resumeVersionId, jobId: input.jobId });
@@ -57,6 +67,8 @@ export class AiService {
 
     const provider = createAiProvider({
       provider: (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local",
+      openaiApiKey: process.env.OPENAI_API_KEY,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       openaiModel: process.env.OPENAI_MODEL,
       anthropicModel: process.env.ANTHROPIC_MODEL,
       localModel: process.env.LOCAL_AI_MODEL
@@ -85,6 +97,9 @@ export class AiService {
       output: {
         variants,
         metadata: output.metadata,
+        providerOutput: output.output,
+        policyChecks: output.metadata.policyChecks,
+        groundingEvidence: output.metadata.groundingEvidence,
         sourceVersionId: input.resumeVersionId,
         targetJobId: input.jobId,
         applicationId: input.applicationId ?? null
