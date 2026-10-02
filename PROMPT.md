@@ -735,6 +735,8 @@ Implement v1.4.1 document export and templates:
 - Keep checks green.
 - Commit the result.
 
+Commit: `448e550 Add document export templates`
+
 ### v1.5.0 — Job Discovery Automation
 
 Implement v1.5.0 job discovery automation:
