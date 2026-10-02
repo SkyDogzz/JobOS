@@ -245,6 +245,7 @@ export interface EmailConnectionSummary {
   accountEmail: string;
   status: string;
   excludeBodies: boolean;
+  syncState: Record<string, unknown>;
   lastSyncedAt: string | null;
   createdAt: string;
 }
@@ -255,6 +256,8 @@ export interface EmailSyncJobSummary {
   status: string;
   cursor: string | null;
   error: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
   provider: string;
   accountEmail: string;
   createdAt: string;

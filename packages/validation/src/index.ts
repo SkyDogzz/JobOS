@@ -260,8 +260,9 @@ export const upsertInterviewSchema = z.object({
 export const createEmailConnectionSchema = z.object({
   provider: z.string().min(1),
   accountEmail: z.string().email(),
-  status: z.string().min(1).default("placeholder"),
-  excludeBodies: z.boolean().default(true)
+  status: z.string().min(1).default("connected"),
+  excludeBodies: z.boolean().default(true),
+  syncState: z.record(z.unknown()).default({})
 });
 
 export const updateEmailConnectionSchema = createEmailConnectionSchema.partial();
@@ -282,6 +283,10 @@ export const createEmailMessageSchema = z.object({
   snippet: z.string().optional(),
   body: z.string().optional(),
   receivedAt: z.string().datetime().optional()
+});
+
+export const syncEmailConnectionSchema = z.object({
+  cursor: z.string().optional()
 });
 
 export const classifyEmailMessageSchema = z.object({
@@ -378,6 +383,7 @@ export type UpdateEmailConnectionInput = z.infer<typeof updateEmailConnectionSch
 export type CreateEmailSyncJobInput = z.infer<typeof createEmailSyncJobSchema>;
 export type CreateEmailMessageInput = z.infer<typeof createEmailMessageSchema>;
 export type ClassifyEmailMessageInput = z.infer<typeof classifyEmailMessageSchema>;
+export type SyncEmailConnectionInput = z.infer<typeof syncEmailConnectionSchema>;
 export type CreateCalendarConnectionInput = z.infer<typeof createCalendarConnectionSchema>;
 export type CreateCalendarSyncJobInput = z.infer<typeof createCalendarSyncJobSchema>;
 export type CreateCalendarEventInput = z.infer<typeof createCalendarEventSchema>;

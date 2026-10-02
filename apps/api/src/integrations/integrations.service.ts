@@ -7,6 +7,7 @@ import {
   createEmailConnectionSchema,
   createEmailMessageSchema,
   createEmailSyncJobSchema,
+  syncEmailConnectionSchema,
   syncCalendarConnectionSchema,
   updateEmailConnectionSchema
 } from "@jobos/validation";
@@ -31,8 +32,11 @@ export class IntegrationsService {
     return connection;
   }
 
-  createEmailSyncJob(body: unknown) {
-    return this.integrations.createEmailSyncJob(parseBody(createEmailSyncJobSchema, body));
+  async createEmailSyncJob(body: unknown) {
+    const input = parseBody(createEmailSyncJobSchema, body);
+    const job = await this.integrations.syncEmailConnection(input.connectionId, { cursor: input.cursor });
+    if (!job) throw new NotFoundException("Email connection not found.");
+    return job;
   }
 
   listEmailSyncJobs() {
@@ -51,6 +55,12 @@ export class IntegrationsService {
     const message = await this.integrations.classifyEmailMessage(id, parseBody(classifyEmailMessageSchema, body));
     if (!message) throw new NotFoundException("Email message not found.");
     return message;
+  }
+
+  async syncEmailConnection(id: string, body: unknown) {
+    const job = await this.integrations.syncEmailConnection(id, parseBody(syncEmailConnectionSchema, body));
+    if (!job) throw new NotFoundException("Email connection not found.");
+    return job;
   }
 
   listCalendarConnections() {

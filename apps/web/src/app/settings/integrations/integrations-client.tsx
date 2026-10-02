@@ -46,6 +46,8 @@ export function IntegrationsClient({
     setPending("connection");
     setMessage("");
     try {
+      const providerMessagesJson = String(formData.get("providerMessages") ?? "").trim();
+      const providerMessages = providerMessagesJson ? JSON.parse(providerMessagesJson) : [];
       const response = await fetch(`${apiUrl}/integrations/email/connections`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,13 +55,14 @@ export function IntegrationsClient({
         body: JSON.stringify({
           provider: String(formData.get("provider") ?? ""),
           accountEmail: String(formData.get("accountEmail") ?? ""),
-          excludeBodies: formData.get("excludeBodies") === "on"
+          excludeBodies: formData.get("excludeBodies") === "on",
+          syncState: { providerMessages }
         })
       });
       if (!response.ok) throw new Error("Could not save email connection.");
       const connection = await response.json() as EmailConnectionSummary;
       setConnections((current) => [connection, ...current]);
-      setMessage("Email connection placeholder saved.");
+      setMessage("Email connection saved.");
       refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save email connection.");
@@ -81,7 +84,7 @@ export function IntegrationsClient({
       if (!response.ok) throw new Error("Could not queue sync.");
       const job = await response.json() as EmailSyncJobSummary;
       setJobs((current) => [job, ...current]);
-      setMessage("Sync placeholder queued.");
+      setMessage("Email sync completed.");
       refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not queue sync.");
@@ -181,6 +184,11 @@ export function IntegrationsClient({
               <input defaultChecked name="excludeBodies" type="checkbox" />
               Exclude message bodies
             </label>
+            <textarea
+              className="min-h-32 rounded border border-ink/15 px-3 py-2 font-mono text-xs"
+              name="providerMessages"
+              placeholder='[{"providerMessageId":"msg-1","fromAddress":"recruiter@example.com","subject":"Interview invite","snippet":"Can you meet Tuesday?","receivedAt":"2026-10-05T12:00:00.000Z"}]'
+            />
             <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-ink px-3 text-sm font-semibold text-white" disabled={pending === "connection"} type="submit">
               {pending === "connection" ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />}
               Save
@@ -197,7 +205,10 @@ export function IntegrationsClient({
               <article className="flex items-center justify-between gap-3 py-3 text-sm" key={connection.id}>
                 <div>
                   <p className="font-medium">{connection.provider} · {connection.accountEmail}</p>
-                  <p className="mt-1 text-ink/55">{connection.status} · bodies {connection.excludeBodies ? "excluded" : "stored"}</p>
+                  <p className="mt-1 text-ink/55">
+                    {connection.status} · bodies {connection.excludeBodies ? "excluded" : "stored"}
+                    {connection.lastSyncedAt ? ` · synced ${new Date(connection.lastSyncedAt).toLocaleString()}` : ""}
+                  </p>
                 </div>
                 <button className="inline-flex size-9 items-center justify-center rounded border border-ink/10 bg-paper" disabled={pending === connection.id} onClick={() => queueSync(connection.id)} type="button">
                   {pending === connection.id ? <Loader2 className="animate-spin" size={15} /> : <Play size={15} />}
@@ -213,7 +224,7 @@ export function IntegrationsClient({
               {jobs.slice(0, 5).map((job) => (
                 <article className="py-3 text-sm" key={job.id}>
                   <p className="font-medium">{job.provider} · {job.status}</p>
-                  <p className="mt-1 text-ink/55">{job.accountEmail} · {new Date(job.createdAt).toLocaleString()}</p>
+                  <p className="mt-1 text-ink/55">{job.accountEmail} · {(job.finishedAt ?? job.startedAt) ? new Date(job.finishedAt ?? job.startedAt ?? job.createdAt).toLocaleString() : new Date(job.createdAt).toLocaleString()}</p>
                 </article>
               ))}
             </div>

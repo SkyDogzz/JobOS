@@ -375,7 +375,24 @@ async function main() {
   const emailConnection = await request("/integrations/email/connections", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider: "gmail", accountEmail: "integration-inbox@example.com", excludeBodies: true })
+    body: JSON.stringify({
+      provider: "gmail",
+      accountEmail: "integration-inbox@example.com",
+      excludeBodies: true,
+      syncState: {
+        providerMessages: [{
+          providerMessageId: `provider-message-${Date.now()}`,
+          threadId: "provider-thread-1",
+          fromAddress: "recruiter@example.com",
+          toAddresses: ["integration-inbox@example.com"],
+          subject: "Interview invitation",
+          snippet: "We would like to schedule an interview.",
+          body: "Sensitive provider body",
+          receivedAt: new Date().toISOString(),
+          metadata: { applicationId: application.id }
+        }]
+      }
+    })
   });
   if (!emailConnection.id || emailConnection.excludeBodies !== true) throw new Error("Email connection creation failed.");
   const emailSyncJob = await request("/integrations/email/sync-jobs", {
@@ -383,7 +400,14 @@ async function main() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ connectionId: emailConnection.id, cursor: "integration-cursor" })
   });
-  if (emailSyncJob.status !== "queued") throw new Error("Email sync placeholder was not queued.");
+  if (emailSyncJob.status !== "completed" || !emailSyncJob.finishedAt) throw new Error("Email provider sync did not complete.");
+  const syncedEmailMessages = await request("/integrations/email/messages");
+  const syncedEmailMessage = syncedEmailMessages.find((item) => item.threadId === "provider-thread-1");
+  if (!syncedEmailMessage) throw new Error("Email provider sync did not import a message.");
+  if (syncedEmailMessage.body !== null) throw new Error("Email provider sync did not honor body exclusion.");
+  if (syncedEmailMessage.classification !== "interview" || syncedEmailMessage.applicationId !== application.id) {
+    throw new Error("Email provider sync did not classify or link imported message.");
+  }
   const emailMessage = await request("/integrations/email/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

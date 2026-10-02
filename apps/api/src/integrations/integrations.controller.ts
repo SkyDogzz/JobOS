@@ -45,6 +45,11 @@ export class IntegrationsController {
     return this.integrations.classifyEmailMessage(id, body);
   }
 
+  @Post("email/connections/:id/sync")
+  syncEmailConnection(@Param("id") id: string, @Body() body: unknown) {
+    return this.integrations.syncEmailConnection(id, body);
+  }
+
   @Get("calendar/connections")
   listCalendarConnections() {
     return this.integrations.listCalendarConnections();

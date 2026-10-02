@@ -17,6 +17,7 @@ import type {
   CreateEmailConnectionInput,
   CreateEmailMessageInput,
   CreateEmailSyncJobInput,
+  SyncEmailConnectionInput,
   SyncCalendarConnectionInput,
   UpdateEmailConnectionInput
 } from "@jobos/validation";
@@ -29,7 +30,12 @@ export class IntegrationsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   listEmailConnections() {
-    return this.db.select().from(emailIntegrationConnections).orderBy(desc(emailIntegrationConnections.createdAt));
+    const userId = requireCurrentUserId();
+    return this.db
+      .select()
+      .from(emailIntegrationConnections)
+      .where(eq(emailIntegrationConnections.userId, userId))
+      .orderBy(desc(emailIntegrationConnections.createdAt));
   }
 
   async createEmailConnection(input: CreateEmailConnectionInput) {
@@ -41,7 +47,8 @@ export class IntegrationsRepository {
         provider: input.provider,
         accountEmail: input.accountEmail,
         status: input.status,
-        excludeBodies: input.excludeBodies
+        excludeBodies: input.excludeBodies,
+        syncState: input.syncState
       })
       .returning();
     return connection;
@@ -72,6 +79,7 @@ export class IntegrationsRepository {
       })
       .from(emailSyncJobs)
       .innerJoin(emailIntegrationConnections, eq(emailSyncJobs.connectionId, emailIntegrationConnections.id))
+      .where(eq(emailIntegrationConnections.userId, requireCurrentUserId()))
       .orderBy(desc(emailSyncJobs.createdAt));
   }
 
@@ -88,7 +96,13 @@ export class IntegrationsRepository {
   }
 
   listEmailMessages() {
-    return this.db.select().from(emailMessages).orderBy(desc(emailMessages.receivedAt), desc(emailMessages.createdAt));
+    return this.db
+      .select()
+      .from(emailMessages)
+      .innerJoin(emailIntegrationConnections, eq(emailMessages.connectionId, emailIntegrationConnections.id))
+      .where(eq(emailIntegrationConnections.userId, requireCurrentUserId()))
+      .orderBy(desc(emailMessages.receivedAt), desc(emailMessages.createdAt))
+      .then((rows) => rows.map((row) => row.email_messages));
   }
 
   async createEmailMessage(input: CreateEmailMessageInput) {
@@ -143,6 +157,55 @@ export class IntegrationsRepository {
       .where(eq(emailMessages.id, id))
       .returning();
     return message ?? null;
+  }
+
+  async syncEmailConnection(connectionId: string, input: SyncEmailConnectionInput) {
+    const userId = requireCurrentUserId();
+    const now = new Date();
+    const [connection] = await this.db
+      .select()
+      .from(emailIntegrationConnections)
+      .where(and(eq(emailIntegrationConnections.id, connectionId), eq(emailIntegrationConnections.userId, userId)))
+      .limit(1);
+    if (!connection) return null;
+
+    const [job] = await this.db
+      .insert(emailSyncJobs)
+      .values({ connectionId, cursor: input.cursor, status: "running", startedAt: now })
+      .returning();
+    const providerMessages = readProviderMessages(connection.syncState);
+
+    for (const message of providerMessages) {
+      await this.createEmailMessage({
+        connectionId,
+        applicationId: message.applicationId ?? inferApplicationId(message),
+        providerMessageId: message.providerMessageId,
+        threadId: message.threadId,
+        fromAddress: message.fromAddress,
+        toAddresses: message.toAddresses ?? [],
+        subject: message.subject,
+        snippet: message.snippet,
+        body: message.body,
+        receivedAt: message.receivedAt
+      });
+    }
+
+    const finishedAt = new Date();
+    const [updatedJob] = await this.db
+      .update(emailSyncJobs)
+      .set({ status: "completed", finishedAt, cursor: input.cursor ?? `synced:${finishedAt.toISOString()}` })
+      .where(eq(emailSyncJobs.id, job.id))
+      .returning();
+    await this.db
+      .update(emailIntegrationConnections)
+      .set({
+        status: "connected",
+        lastSyncedAt: finishedAt,
+        syncState: { ...connection.syncState, lastCursor: updatedJob.cursor, lastSyncedMessageCount: providerMessages.length },
+        updatedAt: finishedAt
+      })
+      .where(eq(emailIntegrationConnections.id, connectionId));
+    return updatedJob;
   }
 
   listCalendarConnections() {
@@ -292,6 +355,20 @@ function classifyFromMetadata(input: CreateEmailMessageInput) {
   if (input.applicationId) return "application_related";
   if (input.fromAddress?.includes("recruit")) return "recruiter";
   return "unclassified";
+}
+
+type ProviderEmailMessage = Omit<CreateEmailMessageInput, "connectionId"> & { metadata?: Record<string, unknown> };
+
+function readProviderMessages(syncState: Record<string, unknown>) {
+  const messages = Array.isArray(syncState.providerMessages) ? syncState.providerMessages : [];
+  return messages
+    .map((message) => message as Partial<ProviderEmailMessage>)
+    .filter((message): message is ProviderEmailMessage => Boolean(message.providerMessageId));
+}
+
+function inferApplicationId(message: ProviderEmailMessage) {
+  const value = message.metadata?.applicationId;
+  return typeof value === "string" ? value : undefined;
 }
 
 function calendarEventValues(input: CreateCalendarEventInput) {
