@@ -26,6 +26,7 @@ const appTables = [
   "applications",
   "job_resume_matches",
   "ats_analyses",
+  "discovered_jobs",
   "resume_versions",
   "resumes",
   "jobs",

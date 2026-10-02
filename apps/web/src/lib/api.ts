@@ -247,6 +247,21 @@ export interface JobSourceSummary {
   notes: string | null;
 }
 
+export interface DiscoveredJobSummary {
+  id: string;
+  title: string;
+  companyName: string | null;
+  description: string;
+  location: string | null;
+  sourceUrl: string | null;
+  sourceName: string | null;
+  status: string;
+  reliabilityScore: number;
+  duplicateScore: number;
+  relevanceScore: number;
+  snoozedUntil: string | null;
+}
+
 export interface EmailConnectionSummary {
   id: string;
   provider: string;
@@ -597,6 +612,10 @@ export async function getContacts() {
 
 export async function getJobSources() {
   return getJson<JobSourceSummary[]>("/job-sources");
+}
+
+export async function getDiscoveredJobs() {
+  return getJson<DiscoveredJobSummary[]>("/job-sources/discovered");
 }
 
 export async function getSavedJobFilters() {

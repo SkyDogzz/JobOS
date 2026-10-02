@@ -89,6 +89,15 @@ export const upsertJobSourceSchema = z.object({
   notes: z.string().optional()
 });
 
+export const runJobSourceCheckSchema = z.object({
+  sourceId: z.string().uuid().optional(),
+  fixtures: z.array(createJobSchema.extend({ sourceName: z.string().min(1).optional() })).default([])
+});
+
+export const discoveredJobActionSchema = z.object({
+  snoozedUntil: z.string().datetime().optional()
+});
+
 export const createApplicationSchema = z.object({
   jobId: z.string().uuid(),
   resumeVersionId: z.string().uuid().optional(),
@@ -382,6 +391,8 @@ export type UpsertCompanyInput = z.infer<typeof upsertCompanySchema>;
 export type CreateContactInput = z.infer<typeof createContactSchema>;
 export type LinkContactInput = z.infer<typeof linkContactSchema>;
 export type UpsertJobSourceInput = z.infer<typeof upsertJobSourceSchema>;
+export type RunJobSourceCheckInput = z.infer<typeof runJobSourceCheckSchema>;
+export type DiscoveredJobActionInput = z.infer<typeof discoveredJobActionSchema>;
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateResumeInput = z.infer<typeof createResumeSchema>;
 export type CreateResumeVersionInput = z.infer<typeof createResumeVersionSchema>;

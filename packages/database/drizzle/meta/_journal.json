@@ -120,6 +120,13 @@
       "when": 1791288000000,
       "tag": "0016_document_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791374400000,
+      "tag": "0017_discovered_jobs",
+      "breakpoints": true
     }
   ]
 }

@@ -1,15 +1,17 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, Building2, RadioTower, Users } from "lucide-react";
-import { getCompanies, getContacts, getJobSources } from "../../lib/api";
+import { getCompanies, getContacts, getDiscoveredJobs, getJobSources } from "../../lib/api";
+import { DiscoveredJobsPanel } from "./discovered-jobs-panel";
 import { JobBoardParserForm } from "./job-board-parser-form";
 import { SourceManagementForm } from "./source-management-form";
 
 export default async function SourcesPage() {
-  const [sources, companies, contacts] = await Promise.all([
+  const [sources, companies, contacts, discoveredJobs] = await Promise.all([
     getJobSources().catch(() => []),
     getCompanies().catch(() => []),
-    getContacts().catch(() => [])
+    getContacts().catch(() => []),
+    getDiscoveredJobs().catch(() => [])
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function SourcesPage() {
         <h1 className="mb-6 text-3xl font-semibold">Sources & Companies</h1>
         <JobBoardParserForm />
         <SourceManagementForm />
+        <DiscoveredJobsPanel jobs={discoveredJobs} />
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
           <Panel icon={<RadioTower size={18} />} title="Job Sources" items={sources.map((source) => [source.name, `${source.kind} · ${source.status}`])} />
           <Panel icon={<Building2 size={18} />} title="Companies" items={companies.map((company) => [company.name, company.website ?? "No website", `/companies/${company.id}`])} />

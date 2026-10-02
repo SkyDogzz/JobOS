@@ -95,6 +95,55 @@ async function main() {
   });
   if (updatedSource.status !== "needs_review") throw new Error("Job source update failed.");
 
+  const discoveryRun = await request("/job-sources/checks/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sourceId: source.id,
+      fixtures: [
+        {
+          title: "Queued Discovery Engineer",
+          companyName: "DiscoveryCo",
+          description: "Build TypeScript automation with PostgreSQL workflows for remote teams.",
+          location: "Remote",
+          sourceUrl: "https://jobs.example.com/discovery-engineer",
+          sourceName: source.name,
+          remotePolicy: "remote",
+          salaryText: "$135k - $165k"
+        },
+        {
+          title: "Dismissed Discovery Role",
+          companyName: "DiscoveryCo",
+          description: "Legacy operations role for deterministic dismissal.",
+          location: "Remote",
+          sourceUrl: "https://jobs.example.com/dismissed-role",
+          sourceName: source.name
+        },
+        {
+          title: "Snoozed Discovery Role",
+          companyName: "DiscoveryCo",
+          description: "Potential future workflow role.",
+          location: "Remote",
+          sourceUrl: "https://jobs.example.com/snoozed-role",
+          sourceName: source.name
+        }
+      ]
+    })
+  });
+  if (discoveryRun.imported !== 3 || !discoveryRun.queued.every((item) => typeof item.relevanceScore === "number")) throw new Error("Job discovery run did not queue scored candidates.");
+  const approvedDiscovery = await request(`/job-sources/discovered/${discoveryRun.queued[0].id}/approve`, { method: "POST" });
+  if (approvedDiscovery.title !== "Queued Discovery Engineer") throw new Error("Discovered job approval did not create a saved job.");
+  const dismissedDiscovery = await request(`/job-sources/discovered/${discoveryRun.queued[1].id}/dismiss`, { method: "POST" });
+  if (dismissedDiscovery.status !== "dismissed") throw new Error("Discovered job dismissal failed.");
+  const snoozedDiscovery = await request(`/job-sources/discovered/${discoveryRun.queued[2].id}/snooze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ snoozedUntil: new Date(Date.now() + 86400000).toISOString() })
+  });
+  if (snoozedDiscovery.status !== "snoozed" || !snoozedDiscovery.snoozedUntil) throw new Error("Discovered job snooze failed.");
+  const discoveryQueue = await request("/job-sources/discovered");
+  if (!discoveryQueue.some((item) => item.id === discoveryRun.queued[0].id && item.status === "approved")) throw new Error("Discovery queue did not retain reviewed candidates.");
+
   const parsedPosting = await request("/job-sources/parse", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -822,6 +871,7 @@ https://example.com/profile`;
   if (exportBundle.formatVersion !== "0.8.2") throw new Error("Account export returned the wrong format version.");
   if (exportBundle.user.email !== "[redacted]") throw new Error("Account export did not redact sensitive user fields.");
   if (!exportBundle.jobs.some((item) => item.id === job.id)) throw new Error("Account export did not include jobs.");
+  if (!exportBundle.discoveredJobs.some((item) => item.id === discoveryRun.queued[0].id)) throw new Error("Account export did not include discovered jobs.");
   if (!exportBundle.applications.some((item) => item.id === application.id)) throw new Error("Account export did not include applications.");
   if (!exportBundle.resumes.some((item) => item.id === resume.id)) throw new Error("Account export did not include resumes.");
   if (!exportBundle.documents.some((item) => item.id === approvedCoverLetter.id)) throw new Error("Account export did not include documents.");

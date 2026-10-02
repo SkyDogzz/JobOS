@@ -84,6 +84,30 @@ export const savedJobFilters = pgTable("saved_job_filters", {
   ...timestamps
 });
 
+export const discoveredJobs = pgTable("discovered_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  sourceId: uuid("source_id").references(() => jobSources.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  companyName: text("company_name"),
+  description: text("description").notNull(),
+  location: text("location"),
+  sourceUrl: text("source_url"),
+  sourceName: text("source_name"),
+  remotePolicy: text("remote_policy"),
+  salaryText: text("salary_text"),
+  status: text("status").notNull().default("pending"),
+  reliabilityScore: integer("reliability_score").notNull().default(50),
+  duplicateScore: integer("duplicate_score").notNull().default(0),
+  relevanceScore: integer("relevance_score").notNull().default(50),
+  snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  userStatusIdx: index("discovered_jobs_user_status_idx").on(table.userId, table.status),
+  sourceUrlIdx: index("discovered_jobs_source_url_idx").on(table.sourceUrl)
+}));
+
 export const contacts = pgTable("contacts", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
