@@ -646,6 +646,31 @@ https://example.com/profile`;
   });
   if (approvedCoverLetter.kind !== "cover_letter") throw new Error("Approved cover letter was not persisted as a cover letter document.");
 
+  const coverLetterTemplate = await request("/documents/templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: "Integration cover letter template",
+      kind: "cover_letter",
+      format: "markdown",
+      body: "# {{title}}\n\n{{body}}\n\nClaims\n{{groundedClaimsList}}"
+    })
+  });
+  if (coverLetterTemplate.kind !== "cover_letter") throw new Error("Document template was not created.");
+  const templates = await request("/documents/templates/list?kind=cover_letter");
+  if (!templates.some((template) => template.id === coverLetterTemplate.id)) throw new Error("Document template list did not include the new template.");
+  const markdownExport = await request(`/documents/${approvedCoverLetter.id}/export?format=markdown&templateId=${coverLetterTemplate.id}`);
+  if (markdownExport.format !== "markdown" || !markdownExport.content.includes("Claims") || markdownExport.content.includes("metadata")) {
+    throw new Error("Markdown export did not render user-facing content separately from metadata.");
+  }
+  if (!markdownExport.metadataSidecar.generatedMetadata?.promptHash) throw new Error("Document export did not preserve generation metadata sidecar.");
+  const pdfExport = await request(`/documents/${approvedCoverLetter.id}/export?format=pdf`);
+  if (pdfExport.mimeType !== "application/pdf" || !pdfExport.content.startsWith("<!doctype html>")) throw new Error("PDF export payload was not rendered deterministically.");
+  const docxExport = await request(`/documents/${approvedCoverLetter.id}/export?format=docx`);
+  if (docxExport.mimeType !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || !docxExport.filename.endsWith(".docx")) {
+    throw new Error("DOCX export payload was not rendered deterministically.");
+  }
+
   const [documents, artifacts] = await Promise.all([
     request("/documents?kind=cover_letter"),
     request("/documents/artifacts")
@@ -800,6 +825,7 @@ https://example.com/profile`;
   if (!exportBundle.applications.some((item) => item.id === application.id)) throw new Error("Account export did not include applications.");
   if (!exportBundle.resumes.some((item) => item.id === resume.id)) throw new Error("Account export did not include resumes.");
   if (!exportBundle.documents.some((item) => item.id === approvedCoverLetter.id)) throw new Error("Account export did not include documents.");
+  if (!exportBundle.documentTemplates.some((item) => item.id === coverLetterTemplate.id)) throw new Error("Account export did not include document templates.");
   if (!exportBundle.aiArtifacts.some((item) => item.id === coverLetters.artifactId)) throw new Error("Account export did not include AI artifacts.");
   const deletionPreview = await request("/account", {
     method: "DELETE",

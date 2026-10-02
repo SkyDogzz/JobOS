@@ -172,6 +172,14 @@ export interface DocumentSummary {
   updatedAt: string;
 }
 
+export interface DocumentExport {
+  filename: string;
+  format: "markdown" | "pdf" | "docx";
+  mimeType: string;
+  content: string;
+  metadataSidecar: Record<string, unknown>;
+}
+
 export interface AiArtifactSummary {
   id: string;
   applicationId: string | null;
@@ -561,6 +569,10 @@ export async function getDocuments() {
 
 export async function getDocumentDetail(id: string) {
   return getJson<DocumentSummary>(`/documents/${id}`);
+}
+
+export async function getDocumentExport(id: string, format: "markdown" | "pdf" | "docx" = "markdown") {
+  return getJson<DocumentExport>(`/documents/${id}/export?format=${format}`);
 }
 
 export async function getAiArtifacts() {

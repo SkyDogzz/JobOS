@@ -199,6 +199,18 @@ export const documents = pgTable("documents", {
   ...timestamps
 });
 
+export const documentTemplates = pgTable("document_templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  kind: documentKind("kind").notNull(),
+  format: text("format").notNull().default("markdown"),
+  body: text("body").notNull(),
+  ...timestamps
+}, (table) => ({
+  userKindIdx: index("document_templates_user_kind_idx").on(table.userId, table.kind)
+}));
+
 export const applicationSharePackets = pgTable("application_share_packets", {
   id: uuid("id").defaultRandom().primaryKey(),
   applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),

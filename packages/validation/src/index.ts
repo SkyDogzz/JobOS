@@ -190,6 +190,15 @@ export const assignDocumentSchema = z.object({
   applicationId: z.string().uuid().nullable()
 });
 
+export const exportFormatSchema = z.enum(["markdown", "pdf", "docx"]);
+
+export const upsertDocumentTemplateSchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(["resume", "cover_letter", "portfolio", "other"]),
+  format: exportFormatSchema.default("markdown"),
+  body: z.string().min(1)
+});
+
 export const createGroundingReviewSchema = z.object({
   artifactId: z.string().uuid()
 });
@@ -386,6 +395,8 @@ export type GenerateCoverLettersInput = z.infer<typeof generateCoverLettersSchem
 export type ApproveCoverLetterInput = z.infer<typeof approveCoverLetterSchema>;
 export type DocumentFiltersInput = z.infer<typeof documentFiltersSchema>;
 export type AssignDocumentInput = z.infer<typeof assignDocumentSchema>;
+export type ExportFormatInput = z.infer<typeof exportFormatSchema>;
+export type UpsertDocumentTemplateInput = z.infer<typeof upsertDocumentTemplateSchema>;
 export type CreateGroundingReviewInput = z.infer<typeof createGroundingReviewSchema>;
 export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;

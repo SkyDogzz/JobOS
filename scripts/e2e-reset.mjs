@@ -19,6 +19,7 @@ const appTables = [
   "notes",
   "reviewer_comments",
   "application_share_packets",
+  "document_templates",
   "documents",
   "application_contacts",
   "application_events",

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
-import { aiArtifacts, applications, documents } from "@jobos/database";
-import type { AssignDocumentInput, DocumentFiltersInput } from "@jobos/validation";
+import { aiArtifacts, applications, documents, documentTemplates } from "@jobos/database";
+import type { AssignDocumentInput, DocumentFiltersInput, UpsertDocumentTemplateInput } from "@jobos/validation";
 import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -48,6 +48,28 @@ export class DocumentsRepository {
     }
     const [document] = await this.db.update(documents).set({ applicationId: input.applicationId, updatedAt: new Date() }).where(and(eq(documents.id, id), eq(documents.userId, userId))).returning();
     return document ?? null;
+  }
+
+  listTemplates(kind?: string) {
+    const userId = requireCurrentUserId();
+    return this.db.select().from(documentTemplates).where(and(eq(documentTemplates.userId, userId), kind ? eq(documentTemplates.kind, kind as typeof documentTemplates.$inferSelect.kind) : undefined)).orderBy(desc(documentTemplates.updatedAt));
+  }
+
+  async findTemplateById(id: string) {
+    const userId = requireCurrentUserId();
+    const [template] = await this.db.select().from(documentTemplates).where(and(eq(documentTemplates.id, id), eq(documentTemplates.userId, userId))).limit(1);
+    return template ?? null;
+  }
+
+  async defaultTemplate(kind: typeof documentTemplates.$inferSelect.kind) {
+    const userId = requireCurrentUserId();
+    const [template] = await this.db.select().from(documentTemplates).where(and(eq(documentTemplates.userId, userId), eq(documentTemplates.kind, kind))).orderBy(desc(documentTemplates.updatedAt)).limit(1);
+    return template ?? null;
+  }
+
+  createTemplate(input: UpsertDocumentTemplateInput) {
+    const userId = requireCurrentUserId();
+    return this.db.insert(documentTemplates).values({ userId, ...input }).returning().then(([template]) => template);
   }
 
   async listArtifacts(filters: DocumentFiltersInput) {

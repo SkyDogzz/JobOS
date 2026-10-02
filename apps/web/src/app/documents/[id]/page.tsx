@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
-import { getDocumentDetail } from "../../../lib/api";
+import { ArrowLeft, Download, FileText } from "lucide-react";
+import { getDocumentDetail, getDocumentExport } from "../../../lib/api";
 
 export default async function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const document = await getDocumentDetail(id).catch(() => null);
+  const [document, preview] = await Promise.all([
+    getDocumentDetail(id).catch(() => null),
+    getDocumentExport(id, "markdown").catch(() => null)
+  ]);
   if (!document) notFound();
 
   const metadata = typeof document.content.metadata === "object" && document.content.metadata ? document.content.metadata : {};
@@ -23,14 +26,22 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
             <h1 className="text-2xl font-semibold">{document.name}</h1>
           </div>
           <p className="text-sm text-ink/55">{document.kind} · {document.applicationId ?? "Unassigned"}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(["markdown", "pdf", "docx"] as const).map((format) => (
+              <a className="inline-flex items-center gap-2 rounded border border-ink/15 px-3 py-2 text-sm font-medium hover:bg-paper" href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/documents/${document.id}/export?format=${format}`} key={format}>
+                <Download size={15} />
+                {format.toUpperCase()}
+              </a>
+            ))}
+          </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
               <h2 className="mb-2 font-semibold">Metadata</h2>
               <pre className="overflow-auto rounded bg-paper p-3 text-xs">{JSON.stringify(metadata, null, 2)}</pre>
             </div>
             <div>
-              <h2 className="mb-2 font-semibold">Content</h2>
-              <pre className="overflow-auto rounded bg-paper p-3 text-xs">{JSON.stringify(document.content, null, 2)}</pre>
+              <h2 className="mb-2 font-semibold">Preview</h2>
+              <pre className="max-h-96 overflow-auto rounded bg-paper p-3 text-xs">{preview?.content ?? JSON.stringify(document.content, null, 2)}</pre>
             </div>
           </div>
         </section>
