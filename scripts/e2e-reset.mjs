@@ -17,6 +17,8 @@ const appTables = [
   "notification_preferences",
   "tasks",
   "notes",
+  "reviewer_comments",
+  "application_share_packets",
   "documents",
   "application_contacts",
   "application_events",

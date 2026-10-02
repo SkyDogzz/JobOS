@@ -213,6 +213,21 @@ export const updateApplicationStageSchema = z.object({
   ])
 });
 
+export const createSharePacketSchema = z.object({
+  audience: z.enum(["mentor", "recruiter", "trusted_reviewer"]).default("trusted_reviewer"),
+  recipientName: z.string().min(1).optional(),
+  recipientEmail: z.string().email().optional(),
+  expiresAt: z.string().datetime()
+});
+
+export const createReviewerCommentSchema = z.object({
+  authorName: z.string().min(1).max(120).default("Reviewer"),
+  targetType: z.enum(["application", "resume", "document"]).default("application"),
+  resumeVersionId: z.string().uuid().optional(),
+  documentId: z.string().uuid().optional(),
+  body: z.string().min(1).max(4000)
+});
+
 export const createNoteSchema = z.object({
   body: z.string().min(1)
 });
@@ -374,6 +389,8 @@ export type AssignDocumentInput = z.infer<typeof assignDocumentSchema>;
 export type CreateGroundingReviewInput = z.infer<typeof createGroundingReviewSchema>;
 export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
+export type CreateSharePacketInput = z.infer<typeof createSharePacketSchema>;
+export type CreateReviewerCommentInput = z.infer<typeof createReviewerCommentSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;

@@ -667,9 +667,54 @@ https://example.com/profile`;
   if (detail.id !== application.id) throw new Error("Application detail returned the wrong record.");
   if (!Array.isArray(detail.events)) throw new Error("Application detail did not include events.");
   if (!Array.isArray(detail.analyses)) throw new Error("Application detail did not include ATS analyses.");
+
+  const sharePacket = await request(`/applications/${application.id}/share-packets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audience: "mentor",
+      recipientName: "Integration Mentor",
+      recipientEmail: "mentor@example.com",
+      expiresAt: new Date(Date.now() + 86400000).toISOString()
+    })
+  });
+  if (!sharePacket.token || sharePacket.applicationId !== application.id) throw new Error("Share packet was not created for the application.");
+  const secondaryShareList = await request(`/applications/${application.id}/share-packets`, {
+    headers: { Cookie: secondarySession }
+  });
+  if (secondaryShareList.length !== 0) throw new Error("Secondary user could list another user's share packets.");
+  const sharedView = await request(`/shares/${sharePacket.token}`);
+  if (sharedView.application.id !== application.id || sharedView.packet.token) throw new Error("Shared packet did not expose the read-only application view.");
+  const reviewerComment = await request(`/shares/${sharePacket.token}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ authorName: "Integration Mentor", targetType: "application", body: "Clarify the recruiter follow-up plan." })
+  });
+  if (reviewerComment.applicationId !== application.id || reviewerComment.targetType !== "application") throw new Error("Reviewer comment was not attached to the shared application.");
+  const sharedViewWithComment = await request(`/shares/${sharePacket.token}`);
+  if (!sharedViewWithComment.comments.some((item) => item.id === reviewerComment.id)) throw new Error("Shared packet did not include reviewer comments.");
+  const revokedShare = await request(`/applications/share-packets/${sharePacket.id}/revoke`, { method: "POST" });
+  if (!revokedShare.revokedAt) throw new Error("Share packet revocation did not set revokedAt.");
+  const revokedView = await fetch(`${apiUrl}/shares/${sharePacket.token}`);
+  if (revokedView.status !== 410) throw new Error("Revoked share link was not blocked.");
+  const expiredShare = await request(`/applications/${application.id}/share-packets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audience: "trusted_reviewer",
+      recipientName: "Expired Reviewer",
+      expiresAt: new Date(Date.now() - 60000).toISOString()
+    })
+  });
+  const expiredView = await fetch(`${apiUrl}/shares/${expiredShare.token}`);
+  if (expiredView.status !== 410) throw new Error("Expired share link was not blocked.");
+
   const auditEvents = await request("/audit/events");
   if (!auditEvents.some((item) => item.applicationId === application.id && item.eventType === "created")) {
     throw new Error("Audit feed did not include application creation.");
+  }
+  if (!auditEvents.some((item) => item.applicationId === application.id && item.eventType === "share_commented")) {
+    throw new Error("Audit feed did not include reviewer comment activity.");
   }
   const filteredAuditEvents = await request(`/audit/events?applicationId=${application.id}&relatedEntity=application`);
   if (!filteredAuditEvents.every((item) => item.applicationId === application.id && item.relatedEntity === "application")) {

@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import {
   aiArtifacts,
   applicationContacts,
   applicationEvents,
+  applicationSharePackets,
   applications,
   atsAnalyses,
   candidateProfiles,
@@ -16,6 +17,7 @@ import {
   notes,
   notificationPreferences,
   notifications,
+  reviewerComments,
   resumeVersions,
   resumes,
   tasks,
@@ -48,6 +50,7 @@ export class AccountRepository {
       noteRows,
       taskRows,
       documentRows,
+      sharePacketRows,
       artifactRows,
       groundingReviewRows,
       atsRows,
@@ -68,12 +71,17 @@ export class AccountRepository {
       this.db.select().from(notes).orderBy(asc(notes.createdAt)),
       this.db.select().from(tasks).where(eq(tasks.userId, user.id)).orderBy(asc(tasks.createdAt)),
       this.db.select().from(documents).where(eq(documents.userId, user.id)).orderBy(asc(documents.createdAt)),
+      this.db.select().from(applicationSharePackets).where(eq(applicationSharePackets.userId, user.id)).orderBy(asc(applicationSharePackets.createdAt)),
       this.db.select().from(aiArtifacts).where(eq(aiArtifacts.userId, user.id)).orderBy(asc(aiArtifacts.createdAt)),
       this.db.select().from(groundingReviews).orderBy(asc(groundingReviews.createdAt)),
       this.db.select().from(atsAnalyses).orderBy(asc(atsAnalyses.createdAt)),
       this.db.select().from(jobResumeMatches).orderBy(asc(jobResumeMatches.createdAt)),
       this.db.select().from(notifications).where(eq(notifications.userId, user.id)).orderBy(asc(notifications.createdAt))
     ]);
+    const applicationIds = applicationRows.map((application) => application.id);
+    const reviewerCommentRows = applicationIds.length
+      ? await this.db.select().from(reviewerComments).where(inArray(reviewerComments.applicationId, applicationIds)).orderBy(asc(reviewerComments.createdAt))
+      : [];
 
     const settings = settingRows[0] ?? null;
     const redact = settings?.redactSensitiveExports ?? true;
@@ -93,6 +101,8 @@ export class AccountRepository {
       resumes: resumeRows,
       resumeVersions: resumeVersionRows,
       documents: documentRows,
+      applicationSharePackets: sharePacketRows,
+      reviewerComments: reviewerCommentRows,
       notes: noteRows,
       tasks: taskRows,
       aiArtifacts: artifactRows,
@@ -115,6 +125,8 @@ export class AccountRepository {
       applications: bundle.applications.length,
       resumes: bundle.resumes.length,
       documents: bundle.documents.length,
+      applicationSharePackets: bundle.applicationSharePackets.length,
+      reviewerComments: bundle.reviewerComments.length,
       tasks: bundle.tasks.length,
       aiArtifacts: bundle.aiArtifacts.length
     };

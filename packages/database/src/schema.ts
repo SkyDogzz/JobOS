@@ -25,7 +25,7 @@ export const applicationStage = pgEnum("application_stage", [
 
 export const documentKind = pgEnum("document_kind", ["resume", "cover_letter", "portfolio", "other"]);
 export const taskStatus = pgEnum("task_status", ["todo", "doing", "done", "cancelled"]);
-export const eventKind = pgEnum("event_kind", ["created", "updated", "stage_changed", "email", "note", "ai_generated"]);
+export const eventKind = pgEnum("event_kind", ["created", "updated", "stage_changed", "email", "note", "ai_generated", "share_created", "share_viewed", "share_commented", "share_revoked"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -198,6 +198,38 @@ export const documents = pgTable("documents", {
   content: jsonb("content").$type<Record<string, unknown>>().notNull().default({}),
   ...timestamps
 });
+
+export const applicationSharePackets = pgTable("application_share_packets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: text("token").notNull(),
+  audience: text("audience").notNull().default("trusted_reviewer"),
+  recipientName: text("recipient_name"),
+  recipientEmail: text("recipient_email"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => ({
+  tokenIdx: uniqueIndex("application_share_packets_token_idx").on(table.token),
+  applicationIdx: index("application_share_packets_application_idx").on(table.applicationId)
+}));
+
+export const reviewerComments = pgTable("reviewer_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sharePacketId: uuid("share_packet_id").references(() => applicationSharePackets.id, { onDelete: "cascade" }),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),
+  resumeVersionId: uuid("resume_version_id").references(() => resumeVersions.id, { onDelete: "set null" }),
+  documentId: uuid("document_id").references(() => documents.id, { onDelete: "set null" }),
+  authorName: text("author_name").notNull(),
+  targetType: text("target_type").notNull().default("application"),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  applicationIdx: index("reviewer_comments_application_idx").on(table.applicationId),
+  sharePacketIdx: index("reviewer_comments_share_packet_idx").on(table.sharePacketId)
+}));
 
 export const notes = pgTable("notes", {
   id: uuid("id").defaultRandom().primaryKey(),

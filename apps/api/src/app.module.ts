@@ -22,6 +22,7 @@ import { NotificationsModule } from "./notifications/notifications.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
 import { ResumesModule } from "./resumes/resumes.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
+import { SharingModule } from "./sharing/sharing.module.js";
 import { TasksModule } from "./tasks/tasks.module.js";
 import { UsersModule } from "./users/users.module.js";
 
@@ -40,6 +41,7 @@ import { UsersModule } from "./users/users.module.js";
     ApplicationsModule,
     ResumesModule,
     SettingsModule,
+    SharingModule,
     DocumentsModule,
     AtsModule,
     MatchingModule,
