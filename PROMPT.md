@@ -638,6 +638,8 @@ Implement v1.1.1 auth and user scoping hardening:
 - Keep checks green.
 - Commit the result.
 
+Commit: `c691004 Harden auth user scoping`
+
 ### v1.1.2 — End-to-End UI Test Suite
 
 Implement v1.1.2 end-to-end UI test suite:
