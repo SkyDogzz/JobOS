@@ -7,6 +7,7 @@ import {
   createEmailConnectionSchema,
   createEmailMessageSchema,
   createEmailSyncJobSchema,
+  syncCalendarConnectionSchema,
   updateEmailConnectionSchema
 } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
@@ -60,8 +61,11 @@ export class IntegrationsService {
     return this.integrations.createCalendarConnection(parseBody(createCalendarConnectionSchema, body));
   }
 
-  createCalendarSyncJob(body: unknown) {
-    return this.integrations.createCalendarSyncJob(parseBody(createCalendarSyncJobSchema, body));
+  async createCalendarSyncJob(body: unknown) {
+    const input = parseBody(createCalendarSyncJobSchema, body);
+    const job = await this.integrations.syncCalendarConnection(input.connectionId, { cursor: input.cursor });
+    if (!job) throw new NotFoundException("Calendar connection not found.");
+    return job;
   }
 
   listCalendarSyncJobs() {
@@ -74,5 +78,11 @@ export class IntegrationsService {
 
   listCalendarEvents() {
     return this.integrations.listCalendarEvents();
+  }
+
+  async syncCalendarConnection(id: string, body: unknown) {
+    const job = await this.integrations.syncCalendarConnection(id, parseBody(syncCalendarConnectionSchema, body));
+    if (!job) throw new NotFoundException("Calendar connection not found.");
+    return job;
   }
 }

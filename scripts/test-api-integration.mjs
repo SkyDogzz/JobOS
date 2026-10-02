@@ -421,33 +421,53 @@ async function main() {
   const calendarConnection = await request("/integrations/calendar/connections", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider: "google_calendar", accountEmail: "integration-calendar@example.com", calendarName: "JobOS Interviews" })
+    body: JSON.stringify({
+      provider: "google_calendar",
+      accountEmail: "integration-calendar@example.com",
+      calendarName: "JobOS Interviews",
+      syncState: {
+        providerEvents: [{
+          interviewId: interview.id,
+          providerEventId: `calendar-event-${Date.now()}`,
+          title: "Integration interview",
+          startsAt: interviewStartsAt,
+          endsAt: new Date(new Date(interviewStartsAt).getTime() + 3600000).toISOString(),
+          location: "https://meet.example.com/integration",
+          status: "confirmed",
+          metadata: { conflict: true, source: "integration-test" }
+        }]
+      }
+    })
   });
   if (!calendarConnection.id) throw new Error("Calendar connection creation failed.");
+  const staleCalendarEvent = await request("/integrations/calendar/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      connectionId: calendarConnection.id,
+      providerEventId: `stale-calendar-event-${Date.now()}`,
+      title: "Old hold",
+      startsAt: new Date(new Date(interviewStartsAt).getTime() + 7200000).toISOString(),
+      status: "confirmed",
+      conflictStatus: "clear",
+      metadata: { source: "stale-seed" }
+    })
+  });
   const calendarSyncJob = await request("/integrations/calendar/sync-jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ connectionId: calendarConnection.id, cursor: "calendar-cursor" })
   });
-  if (calendarSyncJob.status !== "queued") throw new Error("Calendar sync placeholder was not queued.");
-  const calendarEvent = await request("/integrations/calendar/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      connectionId: calendarConnection.id,
-      interviewId: interview.id,
-      providerEventId: `calendar-event-${Date.now()}`,
-      title: "Integration interview",
-      startsAt: interviewStartsAt,
-      endsAt: new Date(new Date(interviewStartsAt).getTime() + 3600000).toISOString(),
-      location: "https://meet.example.com/integration",
-      status: "confirmed",
-      conflictStatus: "conflict",
-      metadata: { source: "integration-test" }
-    })
-  });
+  if (calendarSyncJob.status !== "completed" || !calendarSyncJob.finishedAt) throw new Error("Calendar provider sync did not complete.");
+  const syncedEvents = await request("/integrations/calendar/events");
+  const calendarEvent = syncedEvents.find((item) => item.interviewId === interview.id);
+  const staleSyncedEvent = syncedEvents.find((item) => item.id === staleCalendarEvent.id);
+  if (!calendarEvent) throw new Error("Calendar provider sync did not import the interview event.");
   if (calendarEvent.interviewId !== interview.id || calendarEvent.conflictStatus !== "conflict") {
     throw new Error("Calendar event did not link to interview with conflict status.");
+  }
+  if (staleSyncedEvent?.status !== "cancelled" || staleSyncedEvent.conflictStatus !== "stale") {
+    throw new Error("Calendar sync did not mark missing provider events as stale.");
   }
   const interviewWithCalendar = await request(`/interviews/${interview.id}`);
   if (interviewWithCalendar.calendarConflictStatus !== "conflict") {

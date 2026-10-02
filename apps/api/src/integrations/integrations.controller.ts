@@ -74,4 +74,9 @@ export class IntegrationsController {
   listCalendarEvents() {
     return this.integrations.listCalendarEvents();
   }
+
+  @Post("calendar/connections/:id/sync")
+  syncCalendarConnection(@Param("id") id: string, @Body() body: unknown) {
+    return this.integrations.syncCalendarConnection(id, body);
+  }
 }

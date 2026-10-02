@@ -294,7 +294,8 @@ export const createCalendarConnectionSchema = z.object({
   provider: z.string().min(1),
   accountEmail: z.string().email(),
   calendarName: z.string().optional(),
-  status: z.string().min(1).default("placeholder")
+  status: z.string().min(1).default("connected"),
+  syncState: z.record(z.unknown()).default({})
 });
 
 export const createCalendarSyncJobSchema = z.object({
@@ -312,8 +313,12 @@ export const createCalendarEventSchema = z.object({
   endsAt: z.string().datetime().optional(),
   location: z.string().optional(),
   status: z.string().min(1).default("confirmed"),
-  conflictStatus: z.enum(["clear", "conflict", "tentative", "cancelled"]).default("clear"),
+  conflictStatus: z.enum(["clear", "conflict", "tentative", "cancelled", "stale"]).default("clear"),
   metadata: z.record(z.unknown()).default({})
+});
+
+export const syncCalendarConnectionSchema = z.object({
+  cursor: z.string().optional()
 });
 
 export const upsertCandidateProfileSchema = z.object({
@@ -376,6 +381,7 @@ export type ClassifyEmailMessageInput = z.infer<typeof classifyEmailMessageSchem
 export type CreateCalendarConnectionInput = z.infer<typeof createCalendarConnectionSchema>;
 export type CreateCalendarSyncJobInput = z.infer<typeof createCalendarSyncJobSchema>;
 export type CreateCalendarEventInput = z.infer<typeof createCalendarEventSchema>;
+export type SyncCalendarConnectionInput = z.infer<typeof syncCalendarConnectionSchema>;
 export type UpsertCandidateProfileInput = z.infer<typeof upsertCandidateProfileSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

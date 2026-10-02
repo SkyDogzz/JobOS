@@ -281,6 +281,7 @@ export interface CalendarConnectionSummary {
   accountEmail: string;
   calendarName: string | null;
   status: string;
+  syncState: Record<string, unknown>;
   lastSyncedAt: string | null;
   createdAt: string;
 }
@@ -291,6 +292,8 @@ export interface CalendarSyncJobSummary {
   status: string;
   cursor: string | null;
   error: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
   provider: string;
   accountEmail: string;
   createdAt: string;

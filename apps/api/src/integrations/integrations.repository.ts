@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne, notInArray } from "drizzle-orm";
 import {
   calendarEvents,
   calendarIntegrationConnections,
@@ -17,6 +17,7 @@ import type {
   CreateEmailConnectionInput,
   CreateEmailMessageInput,
   CreateEmailSyncJobInput,
+  SyncCalendarConnectionInput,
   UpdateEmailConnectionInput
 } from "@jobos/validation";
 import { requireCurrentUserId } from "../common/current-user.js";
@@ -145,7 +146,12 @@ export class IntegrationsRepository {
   }
 
   listCalendarConnections() {
-    return this.db.select().from(calendarIntegrationConnections).orderBy(desc(calendarIntegrationConnections.createdAt));
+    const userId = requireCurrentUserId();
+    return this.db
+      .select()
+      .from(calendarIntegrationConnections)
+      .where(eq(calendarIntegrationConnections.userId, userId))
+      .orderBy(desc(calendarIntegrationConnections.createdAt));
   }
 
   async createCalendarConnection(input: CreateCalendarConnectionInput) {
@@ -157,7 +163,8 @@ export class IntegrationsRepository {
         provider: input.provider,
         accountEmail: input.accountEmail,
         calendarName: input.calendarName,
-        status: input.status
+        status: input.status,
+        syncState: input.syncState
       })
       .returning();
     return connection;
@@ -179,6 +186,7 @@ export class IntegrationsRepository {
       })
       .from(calendarSyncJobs)
       .innerJoin(calendarIntegrationConnections, eq(calendarSyncJobs.connectionId, calendarIntegrationConnections.id))
+      .where(eq(calendarIntegrationConnections.userId, requireCurrentUserId()))
       .orderBy(desc(calendarSyncJobs.createdAt));
   }
 
@@ -191,7 +199,13 @@ export class IntegrationsRepository {
   }
 
   listCalendarEvents() {
-    return this.db.select().from(calendarEvents).orderBy(desc(calendarEvents.startsAt), desc(calendarEvents.createdAt));
+    return this.db
+      .select()
+      .from(calendarEvents)
+      .innerJoin(calendarIntegrationConnections, eq(calendarEvents.connectionId, calendarIntegrationConnections.id))
+      .where(eq(calendarIntegrationConnections.userId, requireCurrentUserId()))
+      .orderBy(desc(calendarEvents.startsAt), desc(calendarEvents.createdAt))
+      .then((rows) => rows.map((row) => row.calendar_events));
   }
 
   async createCalendarEvent(input: CreateCalendarEventInput) {
@@ -204,7 +218,71 @@ export class IntegrationsRepository {
       })
       .returning();
     return event;
-  }}
+  }
+
+  async syncCalendarConnection(connectionId: string, input: SyncCalendarConnectionInput) {
+    const userId = requireCurrentUserId();
+    const now = new Date();
+    const [connection] = await this.db
+      .select()
+      .from(calendarIntegrationConnections)
+      .where(and(eq(calendarIntegrationConnections.id, connectionId), eq(calendarIntegrationConnections.userId, userId)))
+      .limit(1);
+    if (!connection) return null;
+
+    const [job] = await this.db
+      .insert(calendarSyncJobs)
+      .values({ connectionId, cursor: input.cursor, status: "running", startedAt: now })
+      .returning();
+    const providerEvents = readProviderEvents(connection.syncState);
+    const syncedProviderIds: string[] = [];
+
+    for (const event of providerEvents) {
+      syncedProviderIds.push(event.providerEventId);
+      await this.createCalendarEvent({
+        connectionId,
+        interviewId: event.interviewId,
+        taskId: event.taskId,
+        providerEventId: event.providerEventId,
+        title: event.title,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        location: event.location,
+        status: event.status ?? "confirmed",
+        conflictStatus: event.conflictStatus ?? inferCalendarConflict(event),
+        metadata: { providerSync: true, ...event.metadata }
+      });
+    }
+
+    if (syncedProviderIds.length > 0) {
+      await this.db
+        .update(calendarEvents)
+        .set({ status: "cancelled", conflictStatus: "stale", updatedAt: now })
+        .where(and(
+          eq(calendarEvents.connectionId, connectionId),
+          notInArray(calendarEvents.providerEventId, syncedProviderIds),
+          ne(calendarEvents.status, "cancelled")
+        ));
+    }
+
+    const finishedAt = new Date();
+    const [updatedJob] = await this.db
+      .update(calendarSyncJobs)
+      .set({ status: "completed", finishedAt, cursor: input.cursor ?? `synced:${finishedAt.toISOString()}` })
+      .where(eq(calendarSyncJobs.id, job.id))
+      .returning();
+    await this.db
+      .update(calendarIntegrationConnections)
+      .set({
+        status: "connected",
+        lastSyncedAt: finishedAt,
+        syncState: { ...connection.syncState, lastCursor: updatedJob.cursor, lastSyncedEventCount: providerEvents.length },
+        updatedAt: finishedAt
+      })
+      .where(eq(calendarIntegrationConnections.id, connectionId));
+    return updatedJob;
+  }
+}
 
 function classifyFromMetadata(input: CreateEmailMessageInput) {
   const haystack = `${input.subject ?? ""} ${input.snippet ?? ""}`.toLowerCase();
@@ -230,4 +308,20 @@ function calendarEventValues(input: CreateCalendarEventInput) {
     conflictStatus: input.conflictStatus,
     metadata: input.metadata
   };
+}
+
+type ProviderCalendarEvent = Omit<CreateCalendarEventInput, "connectionId">;
+
+function readProviderEvents(syncState: Record<string, unknown>) {
+  const events = Array.isArray(syncState.providerEvents) ? syncState.providerEvents : [];
+  return events
+    .map((event) => event as Partial<ProviderCalendarEvent>)
+    .filter((event): event is ProviderCalendarEvent => Boolean(event.providerEventId && event.title && event.startsAt));
+}
+
+function inferCalendarConflict(event: ProviderCalendarEvent) {
+  if (event.status === "cancelled") return "cancelled";
+  if (event.conflictStatus) return event.conflictStatus;
+  if (event.metadata?.conflict === true) return "conflict";
+  return "clear";
 }

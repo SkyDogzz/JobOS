@@ -49,6 +49,7 @@ export function IntegrationsClient({
       const response = await fetch(`${apiUrl}/integrations/email/connections`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           provider: String(formData.get("provider") ?? ""),
           accountEmail: String(formData.get("accountEmail") ?? ""),
@@ -74,6 +75,7 @@ export function IntegrationsClient({
       const response = await fetch(`${apiUrl}/integrations/email/sync-jobs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ connectionId })
       });
       if (!response.ok) throw new Error("Could not queue sync.");
@@ -94,6 +96,7 @@ export function IntegrationsClient({
       const response = await fetch(`${apiUrl}/integrations/email/messages/${id}/classification`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ classification, classificationReason: "Reviewed in settings." })
       });
       if (!response.ok) throw new Error("Could not classify message.");
@@ -112,19 +115,23 @@ export function IntegrationsClient({
     setPending("calendar-connection");
     setMessage("");
     try {
+      const providerEventsJson = String(formData.get("providerEvents") ?? "").trim();
+      const providerEvents = providerEventsJson ? JSON.parse(providerEventsJson) : [];
       const response = await fetch(`${apiUrl}/integrations/calendar/connections`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           provider: String(formData.get("provider") ?? ""),
           accountEmail: String(formData.get("accountEmail") ?? ""),
-          calendarName: String(formData.get("calendarName") ?? "")
+          calendarName: String(formData.get("calendarName") ?? ""),
+          syncState: { providerEvents }
         })
       });
       if (!response.ok) throw new Error("Could not save calendar connection.");
       const connection = await response.json() as CalendarConnectionSummary;
       setCalendarConnections((current) => [connection, ...current]);
-      setMessage("Calendar connection placeholder saved.");
+      setMessage("Calendar connection saved.");
       refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save calendar connection.");
@@ -140,12 +147,13 @@ export function IntegrationsClient({
       const response = await fetch(`${apiUrl}/integrations/calendar/sync-jobs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ connectionId })
       });
       if (!response.ok) throw new Error("Could not queue calendar sync.");
       const job = await response.json() as CalendarSyncJobSummary;
       setCalendarJobs((current) => [job, ...current]);
-      setMessage("Calendar sync placeholder queued.");
+      setMessage("Calendar sync completed.");
       refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not queue calendar sync.");
@@ -249,6 +257,11 @@ export function IntegrationsClient({
             </select>
             <input className="h-10 rounded border border-ink/15 px-3 text-sm" name="accountEmail" placeholder="you@example.com" required type="email" />
             <input className="h-10 rounded border border-ink/15 px-3 text-sm" name="calendarName" placeholder="Job search calendar" />
+            <textarea
+              className="min-h-32 rounded border border-ink/15 px-3 py-2 font-mono text-xs"
+              name="providerEvents"
+              placeholder='[{"providerEventId":"interview-1","title":"Recruiter screen","startsAt":"2026-10-05T16:00:00.000Z","endsAt":"2026-10-05T16:30:00.000Z"}]'
+            />
             <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-ink px-3 text-sm font-semibold text-white" disabled={pending === "calendar-connection"} type="submit">
               {pending === "calendar-connection" ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />}
               Save
