@@ -693,6 +693,8 @@ Implement v1.3.0 provider AI integrations:
 - Keep checks green.
 - Commit the result.
 
+Commit: `13cb7dd Add provider AI integrations`
+
 ### v1.3.1 — Generation Quality Review
 
 Implement v1.3.1 generation quality review:
