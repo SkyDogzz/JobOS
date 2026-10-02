@@ -625,6 +625,8 @@ Implement v1.1.0 production stack smoke:
 - Keep checks green.
 - Commit the result.
 
+Commit: `2ea6362 Add production stack smoke`
+
 ### v1.1.1 — Auth and User Scoping Hardening
 
 Implement v1.1.1 auth and user scoping hardening:
