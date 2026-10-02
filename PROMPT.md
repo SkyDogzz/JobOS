@@ -651,6 +651,8 @@ Implement v1.1.2 end-to-end UI test suite:
 - Keep checks green.
 - Commit the result.
 
+Commit: `2da17ec Add end-to-end UI tests`
+
 ### v1.2.0 — Real Calendar Sync
 
 Implement v1.2.0 real calendar sync:
