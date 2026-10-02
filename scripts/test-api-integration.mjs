@@ -4,6 +4,7 @@ import { join } from "node:path";
 const apiUrl = process.env.API_URL ?? "http://localhost:4000";
 const extensionToken = process.env.EXTENSION_IMPORT_TOKEN ?? "jobos-dev-extension-token";
 const extensionFixturesDir = new URL("../apps/extension/fixtures", import.meta.url);
+const productVersion = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 async function request(path, options) {
   const response = await fetch(`${apiUrl}${path}`, options);
@@ -24,7 +25,7 @@ async function main() {
     return;
   }
   const metrics = await request("/health/metrics");
-  if (metrics.version !== "1.0.0" || typeof metrics.monitoring.rateLimitMax !== "number") {
+  if (metrics.version !== productVersion || typeof metrics.monitoring.rateLimitMax !== "number") {
     throw new Error("Health metrics did not expose monitoring data.");
   }
   const prometheusMetrics = await fetch(`${apiUrl}/health/metrics/prometheus`).then((response) => response.text());

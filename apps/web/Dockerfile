@@ -21,6 +21,7 @@ RUN corepack enable
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/web ./apps/web
+COPY --from=build /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=build /app/packages ./packages
 EXPOSE 3000
 CMD ["pnpm", "--filter", "@jobos/web", "start"]

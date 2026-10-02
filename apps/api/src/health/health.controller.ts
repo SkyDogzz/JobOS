@@ -1,4 +1,21 @@
 import { Controller, Get, Header } from "@nestjs/common";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+function readProductVersion() {
+  if (process.env.JOBOS_VERSION) return process.env.JOBOS_VERSION;
+  for (const packagePath of [join(process.cwd(), "package.json"), join(process.cwd(), "..", "..", "package.json")]) {
+    try {
+      const manifest = JSON.parse(readFileSync(packagePath, "utf8")) as { name?: string; version?: string };
+      if (manifest.name === "jobos" && manifest.version) return manifest.version;
+    } catch {
+      // Try the next likely runtime location.
+    }
+  }
+  return "unknown";
+}
+
+const productVersion = readProductVersion();
 
 @Controller("health")
 export class HealthController {
@@ -12,7 +29,7 @@ export class HealthController {
     const memory = process.memoryUsage();
     return {
       service: "jobos-api",
-      version: "1.0.0",
+      version: productVersion,
       uptimeSeconds: Math.round(process.uptime()),
       memory: {
         rss: memory.rss,

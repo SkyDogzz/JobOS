@@ -41,7 +41,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "4000:4000"
+      - "${API_HOST_PORT:-4000}:4000"
 
   web:
     build:
@@ -54,7 +54,7 @@ services:
     depends_on:
       - api
     ports:
-      - "3000:3000"
+      - "${WEB_HOST_PORT:-3000}:3000"
 
 volumes:
   postgres_data:
