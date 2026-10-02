@@ -721,6 +721,8 @@ Implement v1.4.0 collaboration and sharing:
 - Keep checks green.
 - Commit the result.
 
+Commit: `024c5b7 Add collaboration sharing`
+
 ### v1.4.1 — Document Export and Templates
 
 Implement v1.4.1 document export and templates:
