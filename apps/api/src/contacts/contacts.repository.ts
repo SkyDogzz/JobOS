@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { asc, eq } from "drizzle-orm";
-import { applicationContacts, applications, companies, contacts, jobs, users } from "@jobos/database";
+import { and, asc, eq } from "drizzle-orm";
+import { applicationContacts, applications, companies, contacts, jobs } from "@jobos/database";
 import type { CreateContactInput, LinkContactInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -11,6 +11,7 @@ export class ContactsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async list() {
+    const userId = requireCurrentUserId();
     return this.db
       .select({
         id: contacts.id,
@@ -26,10 +27,12 @@ export class ContactsRepository {
       })
       .from(contacts)
       .leftJoin(companies, eq(contacts.companyId, companies.id))
+      .where(eq(contacts.userId, userId))
       .orderBy(asc(contacts.name));
   }
 
   async findById(id: string) {
+    const userId = requireCurrentUserId();
     const [contact] = await this.db
       .select({
         id: contacts.id,
@@ -46,7 +49,7 @@ export class ContactsRepository {
       })
       .from(contacts)
       .leftJoin(companies, eq(contacts.companyId, companies.id))
-      .where(eq(contacts.id, id))
+      .where(and(eq(contacts.id, id), eq(contacts.userId, userId)))
       .limit(1);
 
     if (!contact) return null;
@@ -73,18 +76,20 @@ export class ContactsRepository {
   }
 
   async create(input: CreateContactInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [contact] = await this.db.insert(contacts).values({ ...contactValues(input), userId }).returning();
     return contact;
   }
 
   async update(id: string, input: CreateContactInput) {
-    const [contact] = await this.db.update(contacts).set({ ...contactValues(input), updatedAt: new Date() }).where(eq(contacts.id, id)).returning();
+    const userId = requireCurrentUserId();
+    const [contact] = await this.db.update(contacts).set({ ...contactValues(input), updatedAt: new Date() }).where(and(eq(contacts.id, id), eq(contacts.userId, userId))).returning();
     return contact ?? null;
   }
 
   async delete(id: string) {
-    const [contact] = await this.db.delete(contacts).where(eq(contacts.id, id)).returning({ id: contacts.id });
+    const userId = requireCurrentUserId();
+    const [contact] = await this.db.delete(contacts).where(and(eq(contacts.id, id), eq(contacts.userId, userId))).returning({ id: contacts.id });
     return contact ?? null;
   }
 
@@ -106,6 +111,7 @@ export class ContactsRepository {
   }
 
   async listForCompany(companyId: string) {
+    const userId = requireCurrentUserId();
     return this.db
       .select({
         id: contacts.id,
@@ -118,11 +124,12 @@ export class ContactsRepository {
         followUpAt: contacts.followUpAt
       })
       .from(contacts)
-      .where(eq(contacts.companyId, companyId))
+      .where(and(eq(contacts.companyId, companyId), eq(contacts.userId, userId)))
       .orderBy(asc(contacts.name));
   }
 
   async listForApplication(applicationId: string) {
+    const userId = requireCurrentUserId();
     return this.db
       .select({
         id: contacts.id,
@@ -140,14 +147,8 @@ export class ContactsRepository {
       .from(applicationContacts)
       .innerJoin(contacts, eq(applicationContacts.contactId, contacts.id))
       .leftJoin(companies, eq(contacts.companyId, companies.id))
-      .where(eq(applicationContacts.applicationId, applicationId))
+      .where(and(eq(applicationContacts.applicationId, applicationId), eq(contacts.userId, userId)))
       .orderBy(asc(contacts.name));
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
   }
 }
 

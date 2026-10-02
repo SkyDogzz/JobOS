@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
 import { applicationEvents, applications, calendarEvents, companies, interviews, jobs, tasks, users } from "@jobos/database";
 import type { UpsertInterviewInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -24,7 +24,7 @@ export class InterviewsRepository {
   }
 
   async create(input: UpsertInterviewInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [interview] = await this.db.insert(interviews).values(interviewValues(input)).returning();
 
     await this.db.insert(applicationEvents).values({
@@ -105,14 +105,7 @@ export class InterviewsRepository {
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .leftJoin(companies, eq(jobs.companyId, companies.id))
       .leftJoin(calendarEvents, eq(calendarEvents.interviewId, interviews.id));
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}
 
 function interviewValues(input: UpsertInterviewInput) {
   return {

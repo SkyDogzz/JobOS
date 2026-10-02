@@ -5,6 +5,8 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module.js";
+import { verifySession } from "./auth/auth.service.js";
+import { runWithCurrentUser } from "./common/current-user.js";
 
 const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60000);
 const rateLimitMax = Number(process.env.RATE_LIMIT_MAX ?? 300);
@@ -16,6 +18,9 @@ async function bootstrap() {
   await app.register(helmet);
   app.enableCors({ origin: true, credentials: true });
   app.getHttpAdapter().getInstance().addHook("onRequest", (request, reply, done) => {
+    const sessionCookie = request.cookies?.jobos_session;
+    const currentUserId = verifySession(sessionCookie);
+    runWithCurrentUser(currentUserId, () => {
     if (request.url.startsWith("/health")) return done();
     const forwarded = request.headers["x-forwarded-for"];
     const key = Array.isArray(forwarded) ? forwarded[0] : forwarded ?? request.ip;
@@ -35,6 +40,7 @@ async function bootstrap() {
       return;
     }
     done();
+    });
   });
 
   const openApiConfig = new DocumentBuilder()

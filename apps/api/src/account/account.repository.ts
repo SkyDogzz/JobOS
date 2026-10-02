@@ -23,7 +23,7 @@ import {
   users
 } from "@jobos/database";
 import type { AccountDeletionInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -32,7 +32,7 @@ export class AccountRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async exportBundle() {
-    const user = await this.ensureDevUser();
+    const user = await this.currentUser();
     const [
       profileRows,
       settingRows,
@@ -105,7 +105,7 @@ export class AccountRepository {
   }
 
   async deletionPreview(input: AccountDeletionInput) {
-    const user = await this.ensureDevUser();
+    const user = await this.currentUser();
     if (input.confirmEmail !== user.email) {
       return { status: "confirmation_mismatch", deleted: false, counts: null };
     }
@@ -125,9 +125,10 @@ export class AccountRepository {
     return { status: "deleted", deleted: true, counts };
   }
 
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select().from(users).where(eq(users.email, devUser.email)).limit(1);
+  private async currentUser() {
+    const userId = requireCurrentUserId();
+    const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw new Error("Authenticated user was not found.");
     return user;
   }
 }

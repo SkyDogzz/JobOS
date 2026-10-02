@@ -99,6 +99,7 @@ export const contacts = pgTable("contacts", {
 
 export const jobs = pgTable("jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
   sourceId: uuid("source_id").references(() => jobSources.id, { onDelete: "set null" }),
   title: text("title").notNull(),
@@ -111,6 +112,7 @@ export const jobs = pgTable("jobs", {
   postedAt: timestamp("posted_at", { withTimezone: true }),
   ...timestamps
 }, (table) => ({
+  userIdx: index("jobs_user_idx").on(table.userId),
   titleIdx: index("jobs_title_idx").on(table.title)
 }));
 

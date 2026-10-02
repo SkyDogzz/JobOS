@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import { candidateProfiles, users } from "@jobos/database";
 import type { UpsertCandidateProfileInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -11,13 +11,13 @@ export class ProfilesRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async getCurrent() {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [profile] = await this.db.select().from(candidateProfiles).where(eq(candidateProfiles.userId, userId)).limit(1);
     return profile ?? null;
   }
 
   async upsert(input: UpsertCandidateProfileInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const canonicalData = {
       skills: input.skills?.split(",").map((skill) => skill.trim()).filter(Boolean) ?? [],
       experience: input.experience ?? ""
@@ -43,12 +43,5 @@ export class ProfilesRepository {
       canonicalData
     }).returning();
     return profile;
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}
 

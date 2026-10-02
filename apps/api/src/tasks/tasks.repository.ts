@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { asc, eq } from "drizzle-orm";
 import { applicationEvents, tasks, users } from "@jobos/database";
 import type { CreateTaskInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -15,7 +15,7 @@ export class TasksRepository {
   }
 
   async create(applicationId: string, input: CreateTaskInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [task] = await this.db.insert(tasks).values({
       applicationId,
       userId,
@@ -40,12 +40,5 @@ export class TasksRepository {
       });
     }
     return task ?? null;
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}
 

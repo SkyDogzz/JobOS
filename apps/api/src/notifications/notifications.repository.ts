@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { applications, companies, jobs, notificationPreferences, notifications, tasks, users } from "@jobos/database";
+import { applications, companies, jobs, notificationPreferences, notifications, tasks } from "@jobos/database";
 import type { UpdateNotificationPreferencesInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -11,12 +11,12 @@ export class NotificationsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async preferences() {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     return this.ensurePreferences(userId);
   }
 
   async updatePreferences(input: UpdateNotificationPreferencesInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     await this.ensurePreferences(userId);
     const [preferences] = await this.db
       .update(notificationPreferences)
@@ -27,13 +27,13 @@ export class NotificationsRepository {
   }
 
   async list() {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     await this.generateReminders(userId);
     return this.db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(asc(notifications.scheduledFor), asc(notifications.createdAt));
   }
 
   async generateReminders(userId?: string) {
-    const resolvedUserId = userId ?? await this.ensureDevUser();
+    const resolvedUserId = userId ?? requireCurrentUserId();
     const preferences = await this.ensurePreferences(resolvedUserId);
     const now = new Date();
     const dueSoon = new Date(now.getTime() + preferences.dueSoonDays * 86400000);
@@ -81,7 +81,8 @@ export class NotificationsRepository {
         })
         .from(applications)
         .innerJoin(jobs, eq(applications.jobId, jobs.id))
-        .leftJoin(companies, eq(jobs.companyId, companies.id));
+        .leftJoin(companies, eq(jobs.companyId, companies.id))
+        .where(eq(applications.userId, resolvedUserId));
       for (const application of staleApplications.filter((row) => !["rejected", "withdrawn", "accepted"].includes(row.stage) && now.getTime() - row.updatedAt.getTime() >= 7 * 86400000)) {
         created += await this.createOnce({
           userId: resolvedUserId,
@@ -101,7 +102,7 @@ export class NotificationsRepository {
   }
 
   async markRead(id: string) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [notification] = await this.db
       .update(notifications)
       .set({ status: "read", readAt: new Date(), updatedAt: new Date() })
@@ -125,11 +126,5 @@ export class NotificationsRepository {
     await this.db.insert(notificationPreferences).values({ userId }).onConflictDoNothing({ target: notificationPreferences.userId });
     const [preferences] = await this.db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
     return preferences;
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
   }
 }

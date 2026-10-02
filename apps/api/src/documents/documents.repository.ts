@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
 import { aiArtifacts, applications, documents } from "@jobos/database";
 import type { AssignDocumentInput, DocumentFiltersInput } from "@jobos/validation";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -10,7 +11,9 @@ export class DocumentsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async list(filters: DocumentFiltersInput) {
+    const userId = requireCurrentUserId();
     const conditions = [
+      eq(documents.userId, userId),
       filters.kind ? eq(documents.kind, filters.kind) : undefined,
       filters.applicationId ? eq(documents.applicationId, filters.applicationId) : undefined
     ].filter(Boolean);
@@ -32,20 +35,23 @@ export class DocumentsRepository {
   }
 
   async findById(id: string) {
-    const [document] = await this.db.select().from(documents).where(eq(documents.id, id)).limit(1);
+    const userId = requireCurrentUserId();
+    const [document] = await this.db.select().from(documents).where(and(eq(documents.id, id), eq(documents.userId, userId))).limit(1);
     return document ?? null;
   }
 
   async assign(id: string, input: AssignDocumentInput) {
+    const userId = requireCurrentUserId();
     if (input.applicationId) {
-      const [application] = await this.db.select({ id: applications.id }).from(applications).where(eq(applications.id, input.applicationId)).limit(1);
+      const [application] = await this.db.select({ id: applications.id }).from(applications).where(and(eq(applications.id, input.applicationId), eq(applications.userId, userId))).limit(1);
       if (!application) return null;
     }
-    const [document] = await this.db.update(documents).set({ applicationId: input.applicationId, updatedAt: new Date() }).where(eq(documents.id, id)).returning();
+    const [document] = await this.db.update(documents).set({ applicationId: input.applicationId, updatedAt: new Date() }).where(and(eq(documents.id, id), eq(documents.userId, userId))).returning();
     return document ?? null;
   }
 
   async listArtifacts(filters: DocumentFiltersInput) {
+    const userId = requireCurrentUserId();
     const rows = await this.db
       .select({
         id: aiArtifacts.id,
@@ -59,6 +65,7 @@ export class DocumentsRepository {
         createdAt: aiArtifacts.createdAt
       })
       .from(aiArtifacts)
+      .where(eq(aiArtifacts.userId, userId))
       .orderBy(desc(aiArtifacts.createdAt));
     return rows.filter((row) => {
       if (filters.applicationId && row.applicationId !== filters.applicationId) return false;
@@ -77,4 +84,3 @@ function matchesContentFilters(content: Record<string, unknown>, filters: Docume
   if (filters.approvalState && content.approvalState !== filters.approvalState) return false;
   return true;
 }
-

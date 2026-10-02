@@ -1,17 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
-import { applications, companies, contacts, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters, users } from "@jobos/database";
+import { applications, companies, contacts, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters } from "@jobos/database";
 import type { CreateJobInput, JobSearchInput, SaveJobFilterInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 
 @Injectable()
 export class JobsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async list(filters: JobSearchInput = {}) {
+    const userId = requireCurrentUserId();
     const conditions = [
+      eq(jobs.userId, userId),
       filters.companyId ? eq(jobs.companyId, filters.companyId) : undefined,
       filters.sourceId ? eq(jobs.sourceId, filters.sourceId) : undefined,
       filters.location ? ilike(jobs.location, `%${filters.location}%`) : undefined,
@@ -59,12 +61,13 @@ export class JobsRepository {
   }
 
   async create(input: CreateJobInput) {
-    await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const companyId = input.companyName ? await this.findOrCreateCompany(input.companyName) : null;
     const sourceId = input.sourceId ?? (input.sourceName ? await this.findOrCreateSource(input.sourceName) : null);
     const [job] = await this.db
       .insert(jobs)
       .values({
+        userId,
         companyId,
         sourceId,
         title: input.title,
@@ -112,7 +115,8 @@ export class JobsRepository {
   }
 
   async merge(id: string, input: CreateJobInput, strategy: "keep_existing" | "update_existing") {
-    const [existing] = await this.db.select().from(jobs).where(eq(jobs.id, id)).limit(1);
+    const userId = requireCurrentUserId();
+    const [existing] = await this.db.select().from(jobs).where(and(eq(jobs.id, id), eq(jobs.userId, userId))).limit(1);
     if (!existing) return null;
     if (strategy === "keep_existing") return existing;
     const companyId = input.companyName ? await this.findOrCreateCompany(input.companyName) : existing.companyId;
@@ -131,12 +135,13 @@ export class JobsRepository {
         salaryText: input.salaryText ?? existing.salaryText,
         updatedAt: new Date()
       })
-      .where(eq(jobs.id, id))
+      .where(and(eq(jobs.id, id), eq(jobs.userId, userId)))
       .returning();
     return updated;
   }
 
   async findById(id: string) {
+    const userId = requireCurrentUserId();
     const [job] = await this.db
       .select({
         id: jobs.id,
@@ -157,7 +162,7 @@ export class JobsRepository {
       .from(jobs)
       .leftJoin(companies, eq(jobs.companyId, companies.id))
       .leftJoin(jobSources, eq(jobs.sourceId, jobSources.id))
-      .where(eq(jobs.id, id))
+      .where(and(eq(jobs.id, id), eq(jobs.userId, userId)))
       .limit(1);
 
     if (!job) return null;
@@ -191,7 +196,7 @@ export class JobsRepository {
             followUpAt: contacts.followUpAt
           })
           .from(contacts)
-          .where(eq(contacts.companyId, job.companyId))
+          .where(and(eq(contacts.companyId, job.companyId), eq(contacts.userId, userId)))
           .orderBy(asc(contacts.name))
       : [];
 
@@ -199,12 +204,12 @@ export class JobsRepository {
   }
 
   async listFilters() {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     return this.db.select().from(savedJobFilters).where(eq(savedJobFilters.userId, userId)).orderBy(asc(savedJobFilters.name));
   }
 
   async saveFilter(input: SaveJobFilterInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [filter] = await this.db.insert(savedJobFilters).values({ userId, name: input.name, filters: input.filters }).returning();
     return filter;
   }
@@ -224,16 +229,6 @@ export class JobsRepository {
     if (existing) return existing.id;
     const [source] = await this.db.insert(jobSources).values({ name, kind: "manual", status: "active" }).returning({ id: jobSources.id });
     return source.id;
-  }
-
-  private async ensureDevUser() {
-    await this.db
-      .insert(users)
-      .values(devUser)
-      .onConflictDoNothing({ target: users.email });
-
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
   }
 }
 

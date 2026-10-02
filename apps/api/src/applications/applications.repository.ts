@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { asc, eq } from "drizzle-orm";
-import { applicationContacts, applicationEvents, applications, atsAnalyses, companies, contacts, jobs, users } from "@jobos/database";
+import { and, asc, eq } from "drizzle-orm";
+import { applicationContacts, applicationEvents, applications, atsAnalyses, companies, contacts, jobs } from "@jobos/database";
 import type { CreateApplicationInput, UpdateApplicationStageInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -11,6 +11,7 @@ export class ApplicationsRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async list() {
+    const userId = requireCurrentUserId();
     return this.db
       .select({
         id: applications.id,
@@ -26,10 +27,12 @@ export class ApplicationsRepository {
       .from(applications)
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .leftJoin(companies, eq(jobs.companyId, companies.id))
+      .where(eq(applications.userId, userId))
       .orderBy(asc(applications.createdAt));
   }
 
   async findById(id: string) {
+    const userId = requireCurrentUserId();
     const [application] = await this.db
       .select({
         id: applications.id,
@@ -47,7 +50,7 @@ export class ApplicationsRepository {
       .from(applications)
       .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .leftJoin(companies, eq(jobs.companyId, companies.id))
-      .where(eq(applications.id, id))
+      .where(and(eq(applications.id, id), eq(applications.userId, userId)))
       .limit(1);
 
     if (!application) {
@@ -102,7 +105,7 @@ export class ApplicationsRepository {
   }
 
   async create(input: CreateApplicationInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [application] = await this.db
       .insert(applications)
       .values({
@@ -123,7 +126,8 @@ export class ApplicationsRepository {
   }
 
   async updateStage(id: string, input: UpdateApplicationStageInput) {
-    const [before] = await this.db.select({ stage: applications.stage }).from(applications).where(eq(applications.id, id)).limit(1);
+    const userId = requireCurrentUserId();
+    const [before] = await this.db.select({ stage: applications.stage }).from(applications).where(and(eq(applications.id, id), eq(applications.userId, userId))).limit(1);
 
     if (!before) {
       return null;
@@ -132,7 +136,7 @@ export class ApplicationsRepository {
     const [application] = await this.db
       .update(applications)
       .set({ stage: input.stage, updatedAt: new Date() })
-      .where(eq(applications.id, id))
+      .where(and(eq(applications.id, id), eq(applications.userId, userId)))
       .returning();
 
     await this.db.insert(applicationEvents).values({
@@ -142,15 +146,4 @@ export class ApplicationsRepository {
     });
 
     return application;
-  }
-
-  private async ensureDevUser() {
-    await this.db
-      .insert(users)
-      .values(devUser)
-      .onConflictDoNothing({ target: users.email });
-
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}

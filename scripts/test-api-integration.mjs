@@ -5,9 +5,14 @@ const apiUrl = process.env.API_URL ?? "http://localhost:4000";
 const extensionToken = process.env.EXTENSION_IMPORT_TOKEN ?? "jobos-dev-extension-token";
 const extensionFixturesDir = new URL("../apps/extension/fixtures", import.meta.url);
 const productVersion = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+let sessionCookie = "";
 
 async function request(path, options) {
-  const response = await fetch(`${apiUrl}${path}`, options);
+  const headers = new Headers(options?.headers);
+  if (sessionCookie && !headers.has("Cookie")) headers.set("Cookie", sessionCookie);
+  const response = await fetch(`${apiUrl}${path}`, { ...options, headers });
+  const setCookie = response.headers.get("set-cookie");
+  if (setCookie) sessionCookie = setCookie.split(";")[0];
 
   if (!response.ok) {
     const body = await response.text();
@@ -30,6 +35,41 @@ async function main() {
   }
   const prometheusMetrics = await fetch(`${apiUrl}/health/metrics/prometheus`).then((response) => response.text());
   if (!prometheusMetrics.includes("jobos_api_uptime_seconds")) throw new Error("Prometheus metrics were not exposed.");
+
+  const primaryEmail = `integration-primary-${Date.now()}@jobos.local`;
+  const primaryAuth = await request("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: primaryEmail, password: "password123", name: "Primary Integration User" })
+  });
+  if (primaryAuth.user.email !== primaryEmail) throw new Error("Primary auth registration failed.");
+  const primarySession = sessionCookie;
+
+  const secondaryEmail = `integration-secondary-${Date.now()}@jobos.local`;
+  const secondaryAuth = await request("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: secondaryEmail, password: "password123", name: "Secondary Integration User" })
+  });
+  if (secondaryAuth.user.email !== secondaryEmail) throw new Error("Secondary auth registration failed.");
+  const secondarySession = sessionCookie;
+
+  const privateJob = await request("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: secondarySession },
+    body: JSON.stringify({
+      title: "Private Secondary Role",
+      companyName: "Secondary Only Co",
+      description: "This job should not be visible to the primary user.",
+      location: "Remote",
+      sourceName: "integration-test"
+    })
+  });
+  sessionCookie = primarySession;
+  const primaryJobsBefore = await request("/jobs");
+  if (primaryJobsBefore.some((item) => item.id === privateJob.id)) throw new Error("Primary user could list a secondary user's job.");
+  const privateJobDetail = await fetch(`${apiUrl}/jobs/${privateJob.id}`, { headers: { Cookie: primarySession } });
+  if (privateJobDetail.ok) throw new Error("Primary user could read a secondary user's job detail.");
 
   const job = await request("/jobs", {
     method: "POST",
@@ -329,7 +369,7 @@ async function main() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ applicationId: application.id, startsAt: new Date(Date.now() + 259200000).toISOString(), format: "phone" })
   });
-  const deletedInterview = await fetch(`${apiUrl}/interviews/${tempInterview.id}`, { method: "DELETE" });
+  const deletedInterview = await fetch(`${apiUrl}/interviews/${tempInterview.id}`, { method: "DELETE", headers: { Cookie: sessionCookie } });
   if (!deletedInterview.ok) throw new Error("Interview delete failed.");
 
   const emailConnection = await request("/integrations/email/connections", {
@@ -432,7 +472,7 @@ async function main() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ companyId: company.id, name: "Temporary Recruiter", email: "temp-recruiter@example.com" })
   });
-  const deletedContact = await fetch(`${apiUrl}/contacts/${tempContact.id}`, { method: "DELETE" });
+  const deletedContact = await fetch(`${apiUrl}/contacts/${tempContact.id}`, { method: "DELETE", headers: { Cookie: sessionCookie } });
   if (!deletedContact.ok) throw new Error("Contact delete failed.");
 
   const secondVersion = await request(`/resumes/${resume.id}/versions`, {
@@ -658,7 +698,7 @@ https://example.com/profile`;
   const deletionPreview = await request("/account", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ confirmEmail: "dev@jobos.local", dryRun: true })
+    body: JSON.stringify({ confirmEmail: primaryEmail, dryRun: true })
   });
   if (deletionPreview.status !== "dry_run" || deletionPreview.deleted !== false) throw new Error("Account deletion dry run failed.");
   if (deletionPreview.counts.applications < 1) throw new Error("Account deletion preview did not include lifecycle counts.");
@@ -677,14 +717,6 @@ https://example.com/profile`;
     body: JSON.stringify({ headline: "Integration Candidate", skills: "TypeScript, PostgreSQL" })
   });
   if (profile.headline !== "Integration Candidate") throw new Error("Profile upsert failed.");
-
-  const authEmail = `integration-${Date.now()}@jobos.local`;
-  const registered = await request("/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: authEmail, password: "password123", name: "Integration User" })
-  });
-  if (registered.user.email !== authEmail) throw new Error("Auth registration failed.");
 
   console.log("API integration tests passed.");
 }

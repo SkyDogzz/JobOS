@@ -19,7 +19,7 @@ import type {
   CreateEmailSyncJobInput,
   UpdateEmailConnectionInput
 } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -32,7 +32,7 @@ export class IntegrationsRepository {
   }
 
   async createEmailConnection(input: CreateEmailConnectionInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [connection] = await this.db
       .insert(emailIntegrationConnections)
       .values({
@@ -149,7 +149,7 @@ export class IntegrationsRepository {
   }
 
   async createCalendarConnection(input: CreateCalendarConnectionInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [connection] = await this.db
       .insert(calendarIntegrationConnections)
       .values({
@@ -204,14 +204,7 @@ export class IntegrationsRepository {
       })
       .returning();
     return event;
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}
 
 function classifyFromMetadata(input: CreateEmailMessageInput) {
   const haystack = `${input.subject ?? ""} ${input.snippet ?? ""}`.toLowerCase();

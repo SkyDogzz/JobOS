@@ -99,6 +99,13 @@
       "when": 1791028800000,
       "tag": "0013_privacy_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791115200000,
+      "tag": "0014_auth_user_scoping",
+      "breakpoints": true
     }
   ]
 }

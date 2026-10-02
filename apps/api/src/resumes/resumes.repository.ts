@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { asc, desc, eq } from "drizzle-orm";
-import { applications, atsAnalyses, companies, jobResumeMatches, jobs, resumeVersions, resumes, users } from "@jobos/database";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { applications, atsAnalyses, companies, jobResumeMatches, jobs, resumeVersions, resumes } from "@jobos/database";
 import type { CreateResumeInput, CreateResumeVersionFromParseInput, CreateResumeVersionInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -11,6 +11,7 @@ export class ResumesRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   async list() {
+    const userId = requireCurrentUserId();
     return this.db
       .select({
         id: resumes.id,
@@ -22,11 +23,12 @@ export class ResumesRepository {
       })
       .from(resumes)
       .leftJoin(resumeVersions, eq(resumes.id, resumeVersions.resumeId))
+      .where(eq(resumes.userId, userId))
       .orderBy(asc(resumes.createdAt), asc(resumeVersions.versionNumber));
   }
 
   async create(input: CreateResumeInput) {
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [resume] = await this.db.insert(resumes).values({ userId, name: input.name }).returning();
     const [version] = await this.db
       .insert(resumeVersions)
@@ -42,6 +44,7 @@ export class ResumesRepository {
   }
 
   async findById(id: string) {
+    const userId = requireCurrentUserId();
     const [resume] = await this.db
       .select({
         id: resumes.id,
@@ -50,7 +53,7 @@ export class ResumesRepository {
         updatedAt: resumes.updatedAt
       })
       .from(resumes)
-      .where(eq(resumes.id, id))
+      .where(and(eq(resumes.id, id), eq(resumes.userId, userId)))
       .limit(1);
 
     if (!resume) {
@@ -118,7 +121,8 @@ export class ResumesRepository {
   }
 
   async createVersion(id: string, input: CreateResumeVersionInput) {
-    const [resume] = await this.db.select({ id: resumes.id }).from(resumes).where(eq(resumes.id, id)).limit(1);
+    const userId = requireCurrentUserId();
+    const [resume] = await this.db.select({ id: resumes.id }).from(resumes).where(and(eq(resumes.id, id), eq(resumes.userId, userId))).limit(1);
     if (!resume) {
       return null;
     }
@@ -155,15 +159,5 @@ export class ResumesRepository {
         }
       }
     });
-  }
-
-  private async ensureDevUser() {
-    await this.db
-      .insert(users)
-      .values(devUser)
-      .onConflictDoNothing({ target: users.email });
-
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
   }
 }

@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
 import { aiArtifacts, applications, candidateProfiles, documents, groundingReviews, jobs, resumeVersions, users } from "@jobos/database";
 import type { ApproveCoverLetterInput, ApproveTailoredResumeInput, UpdateGroundingReviewInput } from "@jobos/validation";
-import { devUser } from "../common/dev-user.js";
+import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -14,7 +14,7 @@ export class AiRepository {
   async loadTailoringContext(jobId: string, resumeVersionId: string) {
     const [job] = await this.db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
     const [resumeVersion] = await this.db.select().from(resumeVersions).where(eq(resumeVersions.id, resumeVersionId)).limit(1);
-    const userId = await this.ensureDevUser();
+    const userId = requireCurrentUserId();
     const [profile] = await this.db.select().from(candidateProfiles).where(eq(candidateProfiles.userId, userId)).limit(1);
     return job && resumeVersion ? { job, resumeVersion, profile, userId } : null;
   }
@@ -125,11 +125,4 @@ export class AiRepository {
 
   hashPrompt(prompt: string) {
     return createHash("sha256").update(prompt).digest("hex");
-  }
-
-  private async ensureDevUser() {
-    await this.db.insert(users).values(devUser).onConflictDoNothing({ target: users.email });
-    const [user] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, devUser.email)).limit(1);
-    return user.id;
-  }
-}
+  }}

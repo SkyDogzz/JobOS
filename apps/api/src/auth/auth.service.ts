@@ -58,7 +58,7 @@ function signSession(userId: string) {
   return `${payload}.${signature}`;
 }
 
-function verifySession(token: string | undefined) {
+export function verifySession(token: string | undefined) {
   if (!token) return null;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
@@ -67,4 +67,3 @@ function verifySession(token: string | undefined) {
   const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { userId?: string };
   return parsed.userId ?? null;
 }
-
