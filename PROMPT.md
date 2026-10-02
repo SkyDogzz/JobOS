@@ -749,6 +749,8 @@ Implement v1.5.0 job discovery automation:
 - Keep checks green.
 - Commit the result.
 
+Commit: `1845eb1 Add job discovery automation`
+
 ### v1.5.1 — Browser Extension Full Workflow
 
 Implement v1.5.1 browser extension full workflow:
