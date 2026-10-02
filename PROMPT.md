@@ -665,6 +665,8 @@ Implement v1.2.0 real calendar sync:
 - Keep checks green.
 - Commit the result.
 
+Commit: `3417683 Add real calendar sync`
+
 ### v1.2.1 — Real Email Sync
 
 Implement v1.2.1 real email sync:
