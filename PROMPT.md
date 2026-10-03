@@ -816,6 +816,8 @@ Implement v1.7.1 background worker reliability:
 - Keep checks green.
 - Commit the result.
 
+Commit: `623fe98 Add background worker reliability`
+
 ### v1.8.0 — Billing and Subscription Foundation
 
 Implement v1.8.0 billing and subscription foundation:
