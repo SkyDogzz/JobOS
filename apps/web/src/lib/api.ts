@@ -412,6 +412,23 @@ export interface HealthMetrics {
   monitoring: { rateLimitWindowMs: number; rateLimitMax: number };
 }
 
+export interface BackgroundJobSummary {
+  id: string;
+  userId: string | null;
+  queueName: string;
+  jobName: string;
+  status: string;
+  idempotencyKey: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  payload: Record<string, unknown>;
+  startedAt: string | null;
+  finishedAt: string | null;
+  deadLetteredAt: string | null;
+  createdAt: string;
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -704,6 +721,10 @@ export async function getAccountExportSummary() {
 
 export async function getHealthMetrics() {
   return getJson<HealthMetrics>("/health/metrics");
+}
+
+export async function getBackgroundJobs() {
+  return getJson<BackgroundJobSummary[]>("/operations/background-jobs");
 }
 
 export async function getFunnelAnalytics(query = "") {

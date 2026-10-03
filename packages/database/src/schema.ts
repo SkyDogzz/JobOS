@@ -230,6 +230,26 @@ export const offers = pgTable("offers", {
   applicationIdx: index("offers_application_idx").on(table.applicationId)
 }));
 
+export const backgroundJobs = pgTable("background_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  queueName: text("queue_name").notNull(),
+  jobName: text("job_name").notNull(),
+  status: text("status").notNull().default("queued"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  lastError: text("last_error"),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  deadLetteredAt: timestamp("dead_lettered_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => ({
+  idempotencyIdx: uniqueIndex("background_jobs_idempotency_idx").on(table.idempotencyKey),
+  queueStatusIdx: index("background_jobs_queue_status_idx").on(table.queueName, table.status)
+}));
+
 export const documents = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

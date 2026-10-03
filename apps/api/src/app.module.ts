@@ -19,6 +19,7 @@ import { JobSourcesModule } from "./job-sources/job-sources.module.js";
 import { MatchingModule } from "./matching/matching.module.js";
 import { NotesModule } from "./notes/notes.module.js";
 import { NotificationsModule } from "./notifications/notifications.module.js";
+import { OperationsModule } from "./operations/operations.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
 import { ResumesModule } from "./resumes/resumes.module.js";
 import { SettingsModule } from "./settings/settings.module.js";
@@ -51,6 +52,7 @@ import { UsersModule } from "./users/users.module.js";
     NotesModule,
     TasksModule,
     NotificationsModule,
+    OperationsModule,
     IntegrationsModule,
     AnalyticsModule,
     AiModule,

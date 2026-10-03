@@ -14,7 +14,7 @@ const navGroups = [
   ["Documents", "CVs", "Cover Letters", "Documents"],
   ["Tools", "ATS Scanner", "Job Matcher", "Interview Prep"],
   ["Network", "Companies", "Contacts"],
-  ["Insights", "Analytics"]
+  ["Insights", "Analytics", "Operations"]
 ];
 
 const stages = ["saved", "applied", "interviewing"] as const;
@@ -378,6 +378,7 @@ function navHref(item: string) {
     Companies: "/sources",
     Contacts: "/sources",
     Analytics: "/analytics",
+    Operations: "/operations",
     Tasks: "/",
     "ATS Scanner": "/documents",
     "Job Matcher": "/jobs"

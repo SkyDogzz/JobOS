@@ -588,6 +588,14 @@ async function main() {
   if (!calendarJobs.some((item) => item.id === calendarSyncJob.id)) throw new Error("Calendar sync job was not listed.");
   if (!calendarEvents.some((item) => item.id === calendarEvent.id)) throw new Error("Calendar event was not listed.");
 
+  const backgroundJobs = await request("/operations/background-jobs");
+  const emailBackgroundJob = backgroundJobs.find((item) => item.queueName === "email-sync" && item.idempotencyKey.includes(emailConnection.id));
+  const calendarBackgroundJob = backgroundJobs.find((item) => item.queueName === "calendar-sync" && item.idempotencyKey.includes(calendarConnection.id));
+  if (!emailBackgroundJob || !calendarBackgroundJob) throw new Error("Background job status visibility did not include sync jobs.");
+  if (emailBackgroundJob.status !== "completed" || calendarBackgroundJob.status !== "completed") throw new Error("Background jobs did not preserve completed status.");
+  const retriedBackgroundJob = await request(`/operations/background-jobs/${emailBackgroundJob.id}/retry`, { method: "POST" });
+  if (retriedBackgroundJob.status !== "queued" || retriedBackgroundJob.deadLetteredAt !== null) throw new Error("Background job retry did not requeue the job.");
+
   const resumeDetail = await request(`/resumes/${resume.id}`);
   if (resumeDetail.id !== resume.id) throw new Error("Resume detail returned the wrong record.");
   if (!resumeDetail.versions.some((item) => item.id === resume.currentVersion.id)) throw new Error("Resume detail did not include the initial version.");

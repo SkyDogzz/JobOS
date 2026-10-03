@@ -24,10 +24,11 @@ import type {
 import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
+import { OperationsRepository } from "../operations/operations.repository.js";
 
 @Injectable()
 export class IntegrationsRepository {
-  constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
+  constructor(@Inject(DATABASE) private readonly db: JobOsDatabase, private readonly operations: OperationsRepository) {}
 
   listEmailConnections() {
     const userId = requireCurrentUserId();
@@ -205,6 +206,13 @@ export class IntegrationsRepository {
         updatedAt: finishedAt
       })
       .where(eq(emailIntegrationConnections.id, connectionId));
+    await this.operations.recordBackgroundJob({
+      queueName: "email-sync",
+      jobName: "sync-email-connection",
+      idempotencyKey: `email-sync:${connectionId}:${input.cursor ?? "latest"}`,
+      status: "completed",
+      payload: { connectionId, cursor: updatedJob.cursor, messageCount: providerMessages.length }
+    });
     return updatedJob;
   }
 
@@ -343,6 +351,13 @@ export class IntegrationsRepository {
         updatedAt: finishedAt
       })
       .where(eq(calendarIntegrationConnections.id, connectionId));
+    await this.operations.recordBackgroundJob({
+      queueName: "calendar-sync",
+      jobName: "sync-calendar-connection",
+      idempotencyKey: `calendar-sync:${connectionId}:${input.cursor ?? "latest"}`,
+      status: "completed",
+      payload: { connectionId, cursor: updatedJob.cursor, eventCount: providerEvents.length }
+    });
     return updatedJob;
   }
 }
