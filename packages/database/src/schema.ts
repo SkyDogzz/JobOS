@@ -84,6 +84,23 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   userIdx: uniqueIndex("user_subscriptions_user_idx").on(table.userId)
 }));
 
+export const billingUsageEvents = pgTable("billing_usage_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  subscriptionId: uuid("subscription_id").references(() => userSubscriptions.id, { onDelete: "cascade" }),
+  metric: text("metric").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  usageBefore: integer("usage_before").notNull().default(0),
+  usageAfter: integer("usage_after").notNull().default(0),
+  limitValue: integer("limit_value"),
+  action: text("action").notNull().default("consume"),
+  overrideReason: text("override_reason"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  userMetricIdx: index("billing_usage_events_user_metric_idx").on(table.userId, table.metric)
+}));
+
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),

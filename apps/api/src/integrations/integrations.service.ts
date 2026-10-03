@@ -35,6 +35,7 @@ export class IntegrationsService {
 
   async createEmailSyncJob(body: unknown) {
     await this.billing.assertEntitlement("providerSync");
+    await this.billing.consumeUsage("syncRuns", 1, { kind: "email" });
     const input = parseBody(createEmailSyncJobSchema, body);
     const job = await this.integrations.syncEmailConnection(input.connectionId, { cursor: input.cursor });
     if (!job) throw new NotFoundException("Email connection not found.");
@@ -61,6 +62,7 @@ export class IntegrationsService {
 
   async syncEmailConnection(id: string, body: unknown) {
     await this.billing.assertEntitlement("providerSync");
+    await this.billing.consumeUsage("syncRuns", 1, { kind: "email", connectionId: id });
     const job = await this.integrations.syncEmailConnection(id, parseBody(syncEmailConnectionSchema, body));
     if (!job) throw new NotFoundException("Email connection not found.");
     return job;
@@ -76,6 +78,7 @@ export class IntegrationsService {
 
   async createCalendarSyncJob(body: unknown) {
     await this.billing.assertEntitlement("providerSync");
+    await this.billing.consumeUsage("syncRuns", 1, { kind: "calendar" });
     const input = parseBody(createCalendarSyncJobSchema, body);
     const job = await this.integrations.syncCalendarConnection(input.connectionId, { cursor: input.cursor });
     if (!job) throw new NotFoundException("Calendar connection not found.");
@@ -96,6 +99,7 @@ export class IntegrationsService {
 
   async syncCalendarConnection(id: string, body: unknown) {
     await this.billing.assertEntitlement("providerSync");
+    await this.billing.consumeUsage("syncRuns", 1, { kind: "calendar", connectionId: id });
     const job = await this.integrations.syncCalendarConnection(id, parseBody(syncCalendarConnectionSchema, body));
     if (!job) throw new NotFoundException("Calendar connection not found.");
     return job;

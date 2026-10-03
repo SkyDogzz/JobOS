@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { eq } from "drizzle-orm";
-import { billingPlans, userSubscriptions } from "@jobos/database";
+import { desc, eq } from "drizzle-orm";
+import { billingPlans, billingUsageEvents, userSubscriptions } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -54,5 +54,48 @@ export class BillingRepository {
       })
       .returning();
     return subscription;
+  }
+
+  async updateUsage(subscriptionId: string, usage: Record<string, number>) {
+    const [subscription] = await this.db
+      .update(userSubscriptions)
+      .set({ usage, updatedAt: new Date() })
+      .where(eq(userSubscriptions.id, subscriptionId))
+      .returning();
+    return subscription;
+  }
+
+  async createUsageEvent(input: {
+    userId: string;
+    subscriptionId: string | null;
+    metric: string;
+    quantity: number;
+    usageBefore: number;
+    usageAfter: number;
+    limitValue?: number | null;
+    action: string;
+    overrideReason?: string | null;
+    metadata?: Record<string, unknown>;
+  }) {
+    const [event] = await this.db
+      .insert(billingUsageEvents)
+      .values({
+        userId: input.userId,
+        subscriptionId: input.subscriptionId,
+        metric: input.metric,
+        quantity: input.quantity,
+        usageBefore: input.usageBefore,
+        usageAfter: input.usageAfter,
+        limitValue: input.limitValue ?? null,
+        action: input.action,
+        overrideReason: input.overrideReason ?? null,
+        metadata: input.metadata ?? {}
+      })
+      .returning();
+    return event;
+  }
+
+  listUsageEvents(userId: string) {
+    return this.db.select().from(billingUsageEvents).where(eq(billingUsageEvents.userId, userId)).orderBy(desc(billingUsageEvents.createdAt)).limit(100);
   }
 }

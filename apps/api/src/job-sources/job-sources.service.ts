@@ -2,11 +2,12 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { parseJobPosting } from "@jobos/job-sources";
 import { discoveredJobActionSchema, parseJobPostingSchema, runJobSourceCheckSchema, upsertJobSourceSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
+import { BillingService } from "../billing/billing.service.js";
 import { JobSourcesRepository } from "./job-sources.repository.js";
 
 @Injectable()
 export class JobSourcesService {
-  constructor(private readonly sources: JobSourcesRepository) {}
+  constructor(private readonly sources: JobSourcesRepository, private readonly billing: BillingService) {}
 
   list() {
     return this.sources.list();
@@ -30,8 +31,10 @@ export class JobSourcesService {
     return this.sources.discovered();
   }
 
-  runChecks(body: unknown) {
-    return this.sources.runChecks(parseBody(runJobSourceCheckSchema, body));
+  async runChecks(body: unknown) {
+    const result = await this.sources.runChecks(parseBody(runJobSourceCheckSchema, body));
+    if (result.imported > 0) await this.billing.consumeUsage("discoveredJobImports", result.imported, { checkedSources: result.checkedSources });
+    return result;
   }
 
   async approveDiscovered(id: string) {

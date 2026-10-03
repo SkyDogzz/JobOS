@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { assignDocumentSchema, documentFiltersSchema, exportFormatSchema, upsertDocumentTemplateSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
+import { BillingService } from "../billing/billing.service.js";
 import { DocumentsRepository } from "./documents.repository.js";
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly documents: DocumentsRepository) {}
+  constructor(private readonly documents: DocumentsRepository, private readonly billing: BillingService) {}
 
   list(query: unknown) {
     return this.documents.list(documentFiltersSchema.parse(query));
@@ -22,6 +23,7 @@ export class DocumentsService {
   }
 
   async export(id: string, format: string, templateId?: string) {
+    await this.billing.consumeUsage("documentExports", 1, { format, documentId: id });
     const document = await this.documents.findById(id);
     if (!document) throw new NotFoundException("Document not found.");
     const template = templateId ? await this.documents.findTemplateById(templateId) : await this.documents.defaultTemplate(document.kind);

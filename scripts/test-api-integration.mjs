@@ -791,6 +791,21 @@ https://example.com/profile`;
   if (docxExport.mimeType !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || !docxExport.filename.endsWith(".docx")) {
     throw new Error("DOCX export payload was not rendered deterministically.");
   }
+  const usageAfterWork = await request("/billing/status");
+  if (usageAfterWork.usage.aiGenerations < 2 || usageAfterWork.usage.syncRuns < 2 || usageAfterWork.usage.documentExports < 3 || usageAfterWork.usage.discoveredJobImports < 3) {
+    throw new Error("Billing usage counters did not account for costly actions.");
+  }
+  const usageEvents = await request("/billing/usage-events");
+  if (!usageEvents.some((event) => event.metric === "documentExports" && event.action === "consume")) throw new Error("Billing usage audit events were not recorded.");
+  const override = await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "documentExports", value: 200, reason: "Integration limit-hit check", overrideToken: "local-operator-override" })
+  });
+  if (override.usage.documentExports !== 200 || override.event.action !== "operator_override") throw new Error("Billing usage override did not persist.");
+  await expectStatus(`/documents/${approvedCoverLetter.id}/export?format=markdown`, 403);
+  const limitEvents = await request("/billing/usage-events");
+  if (!limitEvents.some((event) => event.metric === "documentExports" && event.action === "limit_hit")) throw new Error("Billing limit-hit audit event was not recorded.");
 
   const [documents, artifacts] = await Promise.all([
     request("/documents?kind=cover_letter"),

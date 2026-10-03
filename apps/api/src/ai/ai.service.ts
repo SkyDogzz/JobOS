@@ -16,7 +16,9 @@ export class AiService {
     if (!context) throw new NotFoundException("Job or resume version not found.");
 
     const selectedProvider = (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local";
+    await this.billing.consumeUsage("aiGenerations", 1, { purpose: "resume_tailoring", provider: selectedProvider });
     if (selectedProvider !== "local") await this.billing.assertEntitlement("premiumAi");
+    if (selectedProvider !== "local") await this.billing.consumeUsage("providerCalls", 1, { purpose: "resume_tailoring", provider: selectedProvider });
     const provider = createAiProvider({
       provider: selectedProvider,
       openaiApiKey: process.env.OPENAI_API_KEY,
@@ -80,7 +82,9 @@ export class AiService {
     if (!context) throw new NotFoundException("Job, resume version, or application not found.");
 
     const selectedProvider = (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local";
+    await this.billing.consumeUsage("aiGenerations", 1, { purpose: "cover_letter", provider: selectedProvider });
     if (selectedProvider !== "local") await this.billing.assertEntitlement("premiumAi");
+    if (selectedProvider !== "local") await this.billing.consumeUsage("providerCalls", 1, { purpose: "cover_letter", provider: selectedProvider });
     const provider = createAiProvider({
       provider: selectedProvider,
       openaiApiKey: process.env.OPENAI_API_KEY,

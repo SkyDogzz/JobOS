@@ -79,10 +79,17 @@ export default async function SettingsPage() {
               <span className="rounded border border-ink/10 px-3 py-1 text-sm font-medium">{billing.effectivePlan?.name ?? "Free"}</span>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
-              <Metric label="AI generations" value={formatLimit(billing.limits.aiGenerations)} />
-              <Metric label="Sync runs" value={formatLimit(billing.limits.syncRuns)} />
-              <Metric label="Document exports" value={formatLimit(billing.limits.documentExports)} />
+              <Metric label="AI generations" value={formatUsage(billing.usage.aiGenerations, billing.limits.aiGenerations)} />
+              <Metric label="Sync runs" value={formatUsage(billing.usage.syncRuns, billing.limits.syncRuns)} />
+              <Metric label="Document exports" value={formatUsage(billing.usage.documentExports, billing.limits.documentExports)} />
             </div>
+            {billing.warnings.length ? (
+              <div className="mt-4 rounded border border-rust/20 bg-rust/10 p-3 text-sm text-ink/75">
+                {billing.warnings.map((warning) => (
+                  <p key={warning.metric}>{warning.metric}: {warning.remaining} remaining this period.</p>
+                ))}
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2 text-sm text-ink/65">
               <span>Premium AI: {billing.entitlements.premiumAi ? "enabled" : "locked"}</span>
               <span>Provider sync: {billing.entitlements.providerSync ? "enabled" : "locked"}</span>
@@ -222,4 +229,9 @@ function formatLimit(value: number | boolean | undefined) {
   if (typeof value === "number") return value.toLocaleString();
   if (typeof value === "boolean") return value ? "Enabled" : "Locked";
   return "Not set";
+}
+
+function formatUsage(used: number | undefined, limit: number | boolean | undefined) {
+  const current = Number(used ?? 0).toLocaleString();
+  return typeof limit === "number" ? `${current} / ${limit.toLocaleString()}` : `${current} used`;
 }

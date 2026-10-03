@@ -461,6 +461,20 @@ export interface BillingStatus {
   entitlements: Record<string, boolean>;
   limits: Record<string, number | boolean>;
   usage: Record<string, number>;
+  warnings: Array<{ metric: string; used: number; limit: number; remaining: number }>;
+}
+
+export interface BillingUsageEvent {
+  id: string;
+  metric: string;
+  quantity: number;
+  usageBefore: number;
+  usageAfter: number;
+  limitValue: number | null;
+  action: string;
+  overrideReason: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface FunnelAnalytics {
@@ -751,6 +765,10 @@ export async function getUserSettings() {
 
 export async function getBillingStatus() {
   return getJson<BillingStatus>("/billing/status");
+}
+
+export async function getBillingUsageEvents() {
+  return getJson<BillingUsageEvent[]>("/billing/usage-events");
 }
 
 export async function getAccountExportSummary() {

@@ -14,4 +14,14 @@ export class BillingController {
   checkout(@Body() body: unknown) {
     return this.billing.startCheckout(body);
   }
+
+  @Get("usage-events")
+  usageEvents() {
+    return this.billing.listUsageEvents();
+  }
+
+  @Post("usage/override")
+  overrideUsage(@Body() body: unknown) {
+    return this.billing.overrideUsage(body);
+  }
 }
