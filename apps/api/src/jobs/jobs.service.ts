@@ -1,8 +1,17 @@
 import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { parseJobPosting } from "@jobos/job-sources";
-import { createJobSchema, dedupeJobSchema, extensionJobImportSchema, jobSearchSchema, mergeJobSchema, saveJobFilterSchema } from "@jobos/validation";
-import type { CreateJobInput } from "@jobos/validation";
+import {
+  createJobSchema,
+  dedupeJobSchema,
+  extensionJobImportPreviewSchema,
+  extensionJobImportSchema,
+  jobSearchSchema,
+  mergeJobSchema,
+  saveJobFilterSchema
+} from "@jobos/validation";
+import type { CreateJobInput, ExtensionJobImportInput } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
+import { runWithCurrentUser } from "../common/current-user.js";
 import { JobsRepository } from "./jobs.repository.js";
 
 @Injectable()
@@ -37,25 +46,36 @@ export class JobsService {
   async importFromExtension(authorization: string | undefined, body: unknown) {
     if (!isAuthorizedExtension(authorization)) throw new UnauthorizedException("Invalid extension import token.");
     const input = parseBody(extensionJobImportSchema, body);
-    const parsed = parseJobPosting({ url: input.pageUrl, html: input.html, text: input.text ?? input.description });
-    const incoming: CreateJobInput = {
-      title: input.title ?? parsed.title,
-      companyName: input.companyName ?? parsed.companyName,
-      location: input.location ?? parsed.location,
-      description: input.description ?? parsed.description,
-      sourceUrl: input.pageUrl,
-      sourceName: input.sourceName,
-      remotePolicy: input.remotePolicy ?? parsed.remotePolicy,
-      salaryText: input.salaryText ?? parsed.salaryText
-    };
-    const duplicates = await this.jobs.findDuplicates(incoming);
-    const exact = duplicates.find((job) => job.sourceUrl === input.pageUrl);
-    if (exact) {
-      const job = await this.jobs.merge(exact.id, incoming, "update_existing");
-      return { contractVersion: "0.4.4", status: "updated", job, parsed: incoming, duplicates };
-    }
-    const job = await this.jobs.create(incoming);
-    return { contractVersion: "0.4.4", status: "created", job, parsed: incoming, duplicates };
+    const userId = await this.jobs.ensureExtensionUser();
+    return runWithCurrentUser(userId, async () => {
+      const incoming = toIncomingJob(input);
+      const duplicates = await this.jobs.findDuplicates(incoming);
+      const exact = duplicates.find((job) => job.sourceUrl === input.pageUrl);
+      if (exact) {
+        const job = await this.jobs.merge(exact.id, incoming, "update_existing");
+        return { contractVersion: "0.4.4", status: "updated", job, parsed: incoming, duplicates, duplicateCount: duplicates.length };
+      }
+      const job = await this.jobs.create(incoming);
+      return { contractVersion: "0.4.4", status: "created", job, parsed: incoming, duplicates, duplicateCount: duplicates.length };
+    });
+  }
+
+  async previewExtensionImport(authorization: string | undefined, body: unknown) {
+    if (!isAuthorizedExtension(authorization)) throw new UnauthorizedException("Invalid extension import token.");
+    const input = parseBody(extensionJobImportPreviewSchema, body);
+    const userId = await this.jobs.ensureExtensionUser();
+    return runWithCurrentUser(userId, async () => {
+      const incoming = toIncomingJob(input);
+      const duplicates = await this.jobs.findDuplicates(incoming);
+      const exact = duplicates.find((job) => job.sourceUrl === input.pageUrl);
+      return {
+        contractVersion: "0.4.4",
+        status: exact ? "duplicate" : "ready",
+        parsed: incoming,
+        duplicates,
+        duplicateCount: duplicates.length
+      };
+    });
   }
 
   filters() {
@@ -65,6 +85,20 @@ export class JobsService {
   saveFilter(body: unknown) {
     return this.jobs.saveFilter(parseBody(saveJobFilterSchema, body));
   }
+}
+
+function toIncomingJob(input: ExtensionJobImportInput): CreateJobInput {
+  const parsed = parseJobPosting({ url: input.pageUrl, html: input.html, text: input.text ?? input.description });
+  return {
+    title: input.title ?? parsed.title,
+    companyName: input.companyName ?? parsed.companyName,
+    location: input.location ?? parsed.location,
+    description: input.description ?? parsed.description,
+    sourceUrl: input.pageUrl,
+    sourceName: input.sourceName,
+    remotePolicy: input.remotePolicy ?? parsed.remotePolicy,
+    salaryText: input.salaryText ?? parsed.salaryText
+  };
 }
 
 function isAuthorizedExtension(authorization: string | undefined) {

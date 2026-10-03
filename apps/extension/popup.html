@@ -16,7 +16,32 @@
         Import token
         <input id="token" type="password" placeholder="jobos-dev-extension-token" />
       </label>
-      <button id="savePage" type="button">Save current page</button>
+      <button id="previewPage" type="button">Preview current page</button>
+      <section id="preview" hidden>
+        <dl>
+          <div>
+            <dt>Role</dt>
+            <dd id="previewTitle"></dd>
+          </div>
+          <div>
+            <dt>Company</dt>
+            <dd id="previewCompany"></dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd id="previewLocation"></dd>
+          </div>
+          <div>
+            <dt>Compensation</dt>
+            <dd id="previewSalary"></dd>
+          </div>
+        </dl>
+        <div id="duplicates" hidden>
+          <strong>Possible duplicate</strong>
+          <ul id="duplicateList"></ul>
+        </div>
+        <button id="savePage" type="button">Save to JobOS</button>
+      </section>
       <p id="status" role="status"></p>
     </main>
     <script src="popup.js"></script>

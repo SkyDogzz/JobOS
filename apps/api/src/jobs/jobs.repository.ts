@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
-import { applications, companies, contacts, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters } from "@jobos/database";
+import { applications, companies, contacts, jobResumeMatches, jobs, jobSources, resumeVersions, resumes, savedJobFilters, users } from "@jobos/database";
 import type { CreateJobInput, JobSearchInput, SaveJobFilterInput } from "@jobos/validation";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
+import { devUser } from "../common/dev-user.js";
 import { requireCurrentUserId } from "../common/current-user.js";
 
 @Injectable()
@@ -212,6 +213,18 @@ export class JobsRepository {
     const userId = requireCurrentUserId();
     const [filter] = await this.db.insert(savedJobFilters).values({ userId, name: input.name, filters: input.filters }).returning();
     return filter;
+  }
+
+  async ensureExtensionUser() {
+    const email = process.env.EXTENSION_IMPORT_USER_EMAIL ?? devUser.email;
+    const [existing] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (existing) return existing.id;
+
+    const [user] = await this.db.insert(users).values({
+      email,
+      name: process.env.EXTENSION_IMPORT_USER_NAME ?? devUser.name
+    }).returning({ id: users.id });
+    return user.id;
   }
 
   private async findOrCreateCompany(name: string) {

@@ -25,6 +25,11 @@ export class JobsController {
     return this.jobs.dedupe(body);
   }
 
+  @Post("import/preview")
+  previewExtensionImport(@Headers("authorization") authorization: string | undefined, @Body() body: unknown) {
+    return this.jobs.previewExtensionImport(authorization, body);
+  }
+
   @Post("import")
   importFromExtension(@Headers("authorization") authorization: string | undefined, @Body() body: unknown) {
     return this.jobs.importFromExtension(authorization, body);

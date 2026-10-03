@@ -261,19 +261,46 @@ async function main() {
   });
   if (unauthorizedImport.status !== 401) throw new Error("Extension import endpoint did not require authentication.");
 
+  const unauthorizedPreview = await fetch(`${apiUrl}/jobs/import/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pageUrl: "https://boards.greenhouse.io/extension/jobs/unauthorized-preview",
+      html: "<html><body><h1>Unauthorized Preview</h1><p>Should fail authentication.</p></body></html>"
+    })
+  });
+  if (unauthorizedPreview.status !== 401) throw new Error("Extension preview endpoint did not require authentication.");
+
   const extensionPageUrl = `https://boards.greenhouse.io/extensionco/jobs/${Date.now()}`;
+  const extensionPayload = {
+    contractVersion: "0.4.4",
+    pageUrl: extensionPageUrl,
+    html: `<html><head><meta property="og:title" content="Extension Import Engineer"><script type="application/ld+json">{"@type":"JobPosting","title":"Extension Import Engineer","hiringOrganization":{"name":"ExtensionCo"},"jobLocation":{"address":{"addressLocality":"Remote"}},"description":"Import current browser pages into JobOS with deterministic contracts."}</script></head><body>Extension payload</body></html>`,
+    sourceName: "browser_extension"
+  };
+  const extensionPreview = await request("/jobs/import/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
+    body: JSON.stringify(extensionPayload)
+  });
+  if (extensionPreview.status !== "ready") throw new Error("Extension preview did not return ready before import.");
+  if (extensionPreview.parsed.title !== "Extension Import Engineer") throw new Error("Extension preview did not parse the role title.");
+
   const extensionImport = await request("/jobs/import", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
-    body: JSON.stringify({
-      contractVersion: "0.4.4",
-      pageUrl: extensionPageUrl,
-      html: `<html><head><meta property="og:title" content="Extension Import Engineer"><script type="application/ld+json">{"@type":"JobPosting","title":"Extension Import Engineer","hiringOrganization":{"name":"ExtensionCo"},"jobLocation":{"address":{"addressLocality":"Remote"}},"description":"Import current browser pages into JobOS with deterministic contracts."}</script></head><body>Extension payload</body></html>`,
-      sourceName: "browser_extension"
-    })
+    body: JSON.stringify(extensionPayload)
   });
   if (extensionImport.status !== "created") throw new Error("Extension import did not create a job.");
   if (extensionImport.parsed.sourceUrl !== extensionPageUrl) throw new Error("Extension import did not preserve the page URL.");
+
+  const extensionDuplicatePreview = await request("/jobs/import/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer jobos-dev-extension-token" },
+    body: JSON.stringify(extensionPayload)
+  });
+  if (extensionDuplicatePreview.status !== "duplicate") throw new Error("Extension preview did not flag repeated source URL.");
+  if (extensionDuplicatePreview.duplicateCount < 1) throw new Error("Extension preview did not return duplicate candidates.");
 
   const extensionUpdate = await request("/jobs/import", {
     method: "POST",

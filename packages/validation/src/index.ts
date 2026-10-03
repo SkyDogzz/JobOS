@@ -34,6 +34,8 @@ export const extensionJobImportSchema = z.object({
   capturedAt: z.string().datetime().optional()
 }).refine((value) => value.description || value.html || value.text, "A description, HTML, or text payload is required.");
 
+export const extensionJobImportPreviewSchema = extensionJobImportSchema;
+
 export const jobSearchSchema = z.object({
   q: z.string().optional(),
   companyId: z.string().uuid().optional(),
