@@ -830,6 +830,8 @@ Implement v1.8.0 billing and subscription foundation:
 - Keep checks green.
 - Commit the result.
 
+Commit: `f0375c4 Add billing subscription foundation`
+
 ### v1.8.1 — Usage Limits and Cost Controls
 
 Implement v1.8.1 usage limits and cost controls:
