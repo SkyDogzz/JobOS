@@ -762,6 +762,8 @@ Implement v1.5.1 browser extension full workflow:
 - Keep checks green.
 - Commit the result.
 
+Commit: `ecc1070 Add browser extension workflow`
+
 ### v1.6.0 — Search Strategy Planner
 
 Implement v1.6.0 search strategy planner:
