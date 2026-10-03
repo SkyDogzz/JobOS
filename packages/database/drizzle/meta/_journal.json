@@ -127,6 +127,13 @@
       "when": 1791374400000,
       "tag": "0017_discovered_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791460800000,
+      "tag": "0018_search_strategy_plans",
+      "breakpoints": true
     }
   ]
 }

@@ -257,6 +257,17 @@ export const createTaskSchema = z.object({
   dueAt: z.string().datetime().optional()
 });
 
+export const strategyGoalsSchema = z.object({
+  weekStartsAt: z.string().datetime().optional(),
+  goals: z.object({
+    applications: z.number().int().min(0).max(100).default(5),
+    networking: z.number().int().min(0).max(100).default(3),
+    followUps: z.number().int().min(0).max(100).default(3),
+    interviews: z.number().int().min(0).max(50).default(1),
+    resumeIterations: z.number().int().min(0).max(50).default(1)
+  }).default({})
+});
+
 export const updateNotificationPreferencesSchema = z.object({
   dueSoonDays: z.number().int().min(0).max(30).optional(),
   taskRemindersEnabled: z.boolean().optional(),
@@ -417,6 +428,7 @@ export type CreateSharePacketInput = z.infer<typeof createSharePacketSchema>;
 export type CreateReviewerCommentInput = z.infer<typeof createReviewerCommentSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type StrategyGoalsInput = z.infer<typeof strategyGoalsSchema>;
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
 export type UpdateUserSettingsInput = z.infer<typeof updateUserSettingsSchema>;
 export type AccountDeletionInput = z.infer<typeof accountDeletionSchema>;

@@ -472,6 +472,20 @@ export interface DocumentPerformanceAnalytics {
   }>;
 }
 
+export interface SearchStrategyPlan {
+  id: string;
+  weekStartsAt: string;
+  goals: Record<string, number>;
+  recommendations: Array<{ kind?: string; title?: string; reason?: string }>;
+  progress: Record<string, unknown> & {
+    missedCommitments?: string[];
+    staleApplicationCount?: number;
+  };
+  generatedTaskIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SavedJobFilter {
   id: string;
   name: string;
@@ -507,15 +521,16 @@ async function getJson<T>(path: string): Promise<T> {
 
 export async function getDashboardData() {
   try {
-    const [jobs, applications, resumes, matches, activity] = await Promise.all([
+    const [jobs, applications, resumes, matches, activity, strategy] = await Promise.all([
       getJson<DashboardJob[]>("/jobs"),
       getJson<DashboardApplication[]>("/applications"),
       getJson<DashboardResume[]>("/resumes"),
       getJson<MatchSummary[]>("/matches"),
-      getJson<AuditEventSummary[]>("/audit/events")
+      getJson<AuditEventSummary[]>("/audit/events"),
+      getJson<SearchStrategyPlan>("/strategy/current")
     ]);
 
-    return { jobs, applications, resumes, matches, activity, apiAvailable: true };
+    return { jobs, applications, resumes, matches, activity, strategy, apiAvailable: true };
   } catch {
     return {
       jobs: [] as DashboardJob[],
@@ -523,6 +538,7 @@ export async function getDashboardData() {
       resumes: [] as DashboardResume[],
       matches: [] as MatchSummary[],
       activity: [] as AuditEventSummary[],
+      strategy: null as SearchStrategyPlan | null,
       apiAvailable: false
     };
   }
@@ -684,6 +700,10 @@ export async function getOperationsAnalytics(query = "") {
 
 export async function getDocumentPerformanceAnalytics(query = "") {
   return getJson<DocumentPerformanceAnalytics>(`/analytics/documents${query}`);
+}
+
+export async function getSearchStrategyPlan(query = "") {
+  return getJson<SearchStrategyPlan>(`/strategy/current${query}`);
 }
 
 export { apiUrl };

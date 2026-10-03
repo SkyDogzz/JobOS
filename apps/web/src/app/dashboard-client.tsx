@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, ChartNoAxesCombined, CheckCircle2, FileText, History, Loader2, Plus, Search, XCircle } from "lucide-react";
+import { BriefcaseBusiness, CalendarCheck, ChartNoAxesCombined, CheckCircle2, FileText, History, Loader2, Plus, Search, XCircle } from "lucide-react";
 import type { AuditEventSummary, DashboardApplication, DashboardData, DashboardJob, DashboardResume } from "../lib/api";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -35,6 +35,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   const [resumes, setResumes] = useState(initialData.resumes);
   const matches = initialData.matches ?? [];
   const activity = initialData.activity ?? [];
+  const strategy = initialData.strategy;
   const [apiAvailable, setApiAvailable] = useState(initialData.apiAvailable);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle", message: "" });
   const [pendingForm, setPendingForm] = useState<"job" | "resume" | "application" | null>(null);
@@ -242,6 +243,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           ))}
         </div>
 
+        {strategy ? <StrategyPlanner plan={strategy} /> : null}
+
         <div className="mt-8 grid gap-4 xl:grid-cols-3">
           <CreateJobForm isPending={pendingForm === "job"} onSubmit={handleJobSubmit} />
           <CreateResumeForm isPending={pendingForm === "resume"} onSubmit={handleResumeSubmit} />
@@ -266,6 +269,63 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       </section>
     </main>
+  );
+}
+
+function StrategyPlanner({ plan }: { plan: NonNullable<DashboardData["strategy"]> }) {
+  const goals: Array<[string, unknown, unknown]> = [
+    ["Applications", plan.progress.applications, plan.goals.applications],
+    ["Networking", plan.progress.networking, plan.goals.networking],
+    ["Follow-ups", plan.progress.followUps, plan.goals.followUps],
+    ["Interviews", plan.progress.interviews, plan.goals.interviews],
+    ["CV iterations", plan.progress.resumeIterations, plan.goals.resumeIterations]
+  ];
+
+  return (
+    <section className="mt-8 rounded border border-ink/10 bg-white p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarCheck size={18} />
+          <h2 className="font-semibold">Weekly Search Strategy</h2>
+        </div>
+        <span className="text-sm text-ink/55">Week of {new Date(plan.weekStartsAt).toLocaleDateString()}</span>
+      </div>
+      <div className="grid gap-3 md:grid-cols-5">
+        {goals.map(([label, value, target]) => {
+          const current = Number(value ?? 0);
+          const goal = Number(target ?? 0);
+          return (
+            <article className="rounded border border-ink/10 bg-paper p-3" key={String(label)}>
+              <p className="text-sm text-ink/60">{label}</p>
+              <p className="mt-2 text-2xl font-semibold">{current}/{goal}</p>
+            </article>
+          );
+        })}
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-ink/70">Next Actions</h3>
+          <div className="space-y-2">
+            {plan.recommendations.slice(0, 4).map((item, index) => (
+              <p className="rounded bg-paper px-3 py-2 text-sm" key={`${item.kind}:${index}`}>
+                <span className="font-medium">{item.title}</span>
+                {item.reason ? <span className="text-ink/55"> · {item.reason}</span> : null}
+              </p>
+            ))}
+            {plan.recommendations.length === 0 ? <p className="rounded bg-paper px-3 py-2 text-sm text-ink/55">Plan is on track.</p> : null}
+          </div>
+        </div>
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-ink/70">Missed Commitments</h3>
+          <p className="rounded bg-paper px-3 py-2 text-sm text-ink/65">
+            {(plan.progress.missedCommitments ?? []).length ? (plan.progress.missedCommitments ?? []).join(", ") : "None"}
+          </p>
+          <p className="mt-2 rounded bg-paper px-3 py-2 text-sm text-ink/65">
+            {Number(plan.progress.staleApplicationCount ?? 0)} stale applications need review.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

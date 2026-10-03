@@ -850,6 +850,18 @@ https://example.com/profile`;
     throw new Error("Document performance analytics did not return document usage.");
   }
 
+  const strategyPlan = await request("/strategy/current");
+  if (!strategyPlan.id || !Array.isArray(strategyPlan.recommendations)) throw new Error("Search strategy planner did not return a plan.");
+  if (typeof strategyPlan.progress.staleApplicationCount !== "number") throw new Error("Search strategy planner did not return progress.");
+  const updatedStrategyPlan = await request("/strategy/current", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ goals: { applications: 6, networking: 4, followUps: 4, interviews: 2, resumeIterations: 2 } })
+  });
+  if (updatedStrategyPlan.goals.applications !== 6) throw new Error("Search strategy planner did not persist goals.");
+  const strategyTasks = await request(`/strategy/${updatedStrategyPlan.id}/generate-tasks`, { method: "POST" });
+  if (!Array.isArray(strategyTasks) || strategyTasks.length === 0) throw new Error("Search strategy planner did not generate tasks.");
+
   const note = await request(`/applications/${application.id}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

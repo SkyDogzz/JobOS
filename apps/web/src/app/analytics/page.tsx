@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft, ChartNoAxesCombined } from "lucide-react";
-import { getDocumentPerformanceAnalytics, getFunnelAnalytics, getOperationsAnalytics, getSourcePerformanceAnalytics } from "../../lib/api";
+import { getDocumentPerformanceAnalytics, getFunnelAnalytics, getOperationsAnalytics, getSearchStrategyPlan, getSourcePerformanceAnalytics } from "../../lib/api";
 
 export default async function AnalyticsPage() {
-  const [funnel, sourcePerformance, operations, documentPerformance] = await Promise.all([
+  const [funnel, sourcePerformance, operations, documentPerformance, strategy] = await Promise.all([
     getFunnelAnalytics().catch(() => null),
     getSourcePerformanceAnalytics().catch(() => null),
     getOperationsAnalytics().catch(() => null),
-    getDocumentPerformanceAnalytics().catch(() => null)
+    getDocumentPerformanceAnalytics().catch(() => null),
+    getSearchStrategyPlan().catch(() => null)
   ]);
 
   return (
@@ -51,6 +52,22 @@ export default async function AnalyticsPage() {
               </div>
             </section>
             <section className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded border border-ink/10 bg-white p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <h2 className="font-semibold">Weekly Search Plan</h2>
+                  <span className="text-sm text-ink/55">{strategy ? new Date(strategy.weekStartsAt).toLocaleDateString() : "No plan"}</span>
+                </div>
+                {!strategy ? <p className="text-sm text-ink/60">No strategy plan yet.</p> : null}
+                {strategy ? (
+                  <div className="grid gap-3 text-sm sm:grid-cols-2">
+                    {Object.entries(strategy.goals).map(([key, goal]) => (
+                      <Rate key={key} label={key.replace(/([A-Z])/g, " $1")} value={Number(strategy.progress[key] ?? 0)} suffix={`/${goal}`} />
+                    ))}
+                    <Rate label="Stale apps" value={Number(strategy.progress.staleApplicationCount ?? 0)} suffix="" />
+                    <Rate label="Missed" value={(strategy.progress.missedCommitments ?? []).length} suffix="" />
+                  </div>
+                ) : null}
+              </div>
               <div className="rounded border border-ink/10 bg-white p-5">
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <h2 className="font-semibold">Interview Outcomes</h2>

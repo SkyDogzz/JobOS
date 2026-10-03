@@ -284,6 +284,19 @@ export const tasks = pgTable("tasks", {
   ...timestamps
 });
 
+export const searchStrategyPlans = pgTable("search_strategy_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  weekStartsAt: timestamp("week_starts_at", { withTimezone: true }).notNull(),
+  goals: jsonb("goals").$type<Record<string, number>>().notNull().default({}),
+  recommendations: jsonb("recommendations").$type<Record<string, unknown>[]>().notNull().default([]),
+  progress: jsonb("progress").$type<Record<string, unknown>>().notNull().default({}),
+  generatedTaskIds: jsonb("generated_task_ids").$type<string[]>().notNull().default([]),
+  ...timestamps
+}, (table) => ({
+  userWeekIdx: uniqueIndex("search_strategy_plans_user_week_idx").on(table.userId, table.weekStartsAt)
+}));
+
 export const notificationPreferences = pgTable("notification_preferences", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
