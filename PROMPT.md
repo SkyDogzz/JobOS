@@ -39,12 +39,12 @@ Checks:
 - If a check fails, fix the issue and rerun the relevant failed checks.
 - If a check cannot be fixed safely, stop and report the blocker.
 
-Commit and push discipline:
+Commit discipline:
 - Each minor must have at least one feature commit.
 - After the feature commit, update PROMPT.md with the feature commit hash under that minor.
 - Then make a separate PROMPT.md record commit.
-- Push every commit after it is created.
-- Do not start the next minor until both commits for the current minor have been pushed.
+- Keep commits local unless the user explicitly asks to push.
+- Do not start the next minor until both local commits for the current minor exist.
 - Use concise feature commit messages matching the minor, for example:
   - `Add production stack smoke`
   - `Harden auth user scoping`
@@ -60,14 +60,13 @@ After each minor, report:
 - Checks run and final result.
 - Whether live API smoke tests were run.
 - Whether E2E or production-stack smoke tests were run, if applicable.
-- Push status.
 - Working tree status.
 
 When v2.0.0 is complete:
 - Ensure root package.json is `2.0.0`.
 - Run full release checks.
-- Commit, push, and tag `v2.0.0`.
-- Push the tag.
+- Commit and tag `v2.0.0`.
+- Push commits and tags only when the user explicitly asks.
 - Provide a final release summary listing all feature commits, all PROMPT.md record commits, final package.json version, final check results, and remaining risks or manual follow-up.
 ```
 
@@ -82,7 +81,7 @@ Things that are easy to forget:
 - Confirm background jobs are idempotent before adding retries.
 - Audit every user-visible mutation, especially copilot/tool actions, sharing, deletion, billing, and admin actions.
 - Preserve backward compatibility for existing local data when adding organizations or tenancy.
-- Push tags as well as commits for v2.0.0.
+- Push tags as well as commits for v2.0.0 only when the user explicitly asks.
 
 ## Implemented
 
@@ -775,6 +774,8 @@ Implement v1.6.0 search strategy planner:
 - Add integration coverage for planner recommendations.
 - Keep checks green.
 - Commit the result.
+
+Commit: `0dcd57f Add search strategy planner`
 
 ### v1.6.1 — Offer and Compensation Tracker
 
