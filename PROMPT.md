@@ -789,6 +789,8 @@ Implement v1.6.1 offer and compensation tracker:
 - Keep checks green.
 - Commit the result.
 
+Commit: `26ac99e Add offer compensation tracker`
+
 ### v1.7.0 — Observability and Operations
 
 Implement v1.7.0 observability and operations:
