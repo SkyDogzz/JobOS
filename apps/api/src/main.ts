@@ -7,6 +7,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module.js";
 import { verifySession } from "./auth/auth.service.js";
 import { runWithCurrentUser } from "./common/current-user.js";
+import { captureError, observeRequest } from "./common/observability.js";
 
 const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60000);
 const rateLimitMax = Number(process.env.RATE_LIMIT_MAX ?? 300);
@@ -17,6 +18,10 @@ async function bootstrap() {
   await app.register(cookie);
   await app.register(helmet);
   app.enableCors({ origin: true, credentials: true });
+  app.getHttpAdapter().getInstance().addHook("onRequest", (request, _reply, done) => {
+    request.headers["x-jobos-started-at"] = String(Date.now());
+    done();
+  });
   app.getHttpAdapter().getInstance().addHook("onRequest", (request, reply, done) => {
     const sessionCookie = request.cookies?.jobos_session;
     const currentUserId = verifySession(sessionCookie);
@@ -41,6 +46,15 @@ async function bootstrap() {
     }
     done();
     });
+  });
+  app.getHttpAdapter().getInstance().addHook("onResponse", (request, reply, done) => {
+    const startedAt = Number(request.headers["x-jobos-started-at"] ?? Date.now());
+    observeRequest(request.url.split("?")[0] ?? request.url, request.method, reply.statusCode, Date.now() - startedAt);
+    done();
+  });
+  app.getHttpAdapter().getInstance().addHook("onError", (request, _reply, error, done) => {
+    captureError(error, { url: request.url, method: request.method, headers: request.headers });
+    done();
   });
 
   const openApiConfig = new DocumentBuilder()

@@ -33,8 +33,14 @@ async function main() {
   if (metrics.version !== productVersion || typeof metrics.monitoring.rateLimitMax !== "number") {
     throw new Error("Health metrics did not expose monitoring data.");
   }
+  if (typeof metrics.observability?.counters?.requests !== "number") {
+    throw new Error("Health metrics did not expose observability counters.");
+  }
   const prometheusMetrics = await fetch(`${apiUrl}/health/metrics/prometheus`).then((response) => response.text());
   if (!prometheusMetrics.includes("jobos_api_uptime_seconds")) throw new Error("Prometheus metrics were not exposed.");
+  if (!prometheusMetrics.includes("jobos_api_requests_total") || !prometheusMetrics.includes("jobos_api_request_duration_ms_bucket")) {
+    throw new Error("Prometheus operational metrics were not exposed.");
+  }
 
   const primaryEmail = `integration-primary-${Date.now()}@jobos.local`;
   const primaryAuth = await request("/auth/register", {

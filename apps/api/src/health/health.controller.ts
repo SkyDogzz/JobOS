@@ -1,6 +1,7 @@
 import { Controller, Get, Header } from "@nestjs/common";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { observabilitySnapshot, prometheusMetrics } from "../common/observability.js";
 
 function readProductVersion() {
   if (process.env.JOBOS_VERSION) return process.env.JOBOS_VERSION;
@@ -39,7 +40,8 @@ export class HealthController {
       monitoring: {
         rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60000),
         rateLimitMax: Number(process.env.RATE_LIMIT_MAX ?? 300)
-      }
+      },
+      observability: observabilitySnapshot()
     };
   }
 
@@ -57,7 +59,8 @@ export class HealthController {
       `jobos_api_heap_used_bytes ${memory.heapUsed}`,
       "# HELP jobos_api_rate_limit_max Configured request limit per window.",
       "# TYPE jobos_api_rate_limit_max gauge",
-      `jobos_api_rate_limit_max ${Number(process.env.RATE_LIMIT_MAX ?? 300)}`
+      `jobos_api_rate_limit_max ${Number(process.env.RATE_LIMIT_MAX ?? 300)}`,
+      ...prometheusMetrics()
     ].join("\n");
   }
 }
