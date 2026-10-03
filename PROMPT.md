@@ -803,6 +803,8 @@ Implement v1.7.0 observability and operations:
 - Keep checks green.
 - Commit the result.
 
+Commit: `b690960 Add observability operations metrics`
+
 ### v1.7.1 — Background Worker Reliability
 
 Implement v1.7.1 background worker reliability:
