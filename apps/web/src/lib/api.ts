@@ -429,6 +429,40 @@ export interface BackgroundJobSummary {
   createdAt: string;
 }
 
+export interface BillingPlanSummary {
+  id: string;
+  code: string;
+  name: string;
+  monthlyPriceCents: number;
+  currency: string;
+  limits: Record<string, number | boolean>;
+  entitlements: Record<string, boolean>;
+  active: boolean;
+}
+
+export interface BillingSubscriptionSummary {
+  id: string;
+  userId: string;
+  planId: string;
+  status: string;
+  provider: string;
+  providerCustomerId: string | null;
+  providerSubscriptionId: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  usage: Record<string, number>;
+}
+
+export interface BillingStatus {
+  providerMode: string;
+  plans: BillingPlanSummary[];
+  subscription: BillingSubscriptionSummary | null;
+  effectivePlan: BillingPlanSummary | null;
+  entitlements: Record<string, boolean>;
+  limits: Record<string, number | boolean>;
+  usage: Record<string, number>;
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -713,6 +747,10 @@ export async function getNotificationPreferences() {
 
 export async function getUserSettings() {
   return getJson<UserSettings>("/settings");
+}
+
+export async function getBillingStatus() {
+  return getJson<BillingStatus>("/billing/status");
 }
 
 export async function getAccountExportSummary() {

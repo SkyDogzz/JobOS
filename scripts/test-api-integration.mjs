@@ -22,6 +22,17 @@ async function request(path, options) {
   return response.json();
 }
 
+async function expectStatus(path, status, options) {
+  const headers = new Headers(options?.headers);
+  if (sessionCookie && !headers.has("Cookie")) headers.set("Cookie", sessionCookie);
+  const response = await fetch(`${apiUrl}${path}`, { ...options, headers });
+  if (response.status !== status) {
+    const body = await response.text();
+    throw new Error(`${path} expected ${status}, received ${response.status}: ${body}`);
+  }
+  return response;
+}
+
 async function main() {
   try {
     await request("/health");
@@ -76,6 +87,11 @@ async function main() {
   if (primaryJobsBefore.some((item) => item.id === privateJob.id)) throw new Error("Primary user could list a secondary user's job.");
   const privateJobDetail = await fetch(`${apiUrl}/jobs/${privateJob.id}`, { headers: { Cookie: primarySession } });
   if (privateJobDetail.ok) throw new Error("Primary user could read a secondary user's job detail.");
+
+  const freeBilling = await request("/billing/status");
+  if (freeBilling.effectivePlan?.code !== "free" || freeBilling.entitlements.providerSync !== false) {
+    throw new Error("Default billing status did not resolve to the free plan.");
+  }
 
   const job = await request("/jobs", {
     method: "POST",
@@ -477,6 +493,21 @@ async function main() {
     })
   });
   if (!emailConnection.id || emailConnection.excludeBodies !== true) throw new Error("Email connection creation failed.");
+  await expectStatus("/integrations/email/sync-jobs", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connectionId: emailConnection.id, cursor: "free-plan-cursor" })
+  });
+  const checkout = await request("/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planCode: "pro" })
+  });
+  if (checkout.plan.code !== "pro" || checkout.subscription.status !== "active") throw new Error("Local billing checkout failed.");
+  const proBilling = await request("/billing/status");
+  if (proBilling.effectivePlan?.code !== "pro" || proBilling.entitlements.providerSync !== true || proBilling.entitlements.premiumAi !== true) {
+    throw new Error("Pro billing entitlements were not activated.");
+  }
   const emailSyncJob = await request("/integrations/email/sync-jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

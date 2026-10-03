@@ -148,6 +148,13 @@
       "when": 1791633600000,
       "tag": "0020_background_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791720000000,
+      "tag": "0021_billing_subscriptions",
+      "breakpoints": true
     }
   ]
 }

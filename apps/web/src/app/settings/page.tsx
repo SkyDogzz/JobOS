@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { ArrowLeft, BellRing, BrainCircuit, Download, MapPin, Save, ShieldCheck } from "lucide-react";
-import { apiUrl, getUserSettings } from "../../lib/api";
+import { ArrowLeft, BellRing, BrainCircuit, CreditCard, Download, MapPin, Save, ShieldCheck } from "lucide-react";
+import { apiUrl, getBillingStatus, getUserSettings } from "../../lib/api";
 
 async function saveSettings(formData: FormData) {
   "use server";
@@ -34,8 +34,21 @@ async function saveSettings(formData: FormData) {
   revalidatePath("/settings/notifications");
 }
 
+async function changePlan(formData: FormData) {
+  "use server";
+
+  const response = await fetch(`${apiUrl}/billing/checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planCode: String(formData.get("planCode") ?? "pro") })
+  });
+  if (!response.ok) throw new Error("Unable to update plan.");
+  revalidatePath("/settings");
+}
+
 export default async function SettingsPage() {
   const settings = await getUserSettings().catch(() => null);
+  const billing = await getBillingStatus().catch(() => null);
   const notifications = settings?.notificationPreferences;
 
   return (
@@ -56,6 +69,37 @@ export default async function SettingsPage() {
           <p className="mt-2 max-w-2xl text-sm text-ink/60">Local defaults for matching, reminders, and deterministic document generation.</p>
         </section>
         {!settings ? <p className="rounded border border-rust/20 bg-rust/10 p-4 text-sm text-rust">Settings are unavailable.</p> : null}
+        {billing ? (
+          <section className="mb-5 rounded border border-ink/10 bg-white p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CreditCard size={18} />
+                <h2 className="font-semibold">Plan and usage</h2>
+              </div>
+              <span className="rounded border border-ink/10 px-3 py-1 text-sm font-medium">{billing.effectivePlan?.name ?? "Free"}</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Metric label="AI generations" value={formatLimit(billing.limits.aiGenerations)} />
+              <Metric label="Sync runs" value={formatLimit(billing.limits.syncRuns)} />
+              <Metric label="Document exports" value={formatLimit(billing.limits.documentExports)} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-sm text-ink/65">
+              <span>Premium AI: {billing.entitlements.premiumAi ? "enabled" : "locked"}</span>
+              <span>Provider sync: {billing.entitlements.providerSync ? "enabled" : "locked"}</span>
+              <span>Billing: {billing.providerMode}</span>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {billing.plans.filter((plan) => plan.code !== billing.effectivePlan?.code).map((plan) => (
+                <form action={changePlan} key={plan.code}>
+                  <input type="hidden" name="planCode" value={plan.code} />
+                  <button className="rounded border border-ink/15 px-3 py-2 text-sm font-medium hover:bg-ink/5" type="submit">
+                    Switch to {plan.name}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {settings && notifications ? (
           <form action={saveSettings} className="grid gap-5">
             <section className="rounded border border-ink/10 bg-white p-5">
@@ -163,4 +207,19 @@ function Toggle({ label, name, defaultChecked }: { label: string; name: string; 
       {label}
     </label>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-ink/10 p-3">
+      <p className="text-xs font-medium uppercase text-ink/50">{label}</p>
+      <p className="mt-1 text-lg font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function formatLimit(value: number | boolean | undefined) {
+  if (typeof value === "number") return value.toLocaleString();
+  if (typeof value === "boolean") return value ? "Enabled" : "Locked";
+  return "Not set";
 }

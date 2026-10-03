@@ -12,11 +12,12 @@ import {
   updateEmailConnectionSchema
 } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
+import { BillingService } from "../billing/billing.service.js";
 import { IntegrationsRepository } from "./integrations.repository.js";
 
 @Injectable()
 export class IntegrationsService {
-  constructor(private readonly integrations: IntegrationsRepository) {}
+  constructor(private readonly integrations: IntegrationsRepository, private readonly billing: BillingService) {}
 
   listEmailConnections() {
     return this.integrations.listEmailConnections();
@@ -33,6 +34,7 @@ export class IntegrationsService {
   }
 
   async createEmailSyncJob(body: unknown) {
+    await this.billing.assertEntitlement("providerSync");
     const input = parseBody(createEmailSyncJobSchema, body);
     const job = await this.integrations.syncEmailConnection(input.connectionId, { cursor: input.cursor });
     if (!job) throw new NotFoundException("Email connection not found.");
@@ -58,6 +60,7 @@ export class IntegrationsService {
   }
 
   async syncEmailConnection(id: string, body: unknown) {
+    await this.billing.assertEntitlement("providerSync");
     const job = await this.integrations.syncEmailConnection(id, parseBody(syncEmailConnectionSchema, body));
     if (!job) throw new NotFoundException("Email connection not found.");
     return job;
@@ -72,6 +75,7 @@ export class IntegrationsService {
   }
 
   async createCalendarSyncJob(body: unknown) {
+    await this.billing.assertEntitlement("providerSync");
     const input = parseBody(createCalendarSyncJobSchema, body);
     const job = await this.integrations.syncCalendarConnection(input.connectionId, { cursor: input.cursor });
     if (!job) throw new NotFoundException("Calendar connection not found.");
@@ -91,6 +95,7 @@ export class IntegrationsService {
   }
 
   async syncCalendarConnection(id: string, body: unknown) {
+    await this.billing.assertEntitlement("providerSync");
     const job = await this.integrations.syncCalendarConnection(id, parseBody(syncCalendarConnectionSchema, body));
     if (!job) throw new NotFoundException("Calendar connection not found.");
     return job;

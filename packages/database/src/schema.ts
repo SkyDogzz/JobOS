@@ -53,6 +53,37 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   ...timestamps
 });
 
+export const billingPlans = pgTable("billing_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  monthlyPriceCents: integer("monthly_price_cents").notNull().default(0),
+  currency: text("currency").notNull().default("USD"),
+  limits: jsonb("limits").$type<Record<string, number | boolean>>().notNull().default({}),
+  entitlements: jsonb("entitlements").$type<Record<string, boolean>>().notNull().default({}),
+  providerProductId: text("provider_product_id"),
+  active: boolean("active").notNull().default(true),
+  ...timestamps
+}, (table) => ({
+  codeIdx: uniqueIndex("billing_plans_code_idx").on(table.code)
+}));
+
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  planId: uuid("plan_id").references(() => billingPlans.id, { onDelete: "restrict" }).notNull(),
+  status: text("status").notNull().default("active"),
+  provider: text("provider").notNull().default("local_fake"),
+  providerCustomerId: text("provider_customer_id"),
+  providerSubscriptionId: text("provider_subscription_id"),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  usage: jsonb("usage").$type<Record<string, number>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  userIdx: uniqueIndex("user_subscriptions_user_idx").on(table.userId)
+}));
+
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),

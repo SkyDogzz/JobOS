@@ -3,19 +3,22 @@ import { createAiProvider } from "@jobos/ai";
 import { approveCoverLetterSchema, approveTailoredResumeSchema, generateCoverLettersSchema, updateGroundingReviewSchema, tailorResumeSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { keywordCoverage, textFromContent } from "../common/scoring.js";
+import { BillingService } from "../billing/billing.service.js";
 import { AiRepository } from "./ai.repository.js";
 
 @Injectable()
 export class AiService {
-  constructor(private readonly ai: AiRepository) {}
+  constructor(private readonly ai: AiRepository, private readonly billing: BillingService) {}
 
   async tailorResume(body: unknown) {
     const input = parseBody(tailorResumeSchema, body);
     const context = await this.ai.loadTailoringContext(input.jobId, input.resumeVersionId);
     if (!context) throw new NotFoundException("Job or resume version not found.");
 
+    const selectedProvider = (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local";
+    if (selectedProvider !== "local") await this.billing.assertEntitlement("premiumAi");
     const provider = createAiProvider({
-      provider: (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local",
+      provider: selectedProvider,
       openaiApiKey: process.env.OPENAI_API_KEY,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       openaiModel: process.env.OPENAI_MODEL,
@@ -76,8 +79,10 @@ export class AiService {
     const context = await this.ai.loadCoverLetterContext(input.jobId, input.resumeVersionId, input.applicationId);
     if (!context) throw new NotFoundException("Job, resume version, or application not found.");
 
+    const selectedProvider = (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local";
+    if (selectedProvider !== "local") await this.billing.assertEntitlement("premiumAi");
     const provider = createAiProvider({
-      provider: (process.env.AI_PROVIDER as "local" | "openai" | "anthropic" | undefined) ?? "local",
+      provider: selectedProvider,
       openaiApiKey: process.env.OPENAI_API_KEY,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       openaiModel: process.env.OPENAI_MODEL,
