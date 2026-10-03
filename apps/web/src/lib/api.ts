@@ -37,6 +37,7 @@ export interface ApplicationDetail extends DashboardApplication {
   }>;
   analyses: AnalysisSummary[];
   contacts: ContactSummary[];
+  offers: ApplicationOffer[];
 }
 
 export interface ApplicationNote {
@@ -52,6 +53,21 @@ export interface ApplicationTask {
   title: string;
   status: string;
   dueAt: string | null;
+  createdAt: string;
+}
+
+export interface ApplicationOffer {
+  id: string;
+  applicationId: string;
+  baseCompensation: number;
+  currency: string;
+  equity: string | null;
+  benefits: string | null;
+  deadlineAt: string | null;
+  negotiationNotes: string | null;
+  status: string;
+  decisionScore: number;
+  comparison: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -572,6 +588,10 @@ export async function getApplicationNotes(id: string) {
 
 export async function getApplicationTasks(id: string) {
   return getJson<ApplicationTask[]>(`/applications/${id}/tasks`);
+}
+
+export async function getApplicationOffers(id: string) {
+  return getJson<ApplicationOffer[]>(`/applications/${id}/offers`);
 }
 
 export async function getApplicationInterviews(id: string) {

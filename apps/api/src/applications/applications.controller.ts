@@ -24,4 +24,14 @@ export class ApplicationsController {
   updateStage(@Param("id") id: string, @Body() body: unknown) {
     return this.applications.updateStage(id, body);
   }
+
+  @Get(":id/offers")
+  listOffers(@Param("id") id: string) {
+    return this.applications.listOffers(id);
+  }
+
+  @Post(":id/offers")
+  createOffer(@Param("id") id: string, @Body() body: unknown) {
+    return this.applications.createOffer(id, body);
+  }
 }

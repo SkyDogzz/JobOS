@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq } from "drizzle-orm";
-import { applicationContacts, applicationEvents, applications, atsAnalyses, companies, contacts, jobs } from "@jobos/database";
-import type { CreateApplicationInput, UpdateApplicationStageInput } from "@jobos/validation";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { applicationContacts, applicationEvents, applications, atsAnalyses, companies, contacts, jobs, offers, tasks, userSettings } from "@jobos/database";
+import type { CreateApplicationInput, CreateOfferInput, UpdateApplicationStageInput } from "@jobos/validation";
 import { requireCurrentUserId } from "../common/current-user.js";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -101,7 +101,9 @@ export class ApplicationsRepository {
       .where(eq(applicationContacts.applicationId, id))
       .orderBy(asc(contacts.name));
 
-    return { ...application, events, analyses, contacts: linkedContacts };
+    const applicationOffers = await this.listOffers(id);
+
+    return { ...application, events, analyses, contacts: linkedContacts, offers: applicationOffers };
   }
 
   async create(input: CreateApplicationInput) {
@@ -146,4 +148,80 @@ export class ApplicationsRepository {
     });
 
     return application;
+  }
+
+  async listOffers(applicationId: string) {
+    const userId = requireCurrentUserId();
+    return this.db
+      .select()
+      .from(offers)
+      .where(and(eq(offers.applicationId, applicationId), eq(offers.userId, userId)))
+      .orderBy(desc(offers.decisionScore), asc(offers.deadlineAt));
+  }
+
+  async createOffer(applicationId: string, input: CreateOfferInput) {
+    const userId = requireCurrentUserId();
+    const [application] = await this.db.select({ id: applications.id }).from(applications).where(and(eq(applications.id, applicationId), eq(applications.userId, userId))).limit(1);
+    if (!application) return null;
+
+    const [settings] = await this.db.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1);
+    const comparison = compareOffer(input, settings?.minimumSalary ?? null);
+    const [offer] = await this.db.insert(offers).values({
+      applicationId,
+      userId,
+      baseCompensation: input.baseCompensation,
+      currency: input.currency,
+      equity: input.equity,
+      benefits: input.benefits,
+      deadlineAt: input.deadlineAt ? new Date(input.deadlineAt) : undefined,
+      negotiationNotes: input.negotiationNotes,
+      decisionScore: comparison.score,
+      comparison
+    }).returning();
+
+    if (input.deadlineAt) {
+      await this.db.insert(tasks).values({
+        applicationId,
+        userId,
+        title: `Review ${input.currency} ${input.baseCompensation.toLocaleString()} offer deadline`,
+        dueAt: new Date(input.deadlineAt)
+      });
+    }
+    if (input.negotiationNotes) {
+      const dueAt = new Date();
+      dueAt.setUTCDate(dueAt.getUTCDate() + 2);
+      await this.db.insert(tasks).values({ applicationId, userId, title: "Prepare offer negotiation follow-up", dueAt });
+    }
+
+    await this.db.insert(applicationEvents).values({
+      applicationId,
+      kind: "updated",
+      payload: { offerId: offer.id, action: "offer_created", decisionScore: comparison.score }
+    });
+    return offer;
   }}
+
+function compareOffer(input: CreateOfferInput, minimumSalary: string | null) {
+  const minimum = parseMoney(minimumSalary);
+  const market = input.marketBaseline ?? minimum ?? input.baseCompensation;
+  const compensationRatio = market ? input.baseCompensation / market : 1;
+  const benefitsBonus = input.benefits ? 10 : 0;
+  const equityBonus = input.equity ? 8 : 0;
+  const deadlinePenalty = input.deadlineAt && new Date(input.deadlineAt).getTime() - Date.now() < 3 * 86400000 ? 8 : 0;
+  const score = Math.max(0, Math.min(100, Math.round(compensationRatio * 70 + benefitsBonus + equityBonus - deadlinePenalty)));
+  return {
+    score,
+    marketBaseline: market,
+    minimumSalary: minimum,
+    compensationDelta: input.baseCompensation - market,
+    notes: score >= 80 ? "Strong offer against current assumptions." : "Review compensation, benefits, and negotiation leverage."
+  };
+}
+
+function parseMoney(value: string | null) {
+  if (!value) return null;
+  const match = value.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  return /k\b/i.test(value) ? Math.round(amount * 1000) : Math.round(amount);
+}

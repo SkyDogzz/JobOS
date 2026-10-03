@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { createApplicationSchema, updateApplicationStageSchema } from "@jobos/validation";
+import { createApplicationSchema, createOfferSchema, updateApplicationStageSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { ApplicationsRepository } from "./applications.repository.js";
 
@@ -33,5 +33,15 @@ export class ApplicationsService {
     }
 
     return application;
+  }
+
+  listOffers(id: string) {
+    return this.applications.listOffers(id);
+  }
+
+  async createOffer(id: string, body: unknown) {
+    const offer = await this.applications.createOffer(id, parseBody(createOfferSchema, body));
+    if (!offer) throw new NotFoundException("Application not found.");
+    return offer;
   }
 }

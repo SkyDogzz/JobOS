@@ -829,6 +829,25 @@ https://example.com/profile`;
   });
   if (updated.stage !== "interviewing") throw new Error("Application stage update failed.");
 
+  const offer = await request(`/applications/${application.id}/offers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      baseCompensation: 172000,
+      currency: "USD",
+      equity: "0.12% options",
+      benefits: "Healthcare, remote stipend, 401k",
+      deadlineAt: new Date(Date.now() + 172800000).toISOString(),
+      negotiationNotes: "Ask for signing bonus and earlier equity refresh.",
+      marketBaseline: 160000
+    })
+  });
+  if (offer.decisionScore <= 0 || !offer.comparison?.notes) throw new Error("Offer tracker did not score the offer.");
+  const offers = await request(`/applications/${application.id}/offers`);
+  if (!offers.some((item) => item.id === offer.id)) throw new Error("Offer tracker did not list the created offer.");
+  const offerTasks = await request(`/applications/${application.id}/tasks`);
+  if (!offerTasks.some((item) => item.title.includes("offer deadline"))) throw new Error("Offer tracker did not generate deadline reminders.");
+
   const funnelAnalytics = await request("/analytics/funnel");
   if (!funnelAnalytics.stageCounts.some((item) => item.stage === "interviewing" && item.count >= 1)) {
     throw new Error("Funnel analytics did not aggregate application stages.");

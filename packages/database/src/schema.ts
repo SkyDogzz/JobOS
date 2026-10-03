@@ -211,6 +211,25 @@ export const applicationContacts = pgTable("application_contacts", {
   applicationContactIdx: uniqueIndex("application_contacts_application_contact_idx").on(table.applicationId, table.contactId)
 }));
 
+export const offers = pgTable("offers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  applicationId: uuid("application_id").references(() => applications.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  baseCompensation: integer("base_compensation").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  equity: text("equity"),
+  benefits: text("benefits"),
+  deadlineAt: timestamp("deadline_at", { withTimezone: true }),
+  negotiationNotes: text("negotiation_notes"),
+  status: text("status").notNull().default("active"),
+  decisionScore: integer("decision_score").notNull().default(0),
+  comparison: jsonb("comparison").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  userStatusIdx: index("offers_user_status_idx").on(table.userId, table.status),
+  applicationIdx: index("offers_application_idx").on(table.applicationId)
+}));
+
 export const documents = pgTable("documents", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

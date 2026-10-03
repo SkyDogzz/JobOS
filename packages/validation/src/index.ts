@@ -233,6 +233,16 @@ export const updateApplicationStageSchema = z.object({
   ])
 });
 
+export const createOfferSchema = z.object({
+  baseCompensation: z.number().int().min(0),
+  currency: z.string().min(3).max(8).default("USD"),
+  equity: z.string().optional(),
+  benefits: z.string().optional(),
+  deadlineAt: z.string().datetime().optional(),
+  negotiationNotes: z.string().optional(),
+  marketBaseline: z.number().int().min(0).optional()
+});
+
 export const createSharePacketSchema = z.object({
   audience: z.enum(["mentor", "recruiter", "trusted_reviewer"]).default("trusted_reviewer"),
   recipientName: z.string().min(1).optional(),
@@ -424,6 +434,7 @@ export type UpsertDocumentTemplateInput = z.infer<typeof upsertDocumentTemplateS
 export type CreateGroundingReviewInput = z.infer<typeof createGroundingReviewSchema>;
 export type UpdateGroundingReviewInput = z.infer<typeof updateGroundingReviewSchema>;
 export type UpdateApplicationStageInput = z.infer<typeof updateApplicationStageSchema>;
+export type CreateOfferInput = z.infer<typeof createOfferSchema>;
 export type CreateSharePacketInput = z.infer<typeof createSharePacketSchema>;
 export type CreateReviewerCommentInput = z.infer<typeof createReviewerCommentSchema>;
 export type CreateNoteInput = z.infer<typeof createNoteSchema>;
