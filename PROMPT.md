@@ -844,6 +844,8 @@ Implement v1.8.1 usage limits and cost controls:
 - Keep checks green.
 - Commit the result.
 
+Commit: `35319dc Add usage limits and cost controls`
+
 ### v1.9.0 — Team and Multi-Tenant Readiness
 
 Implement v1.9.0 team and multi-tenant readiness:
