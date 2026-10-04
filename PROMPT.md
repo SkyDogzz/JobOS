@@ -945,6 +945,8 @@ Implement v2.2.1 billing recovery and dunning:
 - Keep checks green.
 - Commit the result.
 
+Commit: `a39f003 Add billing recovery and dunning`
+
 ### v2.3.0 — Production Auth Hardening
 
 Implement v2.3.0 production auth hardening:
