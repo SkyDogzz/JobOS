@@ -14,6 +14,7 @@ Operating rules:
 - Complete exactly one minor at a time before starting the next.
 - Preserve existing user changes. Do not reset, revert, overwrite unrelated work, or use destructive git commands.
 - Prefer deterministic/local foundations over real third-party integrations unless credentials and provider setup already exist.
+- Ask the user whenever a feature requires external setup, secrets, provider accounts, domains, billing products, email sender configuration, deployment targets, or production behavior choices. Continue with safe local fakes/placeholders only when the feature can remain deterministic without blocking that setup.
 - Add database migrations when schema changes are needed.
 - Add API integration coverage for new or changed API behavior.
 - Add frontend UI when the roadmap explicitly requires user-facing views.
