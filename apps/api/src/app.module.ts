@@ -26,6 +26,7 @@ import { SettingsModule } from "./settings/settings.module.js";
 import { SharingModule } from "./sharing/sharing.module.js";
 import { StrategyModule } from "./strategy/strategy.module.js";
 import { TasksModule } from "./tasks/tasks.module.js";
+import { TeamsModule } from "./teams/teams.module.js";
 import { UsersModule } from "./users/users.module.js";
 
 @Module({
@@ -57,6 +58,7 @@ import { UsersModule } from "./users/users.module.js";
     AnalyticsModule,
     AiModule,
     BillingModule,
+    TeamsModule,
     AuditModule
   ]
 })

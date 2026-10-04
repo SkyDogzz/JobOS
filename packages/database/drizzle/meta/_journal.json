@@ -162,6 +162,13 @@
       "when": 1791806400000,
       "tag": "0022_billing_usage_events",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791892800000,
+      "tag": "0023_team_multi_tenant",
+      "breakpoints": true
     }
   ]
 }

@@ -93,6 +93,43 @@ async function main() {
     throw new Error("Default billing status did not resolve to the free plan.");
   }
 
+  const primaryWorkspaces = await request("/teams/workspaces");
+  const primaryPersonal = primaryWorkspaces.find((workspace) => workspace.kind === "personal");
+  if (!primaryPersonal || !primaryPersonal.permissions.includes("delete")) throw new Error("Primary personal workspace did not include owner permissions.");
+  const teamWorkspace = await request("/teams/workspaces", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `Integration Team ${Date.now()}` })
+  });
+  await request(`/teams/workspaces/${teamWorkspace.organization.id}/members`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: secondaryEmail, role: "viewer" })
+  });
+  const teamJob = await request("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "Shared Team Role",
+      companyName: "Team Tenant Co",
+      description: "Visible to members through the workspace endpoint.",
+      location: "Remote",
+      workspaceId: teamWorkspace.organization.id
+    })
+  });
+  const teamJobsForPrimary = await request(`/teams/workspaces/${teamWorkspace.organization.id}/jobs`);
+  if (!teamJobsForPrimary.some((item) => item.id === teamJob.id)) throw new Error("Team workspace job was not visible to the owner.");
+  sessionCookie = secondarySession;
+  const teamJobsForViewer = await request(`/teams/workspaces/${teamWorkspace.organization.id}/jobs`);
+  if (!teamJobsForViewer.some((item) => item.id === teamJob.id)) throw new Error("Team workspace job was not visible to a viewer member.");
+  await expectStatus(`/teams/workspaces/${teamWorkspace.organization.id}/settings`, 403, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ defaultVisibility: "team" })
+  });
+  await expectStatus(`/teams/workspaces/${primaryPersonal.id}/jobs`, 403);
+  sessionCookie = primarySession;
+
   const job = await request("/jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

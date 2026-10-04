@@ -13,10 +13,11 @@ import type { CreateJobInput, ExtensionJobImportInput } from "@jobos/validation"
 import { parseBody } from "../common/validation.js";
 import { runWithCurrentUser } from "../common/current-user.js";
 import { JobsRepository } from "./jobs.repository.js";
+import { TeamsService } from "../teams/teams.service.js";
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly jobs: JobsRepository) {}
+  constructor(private readonly jobs: JobsRepository, private readonly teams: TeamsService) {}
 
   list(query: unknown) {
     return this.jobs.list(jobSearchSchema.parse(query));
@@ -28,8 +29,11 @@ export class JobsService {
     return job;
   }
 
-  create(body: unknown) {
-    return this.jobs.create(parseBody(createJobSchema, body));
+  async create(body: unknown) {
+    const parsed = parseBody(createJobSchema, body);
+    const workspaceId = body && typeof body === "object" && typeof (body as Record<string, unknown>).workspaceId === "string" ? (body as Record<string, string>).workspaceId : null;
+    if (workspaceId) await this.teams.assertPermission(workspaceId, "edit");
+    return this.jobs.create({ ...parsed, workspaceId });
   }
 
   dedupe(body: unknown) {

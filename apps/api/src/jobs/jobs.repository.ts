@@ -61,7 +61,7 @@ export class JobsRepository {
       .orderBy(desc(jobs.createdAt));
   }
 
-  async create(input: CreateJobInput) {
+  async create(input: CreateJobInput & { workspaceId?: string | null }) {
     const userId = requireCurrentUserId();
     const companyId = input.companyName ? await this.findOrCreateCompany(input.companyName) : null;
     const sourceId = input.sourceId ?? (input.sourceName ? await this.findOrCreateSource(input.sourceName) : null);
@@ -69,6 +69,7 @@ export class JobsRepository {
       .insert(jobs)
       .values({
         userId,
+        workspaceId: input.workspaceId ?? null,
         companyId,
         sourceId,
         title: input.title,

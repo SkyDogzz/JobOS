@@ -26,6 +26,8 @@ export const applicationStage = pgEnum("application_stage", [
 export const documentKind = pgEnum("document_kind", ["resume", "cover_letter", "portfolio", "other"]);
 export const taskStatus = pgEnum("task_status", ["todo", "doing", "done", "cancelled"]);
 export const eventKind = pgEnum("event_kind", ["created", "updated", "stage_changed", "email", "note", "ai_generated", "share_created", "share_viewed", "share_commented", "share_revoked"]);
+export const workspaceKind = pgEnum("workspace_kind", ["personal", "team"]);
+export const membershipRole = pgEnum("membership_role", ["owner", "admin", "editor", "viewer"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -52,6 +54,32 @@ export const candidateProfiles = pgTable("candidate_profiles", {
   canonicalData: jsonb("canonical_data").$type<Record<string, unknown>>().notNull().default({}),
   ...timestamps
 });
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  kind: workspaceKind("kind").default("team").notNull(),
+  ownerUserId: uuid("owner_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  settings: jsonb("settings").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  slugIdx: uniqueIndex("organizations_slug_idx").on(table.slug),
+  ownerIdx: index("organizations_owner_idx").on(table.ownerUserId)
+}));
+
+export const organizationMemberships = pgTable("organization_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: membershipRole("role").default("viewer").notNull(),
+  status: text("status").notNull().default("active"),
+  invitedEmail: text("invited_email"),
+  ...timestamps
+}, (table) => ({
+  memberIdx: uniqueIndex("organization_memberships_org_user_idx").on(table.organizationId, table.userId),
+  userIdx: index("organization_memberships_user_idx").on(table.userId)
+}));
 
 export const billingPlans = pgTable("billing_plans", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -172,6 +200,7 @@ export const contacts = pgTable("contacts", {
 export const jobs = pgTable("jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  workspaceId: uuid("workspace_id").references(() => organizations.id, { onDelete: "set null" }),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
   sourceId: uuid("source_id").references(() => jobSources.id, { onDelete: "set null" }),
   title: text("title").notNull(),
@@ -185,6 +214,7 @@ export const jobs = pgTable("jobs", {
   ...timestamps
 }, (table) => ({
   userIdx: index("jobs_user_idx").on(table.userId),
+  workspaceIdx: index("jobs_workspace_idx").on(table.workspaceId),
   titleIdx: index("jobs_title_idx").on(table.title)
 }));
 

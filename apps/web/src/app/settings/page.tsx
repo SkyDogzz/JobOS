@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
-import { ArrowLeft, BellRing, BrainCircuit, CreditCard, Download, MapPin, Save, ShieldCheck } from "lucide-react";
-import { apiUrl, getBillingStatus, getUserSettings } from "../../lib/api";
+import { ArrowLeft, BellRing, BrainCircuit, CreditCard, Download, MapPin, Save, ShieldCheck, UsersRound } from "lucide-react";
+import { apiUrl, getBillingStatus, getUserSettings, getWorkspaces } from "../../lib/api";
 
 async function saveSettings(formData: FormData) {
   "use server";
@@ -46,9 +46,25 @@ async function changePlan(formData: FormData) {
   revalidatePath("/settings");
 }
 
+async function createWorkspace(formData: FormData) {
+  "use server";
+
+  const response = await fetch(`${apiUrl}/teams/workspaces`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: String(formData.get("workspaceName") ?? "Job Search Team"),
+      settings: { defaultVisibility: "private", exportPolicy: "owners_admins", requireApprovalForDelete: true }
+    })
+  });
+  if (!response.ok) throw new Error("Unable to create workspace.");
+  revalidatePath("/settings");
+}
+
 export default async function SettingsPage() {
   const settings = await getUserSettings().catch(() => null);
   const billing = await getBillingStatus().catch(() => null);
+  const workspaces = await getWorkspaces().catch(() => []);
   const notifications = settings?.notificationPreferences;
 
   return (
@@ -107,6 +123,31 @@ export default async function SettingsPage() {
             </div>
           </section>
         ) : null}
+        <section className="mb-5 rounded border border-ink/10 bg-white p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <UsersRound size={18} />
+              <h2 className="font-semibold">Workspaces</h2>
+            </div>
+            <span className="text-sm text-ink/60">{workspaces.length} active</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {workspaces.map((workspace) => (
+              <div className="rounded border border-ink/10 p-4" key={workspace.id}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium">{workspace.name}</p>
+                  <span className="rounded border border-ink/10 px-2 py-1 text-xs font-medium">{workspace.role}</span>
+                </div>
+                <p className="mt-1 text-sm text-ink/60">{workspace.kind} workspace</p>
+                <p className="mt-3 text-xs text-ink/55">Permissions: {workspace.permissions.join(", ")}</p>
+              </div>
+            ))}
+          </div>
+          <form action={createWorkspace} className="mt-4 flex flex-wrap gap-2">
+            <input className="min-w-64 rounded border border-ink/15 px-3 py-2 text-sm" name="workspaceName" placeholder="Team workspace name" />
+            <button className="rounded bg-ink px-3 py-2 text-sm font-semibold text-white" type="submit">Create team</button>
+          </form>
+        </section>
         {settings && notifications ? (
           <form action={saveSettings} className="grid gap-5">
             <section className="rounded border border-ink/10 bg-white p-5">

@@ -477,6 +477,16 @@ export interface BillingUsageEvent {
   createdAt: string;
 }
 
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  slug: string;
+  kind: "personal" | "team";
+  role: "owner" | "admin" | "editor" | "viewer";
+  permissions: string[];
+  settings: Record<string, unknown>;
+}
+
 export interface FunnelAnalytics {
   totalApplications: number;
   activeApplications: number;
@@ -769,6 +779,10 @@ export async function getBillingStatus() {
 
 export async function getBillingUsageEvents() {
   return getJson<BillingUsageEvent[]>("/billing/usage-events");
+}
+
+export async function getWorkspaces() {
+  return getJson<WorkspaceSummary[]>("/teams/workspaces");
 }
 
 export async function getAccountExportSummary() {
