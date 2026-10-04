@@ -44,9 +44,37 @@ export class BillingService {
   async assertEntitlement(entitlement: string) {
     const status = await this.getBillingStatus();
     if (!status.entitlements[entitlement]) {
-      throw new ForbiddenException(`Your current plan does not include ${entitlement}.`);
+      throw new ForbiddenException({
+        code: "PLAN_ENTITLEMENT_REQUIRED",
+        entitlement,
+        requiredPlan: requiredPlanFor(entitlement),
+        message: `Your current plan does not include ${entitlement}.`
+      });
     }
     return status;
+  }
+
+  async assertUsageAvailable(metric: string, quantity = 1, metadata: Record<string, unknown> = {}) {
+    const userId = requireCurrentUserId();
+    const current = await this.ensureSubscription(userId);
+    const before = Number(current.subscription.usage?.[metric] ?? 0);
+    const after = before + quantity;
+    const limit = numericLimit((current.plan.limits as Limits)[metric]);
+    if (limit !== null && after > limit) {
+      await this.billing.createUsageEvent({
+        userId,
+        subscriptionId: current.subscription.id,
+        metric,
+        quantity,
+        usageBefore: before,
+        usageAfter: before,
+        limitValue: limit,
+        action: "limit_hit",
+        metadata: { ...metadata, nonDestructive: true }
+      });
+      throw limitException(metric, before, quantity, limit);
+    }
+    return { metric, usageBefore: before, usageAfter: after, limitValue: limit };
   }
 
   async consumeUsage(metric: string, quantity = 1, metadata: Record<string, unknown> = {}) {
@@ -68,7 +96,7 @@ export class BillingService {
         action: "limit_hit",
         metadata
       });
-      throw new ForbiddenException(`Usage limit reached for ${metric}.`);
+      throw limitException(metric, before, quantity, limit);
     }
     usage[metric] = after;
     await this.billing.updateUsage(current.subscription.id, usage);
@@ -161,4 +189,22 @@ function buildUpgradePrompts(entitlements: Entitlements, limits: Limits) {
   if (!entitlements.teamWorkspace) prompts.push({ feature: "teamWorkspace", label: "Team workspaces", requiredPlan: "team" });
   if (typeof limits.copilotMessages === "number" && limits.copilotMessages <= 10) prompts.push({ feature: "copilotMessages", label: "More copilot planning", requiredPlan: "premium" });
   return prompts;
+}
+
+function limitException(metric: string, usageBefore: number, quantity: number, limit: number) {
+  return new ForbiddenException({
+    code: "PLAN_LIMIT_REACHED",
+    metric,
+    usageBefore,
+    requested: quantity,
+    limit,
+    remaining: Math.max(0, limit - usageBefore),
+    requiredPlan: "premium",
+    preserveDraft: true,
+    message: `Usage limit reached for ${metric}. Upgrade to keep going without losing your work.`
+  });
+}
+
+function requiredPlanFor(entitlement: string) {
+  return entitlement === "teamWorkspace" ? "team" : "premium";
 }

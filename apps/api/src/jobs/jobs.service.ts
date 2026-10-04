@@ -14,10 +14,11 @@ import { parseBody } from "../common/validation.js";
 import { runWithCurrentUser } from "../common/current-user.js";
 import { JobsRepository } from "./jobs.repository.js";
 import { TeamsService } from "../teams/teams.service.js";
+import { BillingService } from "../billing/billing.service.js";
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly jobs: JobsRepository, private readonly teams: TeamsService) {}
+  constructor(private readonly jobs: JobsRepository, private readonly teams: TeamsService, private readonly billing: BillingService) {}
 
   list(query: unknown) {
     return this.jobs.list(jobSearchSchema.parse(query));
@@ -33,7 +34,10 @@ export class JobsService {
     const parsed = parseBody(createJobSchema, body);
     const workspaceId = body && typeof body === "object" && typeof (body as Record<string, unknown>).workspaceId === "string" ? (body as Record<string, string>).workspaceId : null;
     if (workspaceId) await this.teams.assertPermission(workspaceId, "edit");
-    return this.jobs.create({ ...parsed, workspaceId });
+    await this.billing.assertUsageAvailable("savedJobs", 1, { source: "manual_job_create" });
+    const job = await this.jobs.create({ ...parsed, workspaceId });
+    await this.billing.consumeUsage("savedJobs", 1, { source: "manual_job_create", jobId: job.id });
+    return job;
   }
 
   dedupe(body: unknown) {
@@ -59,7 +63,9 @@ export class JobsService {
         const job = await this.jobs.merge(exact.id, incoming, "update_existing");
         return { contractVersion: "0.4.4", status: "updated", job, parsed: incoming, duplicates, duplicateCount: duplicates.length };
       }
+      await this.billing.assertUsageAvailable("savedJobs", 1, { source: "extension_import", pageUrl: input.pageUrl });
       const job = await this.jobs.create(incoming);
+      await this.billing.consumeUsage("savedJobs", 1, { source: "extension_import", jobId: job.id, pageUrl: input.pageUrl });
       return { contractVersion: "0.4.4", status: "created", job, parsed: incoming, duplicates, duplicateCount: duplicates.length };
     });
   }

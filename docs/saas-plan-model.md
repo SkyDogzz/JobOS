@@ -1,6 +1,7 @@
 # SaaS Plan Model
 
 JobOS v2.1.0 defines the public SaaS catalog as deterministic database seed data.
+JobOS v2.1.1 enforces the free-tier usage boundaries through the billing service.
 
 ## Plans
 
@@ -17,6 +18,23 @@ Until Stripe is implemented, checkout remains deterministic and local:
 - `POST /billing/checkout` accepts `planCode`.
 - The default checkout target is `premium`.
 - New users receive an active `free` subscription on first billing status read.
+
+## Free Tier Enforcement
+
+The API records usage events and blocks writes before data is mutated when a free plan reaches these limits:
+
+- saved jobs
+- applications
+- resumes
+- copilot messages
+- copilot actions
+- AI generations
+- document exports
+- discovered job imports
+
+Limit hits return HTTP 403 with `code: "PLAN_LIMIT_REACHED"`, the blocked metric, the current usage, the limit, `requiredPlan: "premium"`, and `preserveDraft: true`. Clients should keep form/chat state intact and show the upgrade prompt rather than discarding in-progress work.
+
+Entitlement blocks return HTTP 403 with `code: "PLAN_ENTITLEMENT_REQUIRED"` and the required plan.
 
 ## Production Notes
 

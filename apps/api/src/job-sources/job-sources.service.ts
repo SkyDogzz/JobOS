@@ -32,7 +32,9 @@ export class JobSourcesService {
   }
 
   async runChecks(body: unknown) {
-    const result = await this.sources.runChecks(parseBody(runJobSourceCheckSchema, body));
+    const input = parseBody(runJobSourceCheckSchema, body);
+    if (input.fixtures?.length) await this.billing.assertUsageAvailable("discoveredJobImports", input.fixtures.length, { source: "job_source_check", sourceId: input.sourceId });
+    const result = await this.sources.runChecks(input);
     if (result.imported > 0) await this.billing.consumeUsage("discoveredJobImports", result.imported, { checkedSources: result.checkedSources });
     return result;
   }

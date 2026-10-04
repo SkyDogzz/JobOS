@@ -2,17 +2,21 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { createApplicationSchema, createOfferSchema, updateApplicationStageSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { ApplicationsRepository } from "./applications.repository.js";
+import { BillingService } from "../billing/billing.service.js";
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly applications: ApplicationsRepository) {}
+  constructor(private readonly applications: ApplicationsRepository, private readonly billing: BillingService) {}
 
   list() {
     return this.applications.list();
   }
 
-  create(body: unknown) {
-    return this.applications.create(parseBody(createApplicationSchema, body));
+  async create(body: unknown) {
+    await this.billing.assertUsageAvailable("applications", 1, { source: "application_create" });
+    const application = await this.applications.create(parseBody(createApplicationSchema, body));
+    await this.billing.consumeUsage("applications", 1, { source: "application_create", applicationId: application.id });
+    return application;
   }
 
   async findById(id: string) {

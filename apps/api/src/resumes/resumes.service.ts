@@ -3,10 +3,11 @@ import { parseResumeText } from "@jobos/document-parser";
 import { createResumeSchema, createResumeVersionFromParseSchema, createResumeVersionSchema, parseResumeSchema } from "@jobos/validation";
 import { parseBody } from "../common/validation.js";
 import { ResumesRepository } from "./resumes.repository.js";
+import { BillingService } from "../billing/billing.service.js";
 
 @Injectable()
 export class ResumesService {
-  constructor(private readonly resumes: ResumesRepository) {}
+  constructor(private readonly resumes: ResumesRepository, private readonly billing: BillingService) {}
 
   list() {
     return this.resumes.list();
@@ -21,8 +22,11 @@ export class ResumesService {
     return resume;
   }
 
-  create(body: unknown) {
-    return this.resumes.create(parseBody(createResumeSchema, body));
+  async create(body: unknown) {
+    await this.billing.assertUsageAvailable("resumes", 1, { source: "resume_create" });
+    const resume = await this.resumes.create(parseBody(createResumeSchema, body));
+    await this.billing.consumeUsage("resumes", 1, { source: "resume_create", resumeId: resume.id });
+    return resume;
   }
 
   async createVersion(id: string, body: unknown) {

@@ -33,6 +33,19 @@ async function expectStatus(path, status, options) {
   return response;
 }
 
+async function expectJsonStatus(path, status, options) {
+  const response = await expectStatus(path, status, options);
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+function expectPlanLimit(body, metric) {
+  const payload = body?.message && typeof body.message === "object" ? body.message : body;
+  if (payload?.code !== "PLAN_LIMIT_REACHED" || payload.metric !== metric || payload.preserveDraft !== true || payload.requiredPlan !== "premium") {
+    throw new Error(`Expected structured ${metric} plan limit response.`);
+  }
+}
+
 async function main() {
   try {
     await request("/health");
@@ -113,6 +126,111 @@ async function main() {
   if (!freeBilling.upgradePrompts.some((prompt) => prompt.feature === "premiumAi")) {
     throw new Error("Free plan did not expose premium upgrade prompts.");
   }
+
+  const limitEmail = `integration-limits-${Date.now()}@jobos.local`;
+  await request("/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: limitEmail, password: "password123", name: "Limit Boundary User" })
+  });
+  const limitJob = await request("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Limit Seed Role", companyName: "LimitCo", description: "Seed job for limit coverage.", location: "Remote" })
+  });
+  const limitResume = await request("/resumes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Limit Resume", title: "Limit Resume v1", content: { summary: "Limit coverage." } })
+  });
+  const limitApplication = await request("/applications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: limitJob.id, resumeVersionId: limitResume.currentVersion.id, stage: "applied" })
+  });
+  if (!limitApplication.id) throw new Error("Limit boundary application setup failed.");
+
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "savedJobs", value: freeBilling.limits.savedJobs, reason: "Saved job limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/jobs", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Blocked Saved Job", companyName: "LimitCo", description: "Should be blocked before save." })
+  }), "savedJobs");
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "applications", value: freeBilling.limits.applications, reason: "Application limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/applications", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: limitJob.id, resumeVersionId: limitResume.currentVersion.id, stage: "saved" })
+  }), "applications");
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "resumes", value: freeBilling.limits.resumes, reason: "Resume limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/resumes", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Blocked Resume", content: { summary: "Should remain a draft." } })
+  }), "resumes");
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "copilotMessages", value: freeBilling.limits.copilotMessages, reason: "Copilot message limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/copilot/chat", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "This should be preserved as a draft." })
+  }), "copilotMessages");
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "copilotMessages", value: 0, reason: "Reset message limit for action boundary", overrideToken: "local-operator-override" })
+  });
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "copilotActions", value: freeBilling.limits.copilotActions, reason: "Copilot action limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/copilot/chat", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Action limit should block before messages are saved." })
+  }), "copilotActions");
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "aiGenerations", value: freeBilling.limits.aiGenerations, reason: "AI generation limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/ai/tailor-resume", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jobId: limitJob.id, resumeVersionId: limitResume.currentVersion.id, provider: "local" })
+  }), "aiGenerations");
+  const limitSource = await request("/job-sources", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `Limit Source ${Date.now()}`, kind: "job_board", baseUrl: "https://limits.example.com", status: "active" })
+  });
+  await request("/billing/usage/override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ metric: "discoveredJobImports", value: freeBilling.limits.discoveredJobImports, reason: "Discovery limit boundary", overrideToken: "local-operator-override" })
+  });
+  expectPlanLimit(await expectJsonStatus("/job-sources/checks/run", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sourceId: limitSource.id, fixtures: [{ title: "Blocked Discovery", companyName: "LimitCo", description: "Should not queue.", sourceUrl: "https://limits.example.com/blocked" }] })
+  }), "discoveredJobImports");
+  sessionCookie = primarySession;
 
   const primaryWorkspaces = await request("/teams/workspaces");
   const primaryPersonal = primaryWorkspaces.find((workspace) => workspace.kind === "personal");
@@ -880,7 +998,7 @@ https://example.com/profile`;
     body: JSON.stringify({ metric: "documentExports", value: 200, reason: "Integration limit-hit check", overrideToken: "local-operator-override" })
   });
   if (override.usage.documentExports !== 200 || override.event.action !== "operator_override") throw new Error("Billing usage override did not persist.");
-  await expectStatus(`/documents/${approvedCoverLetter.id}/export?format=markdown`, 403);
+  expectPlanLimit(await expectJsonStatus(`/documents/${approvedCoverLetter.id}/export?format=markdown`, 403), "documentExports");
   const limitEvents = await request("/billing/usage-events");
   if (!limitEvents.some((event) => event.metric === "documentExports" && event.action === "limit_hit")) throw new Error("Billing limit-hit audit event was not recorded.");
 

@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { requireCurrentUserId } from "../common/current-user.js";
 import { CopilotRepository } from "./copilot.repository.js";
+import { BillingService } from "../billing/billing.service.js";
 
 @Injectable()
 export class CopilotService {
-  constructor(private readonly copilot: CopilotRepository) {}
+  constructor(private readonly copilot: CopilotRepository, private readonly billing: BillingService) {}
 
   async state() {
     const userId = requireCurrentUserId();
@@ -22,10 +23,14 @@ export class CopilotService {
     const input = parseChat(body);
     const conversation = await this.copilot.ensureConversation(userId);
     const grounding = await this.copilot.groundingContext(userId);
-    await this.copilot.createMessage({ conversationId: conversation.id, userId, role: "user", content: input.message });
     const plan = buildPlan(input.message, grounding);
+    await this.billing.assertUsageAvailable("copilotMessages", 2, { source: "copilot_chat", conversationId: conversation.id });
+    await this.billing.assertUsageAvailable("copilotActions", plan.actions.length, { source: "copilot_chat", conversationId: conversation.id });
+    await this.copilot.createMessage({ conversationId: conversation.id, userId, role: "user", content: input.message });
     const assistant = await this.copilot.createMessage({ conversationId: conversation.id, userId, role: "assistant", content: plan.content, grounding: plan.grounding });
+    await this.billing.consumeUsage("copilotMessages", 2, { source: "copilot_chat", conversationId: conversation.id });
     const actions = await this.copilot.replacePendingActions({ conversationId: conversation.id, userId, actions: plan.actions });
+    if (actions.length > 0) await this.billing.consumeUsage("copilotActions", actions.length, { source: "copilot_chat", conversationId: conversation.id });
     return { conversation, message: assistant, actions, grounding };
   }
 
