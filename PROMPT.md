@@ -931,6 +931,8 @@ Implement v2.2.0 Stripe billing integration:
 - Keep checks green.
 - Commit the result.
 
+Commit: `ff61492 Add Stripe billing integration`
+
 ### v2.2.1 — Billing Recovery and Dunning
 
 Implement v2.2.1 billing recovery and dunning:
