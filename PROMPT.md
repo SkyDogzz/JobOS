@@ -887,3 +887,235 @@ Implement v2.0.0 intelligent job search copilot:
 - Commit and tag the result.
 
 Commit: `26b0d32 Add intelligent job search copilot`
+
+## Roadmap to v3.0.0
+
+### v2.1.0 — SaaS Plan Model
+
+Implement v2.1.0 SaaS plan model:
+
+- Define public free, premium, and team plans with explicit limits and entitlements.
+- Replace placeholder/local-only plan assumptions with a production-ready plan catalog.
+- Add migration-safe plan seed/update behavior for existing users and subscriptions.
+- Show plan limits and premium feature locks clearly in account settings.
+- Add integration coverage for plan resolution, default free assignment, and premium entitlement reads.
+- Keep checks green.
+- Commit the result.
+
+### v2.1.1 — Free Tier Limit Enforcement
+
+Implement v2.1.1 free tier limit enforcement:
+
+- Enforce free limits for saved jobs, applications, resumes, copilot messages/actions, AI generations, document exports, and discovery imports.
+- Add user-facing upgrade prompts at limit boundaries without losing in-progress work.
+- Add audit and usage events for limit hits.
+- Add integration coverage for every enforced free-tier boundary.
+- Keep checks green.
+- Commit the result.
+
+### v2.2.0 — Stripe Billing Integration
+
+Implement v2.2.0 Stripe billing integration:
+
+- Add Stripe checkout sessions, customer mapping, subscription mapping, and customer portal links.
+- Keep deterministic local billing fakes for tests and local development.
+- Add webhook handling for subscription created, updated, canceled, payment failed, and checkout completed events.
+- Make webhook processing idempotent and audit every billing state transition.
+- Add integration coverage with signed local webhook fixtures.
+- Update billing setup documentation and required environment variables.
+- Keep checks green.
+- Commit the result.
+
+### v2.2.1 — Billing Recovery and Dunning
+
+Implement v2.2.1 billing recovery and dunning:
+
+- Add past-due, unpaid, canceled, trialing, and grace-period subscription states.
+- Gate premium features according to recoverable and terminal billing states.
+- Add account UI for failed payments, grace periods, plan changes, and cancellation status.
+- Add notification events for payment failure and grace-period expiration.
+- Add integration coverage for dunning state transitions and entitlement changes.
+- Keep checks green.
+- Commit the result.
+
+### v2.3.0 — Production Auth Hardening
+
+Implement v2.3.0 production auth hardening:
+
+- Add email verification flow with deterministic local email capture.
+- Add password reset flow with expiring, single-use tokens.
+- Harden session cookies, logout behavior, session rotation, and production cookie settings.
+- Add account security UI for email status, password reset, and active session metadata.
+- Add integration and E2E coverage for registration, verification, reset, and protected routes.
+- Update auth setup and operations documentation.
+- Keep checks green.
+- Commit the result.
+
+### v2.3.1 — Abuse Prevention and Rate Limits
+
+Implement v2.3.1 abuse prevention and rate limits:
+
+- Add per-IP and per-user rate limits for auth, copilot, AI generation, imports, exports, and webhook endpoints.
+- Add bot-resistant throttling and lockout behavior for repeated auth failures.
+- Add operator-visible abuse events with sensitive data redaction.
+- Add integration coverage for rate-limit responses and recovery windows.
+- Update operations documentation with tuning guidance.
+- Keep checks green.
+- Commit the result.
+
+### v2.4.0 — Public Marketing and Pricing Site
+
+Implement v2.4.0 public marketing and pricing site:
+
+- Add public landing, pricing, features, FAQ, and contact pages.
+- Add clear free-vs-premium copy tied to the actual plan catalog.
+- Add unauthenticated navigation that routes users to login, registration, and checkout intent.
+- Add responsive, accessible design suitable for a public SaaS launch.
+- Add E2E coverage for public navigation, pricing visibility, and registration entry points.
+- Keep checks green.
+- Commit the result.
+
+### v2.4.1 — Legal, Privacy, and Consent
+
+Implement v2.4.1 legal, privacy, and consent:
+
+- Add Terms of Service, Privacy Policy, Cookie Policy, and AI usage disclosure pages.
+- Add registration-time acceptance tracking with policy version metadata.
+- Add settings UI for privacy controls, export, deletion, and communication preferences.
+- Ensure exports, support bundles, logs, and analytics redact sensitive user content.
+- Add integration coverage for consent recording and privacy controls.
+- Update privacy and operator documentation.
+- Keep checks green.
+- Commit the result.
+
+### v2.5.0 — SaaS Onboarding and Activation
+
+Implement v2.5.0 SaaS onboarding and activation:
+
+- Add first-run onboarding for goals, target roles, locations, resume import, and first saved job.
+- Add guided free-tier activation flow ending in the dashboard and copilot.
+- Add upgrade prompts only after the user reaches meaningful value moments.
+- Add onboarding progress persistence and skip/resume behavior.
+- Add E2E coverage for new-user onboarding and first-value workflow.
+- Keep checks green.
+- Commit the result.
+
+### v2.5.1 — Lifecycle Emails and Product Notifications
+
+Implement v2.5.1 lifecycle emails and product notifications:
+
+- Add deterministic local email provider plus production provider abstraction.
+- Send verification, reset, billing, onboarding, limit warning, and weekly summary emails.
+- Respect notification preferences and unsubscribe/transactional boundaries.
+- Add email event audit logs with no secret or sensitive body leakage.
+- Add integration coverage for email rendering, queuing, preferences, and suppression.
+- Keep checks green.
+- Commit the result.
+
+### v2.6.0 — Production Deployment Pipeline
+
+Implement v2.6.0 production deployment pipeline:
+
+- Add documented deployment pipeline for API, web, worker, database migrations, and static assets.
+- Add environment validation for required production secrets and provider credentials.
+- Add zero-downtime migration guidance and rollback notes.
+- Add release checklist automation for build, migrations, smoke tests, and tag verification.
+- Add staging deployment documentation and smoke-test scripts.
+- Keep checks green.
+- Commit the result.
+
+### v2.6.1 — Backups, Restore, and Data Retention
+
+Implement v2.6.1 backups, restore, and data retention:
+
+- Add production backup schedules for database and object/document storage.
+- Add restore verification scripts and operator documentation.
+- Add retention policies for deleted accounts, AI artifacts, support bundles, logs, and exports.
+- Add admin-visible backup health and last-restore verification status.
+- Add integration or smoke coverage for backup metadata and retention policy behavior.
+- Keep checks green.
+- Commit the result.
+
+### v2.7.0 — Observability for Public SaaS
+
+Implement v2.7.0 observability for public SaaS:
+
+- Add production-ready error reporting, metrics, traces, uptime checks, and alert routing.
+- Add business metrics for activation, conversion, retention, churn, usage, and billing events.
+- Add dashboards for API health, worker health, sync health, billing health, and copilot usage.
+- Redact secrets and sensitive user content from every telemetry surface.
+- Add smoke coverage for metrics endpoints and redaction behavior.
+- Update observability operations documentation.
+- Keep checks green.
+- Commit the result.
+
+### v2.7.1 — Support Operations Console
+
+Implement v2.7.1 support operations console:
+
+- Expand admin support tools into a production-safe console for lookup, diagnostics, audit review, and billing status.
+- Add support role permissions separate from normal team roles.
+- Add strict audit logs for every support action, export, diagnostic bundle, and impersonation-like flow.
+- Add support-safe diagnostic views that never expose raw resume, message, email body, or secret content.
+- Add integration coverage for support permissions, audit logs, and redaction.
+- Keep checks green.
+- Commit the result.
+
+### v2.8.0 — Security Review and Tenant Isolation
+
+Implement v2.8.0 security review and tenant isolation:
+
+- Audit every API endpoint for authentication, user scoping, workspace scoping, and role permissions.
+- Add tenant isolation tests for jobs, applications, resumes, documents, tasks, billing, copilot, analytics, integrations, and support tools.
+- Harden unsafe local defaults for production environments.
+- Add security headers, CORS rules, CSP, and secure cookie defaults suitable for public SaaS.
+- Document security posture, known limitations, and disclosure process.
+- Keep checks green.
+- Commit the result.
+
+### v2.8.1 — Compliance and Data Processing Readiness
+
+Implement v2.8.1 compliance and data processing readiness:
+
+- Add data inventory for user profile data, resumes, job content, AI artifacts, billing data, and support metadata.
+- Add DPA-ready subprocessors documentation and provider configuration notes.
+- Add user data export and deletion verification coverage.
+- Add operator workflows for legal holds, deletion requests, and account recovery.
+- Add documentation for AI data handling and provider retention assumptions.
+- Keep checks green.
+- Commit the result.
+
+### v2.9.0 — Private Beta Launch
+
+Implement v2.9.0 private beta launch:
+
+- Add beta access controls, invite codes, and waitlist capture.
+- Add onboarding analytics for first job saved, first application created, first resume imported, and first copilot plan generated.
+- Add feedback capture and support escalation flows.
+- Add beta operator dashboard for activation, errors, billing readiness, and usage limits.
+- Add E2E coverage for invite registration, onboarding, feedback, and upgrade prompts.
+- Keep checks green.
+- Commit the result.
+
+### v2.9.1 — Launch Candidate Hardening
+
+Implement v2.9.1 launch candidate hardening:
+
+- Fix beta feedback, polish key activation flows, and close launch-blocking security or billing gaps.
+- Add load and concurrency smoke coverage for auth, dashboard, copilot, checkout, and webhooks.
+- Run restore verification, production-stack smoke, and release checklist automation.
+- Update public docs, operator runbooks, release notes, and known-risk register.
+- Freeze non-critical feature work until v3.0.0 release verification is complete.
+- Keep checks green.
+- Commit the result.
+
+### v3.0.0 — Public SaaS Launch
+
+Implement v3.0.0 public SaaS launch:
+
+- Ensure production billing, free/premium enforcement, auth hardening, onboarding, legal pages, observability, backups, and support workflows are complete.
+- Run full release checks including typecheck, build, test, live API integration, E2E, production-stack smoke, restore verification, and release checklist automation.
+- Verify root package.json is `3.0.0`.
+- Create final public launch release notes with free and premium feature boundaries.
+- Commit and tag `v3.0.0`.
+- Push commits and tags only when the user explicitly asks.
