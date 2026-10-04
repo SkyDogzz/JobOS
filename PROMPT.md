@@ -903,6 +903,8 @@ Implement v2.1.0 SaaS plan model:
 - Keep checks green.
 - Commit the result.
 
+Commit: `be64a90 Add SaaS plan model`
+
 ### v2.1.1 — Free Tier Limit Enforcement
 
 Implement v2.1.1 free tier limit enforcement:
