@@ -104,8 +104,14 @@ async function main() {
   if (JSON.stringify(supportBundle).includes(secondaryEmail)) throw new Error("Support bundle leaked the target email address.");
 
   const freeBilling = await request("/billing/status");
-  if (freeBilling.effectivePlan?.code !== "free" || freeBilling.entitlements.providerSync !== false) {
+  if (freeBilling.effectivePlan?.code !== "free" || freeBilling.subscription?.status !== "active" || freeBilling.entitlements.providerSync !== false) {
     throw new Error("Default billing status did not resolve to the free plan.");
+  }
+  if (!freeBilling.plans.some((plan) => plan.code === "premium") || !freeBilling.plans.some((plan) => plan.code === "team")) {
+    throw new Error("Public SaaS plan catalog did not expose premium and team plans.");
+  }
+  if (!freeBilling.upgradePrompts.some((prompt) => prompt.feature === "premiumAi")) {
+    throw new Error("Free plan did not expose premium upgrade prompts.");
   }
 
   const primaryWorkspaces = await request("/teams/workspaces");
@@ -572,12 +578,12 @@ async function main() {
   const checkout = await request("/billing/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ planCode: "pro" })
+    body: JSON.stringify({ planCode: "premium" })
   });
-  if (checkout.plan.code !== "pro" || checkout.subscription.status !== "active") throw new Error("Local billing checkout failed.");
-  const proBilling = await request("/billing/status");
-  if (proBilling.effectivePlan?.code !== "pro" || proBilling.entitlements.providerSync !== true || proBilling.entitlements.premiumAi !== true) {
-    throw new Error("Pro billing entitlements were not activated.");
+  if (checkout.plan.code !== "premium" || checkout.subscription.status !== "active") throw new Error("Local billing checkout failed.");
+  const premiumBilling = await request("/billing/status");
+  if (premiumBilling.effectivePlan?.code !== "premium" || premiumBilling.entitlements.providerSync !== true || premiumBilling.entitlements.premiumAi !== true) {
+    throw new Error("Premium billing entitlements were not activated.");
   }
   const emailSyncJob = await request("/integrations/email/sync-jobs", {
     method: "POST",

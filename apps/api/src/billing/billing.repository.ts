@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { billingPlans, billingUsageEvents, userSubscriptions } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
@@ -9,7 +9,7 @@ export class BillingRepository {
   constructor(@Inject(DATABASE) private readonly db: JobOsDatabase) {}
 
   listPlans() {
-    return this.db.select().from(billingPlans).where(eq(billingPlans.active, true));
+    return this.db.select().from(billingPlans).where(eq(billingPlans.active, true)).orderBy(asc(billingPlans.monthlyPriceCents));
   }
 
   getPlanByCode(code: string) {

@@ -12,18 +12,18 @@ export class BillingService {
   async getBillingStatus() {
     const userId = requireCurrentUserId();
     const plans = await this.billing.listPlans();
-    const subscription = await this.billing.getSubscriptionForUser(userId);
-    const freePlan = plans.find((plan) => plan.code === "free") ?? null;
-    const effectivePlan = subscription?.plan ?? freePlan;
+    const subscription = await this.ensureSubscription(userId);
+    const effectivePlan = subscription.plan;
     return {
       providerMode: process.env.STRIPE_SECRET_KEY ? "stripe_optional" : "local_fake",
       plans,
-      subscription: subscription?.subscription ?? null,
+      subscription: subscription.subscription,
       effectivePlan,
       entitlements: (effectivePlan?.entitlements ?? {}) as Entitlements,
       limits: (effectivePlan?.limits ?? {}) as Limits,
-      usage: subscription?.subscription.usage ?? {},
-      warnings: buildWarnings(subscription?.subscription.usage ?? {}, (effectivePlan?.limits ?? {}) as Limits)
+      usage: subscription.subscription.usage ?? {},
+      warnings: buildWarnings(subscription.subscription.usage ?? {}, (effectivePlan?.limits ?? {}) as Limits),
+      upgradePrompts: buildUpgradePrompts((effectivePlan?.entitlements ?? {}) as Entitlements, (effectivePlan?.limits ?? {}) as Limits)
     };
   }
 
@@ -131,7 +131,7 @@ export class BillingService {
 
 function parseCheckout(body: unknown) {
   const value = body && typeof body === "object" ? (body as Record<string, unknown>).planCode : undefined;
-  return { planCode: typeof value === "string" && value.trim() ? value.trim() : "pro" };
+  return { planCode: typeof value === "string" && value.trim() ? value.trim() : "premium" };
 }
 
 function parseOverride(body: unknown) {
@@ -152,4 +152,13 @@ function buildWarnings(usage: Record<string, number>, limits: Limits) {
     .filter(([, limit]) => typeof limit === "number")
     .map(([metric, limit]) => ({ metric, used: Number(usage[metric] ?? 0), limit: limit as number, remaining: Math.max(0, (limit as number) - Number(usage[metric] ?? 0)) }))
     .filter((item) => item.remaining <= Math.max(1, Math.ceil(item.limit * 0.2)));
+}
+
+function buildUpgradePrompts(entitlements: Entitlements, limits: Limits) {
+  const prompts = [];
+  if (!entitlements.premiumAi) prompts.push({ feature: "premiumAi", label: "Premium AI", requiredPlan: "premium" });
+  if (!entitlements.providerSync) prompts.push({ feature: "providerSync", label: "Email and calendar sync", requiredPlan: "premium" });
+  if (!entitlements.teamWorkspace) prompts.push({ feature: "teamWorkspace", label: "Team workspaces", requiredPlan: "team" });
+  if (typeof limits.copilotMessages === "number" && limits.copilotMessages <= 10) prompts.push({ feature: "copilotMessages", label: "More copilot planning", requiredPlan: "premium" });
+  return prompts;
 }

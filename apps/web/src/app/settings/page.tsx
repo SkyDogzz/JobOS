@@ -40,7 +40,7 @@ async function changePlan(formData: FormData) {
   const response = await fetch(`${apiUrl}/billing/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ planCode: String(formData.get("planCode") ?? "pro") })
+    body: JSON.stringify({ planCode: String(formData.get("planCode") ?? "premium") })
   });
   if (!response.ok) throw new Error("Unable to update plan.");
   revalidatePath("/settings");
@@ -99,6 +99,22 @@ export default async function SettingsPage() {
               <Metric label="Sync runs" value={formatUsage(billing.usage.syncRuns, billing.limits.syncRuns)} />
               <Metric label="Document exports" value={formatUsage(billing.usage.documentExports, billing.limits.documentExports)} />
             </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {billing.plans.map((plan) => (
+                <div className={`rounded border p-4 ${plan.code === billing.effectivePlan?.code ? "border-ink bg-paper" : "border-ink/10"}`} key={plan.code}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold">{plan.name}</p>
+                    <p className="text-sm text-ink/60">{formatPrice(plan.monthlyPriceCents, plan.currency)}</p>
+                  </div>
+                  <dl className="mt-3 space-y-1 text-sm text-ink/65">
+                    <PlanLimit label="Saved jobs" value={plan.limits.savedJobs} />
+                    <PlanLimit label="Applications" value={plan.limits.applications} />
+                    <PlanLimit label="Copilot messages" value={plan.limits.copilotMessages} />
+                    <PlanLimit label="Team seats" value={plan.limits.teamSeats} />
+                  </dl>
+                </div>
+              ))}
+            </div>
             {billing.warnings.length ? (
               <div className="mt-4 rounded border border-rust/20 bg-rust/10 p-3 text-sm text-ink/75">
                 {billing.warnings.map((warning) => (
@@ -109,8 +125,16 @@ export default async function SettingsPage() {
             <div className="mt-4 flex flex-wrap gap-2 text-sm text-ink/65">
               <span>Premium AI: {billing.entitlements.premiumAi ? "enabled" : "locked"}</span>
               <span>Provider sync: {billing.entitlements.providerSync ? "enabled" : "locked"}</span>
+              <span>Team workspace: {billing.entitlements.teamWorkspace ? "enabled" : "locked"}</span>
               <span>Billing: {billing.providerMode}</span>
             </div>
+            {billing.upgradePrompts.length ? (
+              <div className="mt-4 rounded border border-ink/10 bg-paper p-3 text-sm text-ink/70">
+                {billing.upgradePrompts.map((prompt) => (
+                  <p key={prompt.feature}>{prompt.label} unlocks on {prompt.requiredPlan}.</p>
+                ))}
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               {billing.plans.filter((plan) => plan.code !== billing.effectivePlan?.code).map((plan) => (
                 <form action={changePlan} key={plan.code}>
@@ -264,6 +288,20 @@ function Metric({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>
   );
+}
+
+function PlanLimit({ label, value }: { label: string; value: number | boolean | undefined }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt>{label}</dt>
+      <dd className="font-medium text-ink">{formatLimit(value)}</dd>
+    </div>
+  );
+}
+
+function formatPrice(cents: number, currency: string) {
+  if (cents === 0) return "Free";
+  return `${new Intl.NumberFormat("en-US", { style: "currency" as const, currency }).format(cents / 100)}/mo`;
 }
 
 function formatLimit(value: number | boolean | undefined) {

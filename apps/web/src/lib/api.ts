@@ -511,6 +511,7 @@ export interface BillingStatus {
   limits: Record<string, number | boolean>;
   usage: Record<string, number>;
   warnings: Array<{ metric: string; used: number; limit: number; remaining: number }>;
+  upgradePrompts: Array<{ feature: string; label: string; requiredPlan: string }>;
 }
 
 export interface BillingUsageEvent {
