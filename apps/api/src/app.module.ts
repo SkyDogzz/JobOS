@@ -10,6 +10,7 @@ import { AnalyticsModule } from "./analytics/analytics.module.js";
 import { BillingModule } from "./billing/billing.module.js";
 import { CompaniesModule } from "./companies/companies.module.js";
 import { ContactsModule } from "./contacts/contacts.module.js";
+import { CopilotModule } from "./copilot/copilot.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { DocumentsModule } from "./documents/documents.module.js";
 import { HealthModule } from "./health/health.module.js";
@@ -41,6 +42,7 @@ import { UsersModule } from "./users/users.module.js";
     ProfilesModule,
     CompaniesModule,
     ContactsModule,
+    CopilotModule,
     JobsModule,
     JobSourcesModule,
     ApplicationsModule,

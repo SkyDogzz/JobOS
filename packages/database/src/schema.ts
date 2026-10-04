@@ -140,6 +140,44 @@ export const supportDiagnosticBundles = pgTable("support_diagnostic_bundles", {
   targetIdx: index("support_diagnostic_bundles_target_idx").on(table.targetUserId)
 }));
 
+export const copilotConversations = pgTable("copilot_conversations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull().default("Job search copilot"),
+  ...timestamps
+}, (table) => ({
+  userIdx: index("copilot_conversations_user_idx").on(table.userId)
+}));
+
+export const copilotMessages = pgTable("copilot_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id").references(() => copilotConversations.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  grounding: jsonb("grounding").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  conversationIdx: index("copilot_messages_conversation_idx").on(table.conversationId)
+}));
+
+export const copilotActions = pgTable("copilot_actions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id").references(() => copilotConversations.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  rationale: text("rationale").notNull(),
+  status: text("status").notNull().default("pending"),
+  proposedMutation: jsonb("proposed_mutation").$type<Record<string, unknown>>().notNull().default({}),
+  grounding: jsonb("grounding").$type<Record<string, unknown>>().notNull().default({}),
+  approvalHistory: jsonb("approval_history").$type<Record<string, unknown>[]>().notNull().default([]),
+  rollbackPlan: jsonb("rollback_plan").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  userStatusIdx: index("copilot_actions_user_status_idx").on(table.userId, table.status)
+}));
+
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),

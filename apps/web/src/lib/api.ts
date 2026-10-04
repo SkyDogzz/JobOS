@@ -451,6 +451,33 @@ export interface AdminSyncHealth {
   calendar: Array<Record<string, unknown>>;
 }
 
+export interface CopilotActionSummary {
+  id: string;
+  kind: string;
+  title: string;
+  rationale: string;
+  status: "pending" | "accepted" | "rejected";
+  proposedMutation: Record<string, unknown>;
+  grounding: Record<string, unknown>;
+  approvalHistory: Record<string, unknown>[];
+  rollbackPlan: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface CopilotState {
+  conversation: { id: string; title: string; createdAt: string; updatedAt: string };
+  messages: Array<{ id: string; role: string; content: string; grounding: Record<string, unknown>; createdAt: string }>;
+  actions: CopilotActionSummary[];
+  grounding: {
+    savedJobs: DashboardJob[];
+    applications: DashboardApplication[];
+    resumeCount: number;
+    documentCount: number;
+    openTasks: ApplicationTask[];
+    settings: UserSettings | null;
+  };
+}
+
 export interface BillingPlanSummary {
   id: string;
   code: string;
@@ -841,6 +868,10 @@ export async function getAdminFailedJobs() {
 
 export async function getAdminSyncHealth() {
   return getAdminJson<AdminSyncHealth>("/admin/sync-health");
+}
+
+export async function getCopilotState() {
+  return getJson<CopilotState>("/copilot");
 }
 
 export async function getFunnelAnalytics(query = "") {

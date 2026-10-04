@@ -156,6 +156,23 @@ async function main() {
       sourceName: "integration-test"
     })
   });
+  const copilotInitial = await request("/copilot");
+  if (!copilotInitial.conversation?.id || !Array.isArray(copilotInitial.actions)) throw new Error("Copilot state did not initialize a conversation.");
+  const copilotPlan = await request("/copilot/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Plan my week from my current pipeline" })
+  });
+  if (!copilotPlan.message.content.includes("saved jobs") || copilotPlan.actions.length === 0) throw new Error("Copilot did not return grounded recommendations.");
+  const groundedAction = copilotPlan.actions.find((action) => action.grounding && Object.keys(action.grounding).length > 0);
+  if (!groundedAction) throw new Error("Copilot action was not grounded in stored data.");
+  const approvedAction = await request(`/copilot/actions/${groundedAction.id}/approve`, { method: "POST" });
+  if (approvedAction.status !== "accepted" || approvedAction.approvalHistory.length === 0) throw new Error("Copilot approval was not recorded.");
+  const rejectedActionTarget = copilotPlan.actions.find((action) => action.id !== groundedAction.id);
+  if (rejectedActionTarget) {
+    const rejectedAction = await request(`/copilot/actions/${rejectedActionTarget.id}/reject`, { method: "POST" });
+    if (rejectedAction.status !== "rejected") throw new Error("Copilot rejection was not recorded.");
+  }
   const adminAudit = await request(`/admin/audit?userId=${primaryAuth.user.id}`, { headers: adminHeaders });
   if (!Array.isArray(adminAudit)) throw new Error("Admin audit endpoint did not return a list.");
 

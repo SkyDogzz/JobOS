@@ -14,7 +14,7 @@ const navGroups = [
   ["Documents", "CVs", "Cover Letters", "Documents"],
   ["Tools", "ATS Scanner", "Job Matcher", "Interview Prep"],
   ["Network", "Companies", "Contacts"],
-  ["Insights", "Analytics", "Operations"]
+  ["Insights", "Analytics", "Operations", "Copilot"]
 ];
 
 const stages = ["saved", "applied", "interviewing"] as const;
