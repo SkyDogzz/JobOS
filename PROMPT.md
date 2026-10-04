@@ -858,6 +858,8 @@ Implement v1.9.0 team and multi-tenant readiness:
 - Keep checks green.
 - Commit the result.
 
+Commit: `d1d69df Add team multi-tenant readiness`
+
 ### v1.9.1 — Admin and Support Tools
 
 Implement v1.9.1 admin and support tools:
