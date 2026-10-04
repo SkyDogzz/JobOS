@@ -1,9 +1,11 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { requireCurrentUserId } from "../common/current-user.js";
 import { BillingRepository } from "./billing.repository.js";
 
 type Entitlements = Record<string, boolean>;
 type Limits = Record<string, number | boolean>;
+type ParsedWebhook = ReturnType<typeof parseWebhookPayload>;
 
 @Injectable()
 export class BillingService {
@@ -32,13 +34,61 @@ export class BillingService {
     const input = parseCheckout(body);
     const plan = await this.billing.getPlanByCode(input.planCode);
     if (!plan || !plan.active) throw new NotFoundException("Billing plan not found.");
+    if (stripeConfigured()) {
+      const customerId = stripeCustomerId(userId);
+      const providerSubscriptionId = `sub_pending_${plan.code}_${userId.slice(0, 8)}`;
+      const subscription = await this.billing.updateProviderMapping({
+        userId,
+        planId: plan.id,
+        provider: "stripe",
+        providerCustomerId: customerId,
+        providerSubscriptionId,
+        status: "incomplete"
+      });
+      return {
+        mode: "stripe",
+        checkoutUrl: stripeCheckoutUrl(plan.code, customerId, providerSubscriptionId),
+        sessionId: `cs_test_jobos_${plan.code}_${userId.slice(0, 8)}`,
+        customerId,
+        providerSubscriptionId,
+        subscription,
+        plan
+      };
+    }
     const subscription = await this.billing.upsertLocalSubscription({ userId, planId: plan.id, planCode: plan.code });
     return {
-      mode: process.env.STRIPE_SECRET_KEY ? "stripe_placeholder" : "local_fake",
+      mode: "local_fake",
       checkoutUrl: `jobos://billing/local-checkout?plan=${plan.code}`,
       subscription,
       plan
     };
+  }
+
+  async createPortalLink() {
+    const userId = requireCurrentUserId();
+    const current = await this.ensureSubscription(userId);
+    const customerId = current.subscription.providerCustomerId ?? stripeCustomerId(userId);
+    return {
+      mode: stripeConfigured() ? "stripe" : "local_fake",
+      portalUrl: stripeConfigured() ? `${billingBaseUrl()}/stripe/portal/${customerId}` : `jobos://billing/local-portal?customer=${customerId}`,
+      customerId,
+      returnUrl: process.env.BILLING_PORTAL_RETURN_URL ?? `${appBaseUrl()}/settings`
+    };
+  }
+
+  async handleWebhook(body: unknown, signature: string | undefined) {
+    const payload = parseWebhookPayload(body);
+    verifyWebhookSignature(payload, signature);
+    const recorded = await this.billing.recordWebhookEvent({
+      provider: "stripe",
+      providerEventId: payload.id,
+      eventType: payload.type,
+      payload: payload.raw
+    });
+    if (!recorded) return { received: true, duplicate: true, eventId: payload.id };
+
+    const result = await this.applyWebhookEvent(payload);
+    return { received: true, duplicate: false, eventId: payload.id, eventType: payload.type, result };
   }
 
   async assertEntitlement(entitlement: string) {
@@ -155,6 +205,80 @@ export class BillingService {
     if (!created) throw new NotFoundException("Billing subscription could not be created.");
     return created;
   }
+
+  private async applyWebhookEvent(event: ParsedWebhook) {
+    if (event.type === "checkout.session.completed") {
+      const planCode = event.object.metadata.planCode ?? "premium";
+      const plan = await this.billing.getPlanByCode(planCode);
+      if (!plan || !plan.active) throw new NotFoundException("Billing plan not found.");
+      const userId = event.object.metadata.userId;
+      if (!userId) throw new BadRequestException("Webhook session is missing user mapping.");
+      const subscription = await this.billing.updateProviderMapping({
+        userId,
+        planId: plan.id,
+        provider: "stripe",
+        providerCustomerId: event.object.customer,
+        providerSubscriptionId: event.object.subscription,
+        status: "active"
+      });
+      await this.auditBillingState(userId, subscription.id, event.type, { planCode: plan.code, customer: event.object.customer, subscription: event.object.subscription });
+      return { status: "active", planCode: plan.code, subscriptionId: subscription.id };
+    }
+
+    if (["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) {
+      const providerSubscriptionId = event.object.id;
+      const current = await this.billing.getSubscriptionByProviderSubscriptionId(providerSubscriptionId) ?? await this.billing.getSubscriptionByProviderCustomerId(event.object.customer);
+      if (!current) throw new NotFoundException("Mapped billing subscription not found.");
+      const planCode = event.object.metadata.planCode ?? current.plan.code;
+      const plan = await this.billing.getPlanByCode(planCode);
+      if (!plan || !plan.active) throw new NotFoundException("Billing plan not found.");
+      const status = event.type === "customer.subscription.deleted" ? "canceled" : normalizeStripeStatus(event.object.status);
+      const updated = await this.billing.updateSubscriptionFromProvider({
+        providerSubscriptionId,
+        providerCustomerId: event.object.customer,
+        planId: plan.id,
+        status,
+        cancelAtPeriodEnd: event.object.cancelAtPeriodEnd,
+        currentPeriodEnd: event.object.currentPeriodEnd ? new Date(event.object.currentPeriodEnd * 1000) : null
+      });
+      const subscription = updated ?? current.subscription;
+      await this.auditBillingState(subscription.userId, subscription.id, event.type, { planCode: plan.code, status, providerSubscriptionId });
+      return { status, planCode: plan.code, subscriptionId: subscription.id };
+    }
+
+    if (event.type === "invoice.payment_failed") {
+      const providerSubscriptionId = event.object.subscription;
+      const current = providerSubscriptionId ? await this.billing.getSubscriptionByProviderSubscriptionId(providerSubscriptionId) : null;
+      if (!current) throw new NotFoundException("Mapped billing subscription not found.");
+      const updated = await this.billing.updateSubscriptionFromProvider({
+        providerSubscriptionId: current.subscription.providerSubscriptionId ?? providerSubscriptionId,
+        providerCustomerId: current.subscription.providerCustomerId,
+        planId: current.plan.id,
+        status: "past_due",
+        cancelAtPeriodEnd: current.subscription.cancelAtPeriodEnd,
+        currentPeriodEnd: current.subscription.currentPeriodEnd
+      });
+      const subscription = updated ?? current.subscription;
+      await this.auditBillingState(subscription.userId, subscription.id, event.type, { status: "past_due", providerSubscriptionId });
+      return { status: "past_due", subscriptionId: subscription.id };
+    }
+
+    return { ignored: true };
+  }
+
+  private async auditBillingState(userId: string, subscriptionId: string, action: string, metadata: Record<string, unknown>) {
+    return this.billing.createUsageEvent({
+      userId,
+      subscriptionId,
+      metric: "billing_state",
+      quantity: 0,
+      usageBefore: 0,
+      usageAfter: 0,
+      limitValue: null,
+      action,
+      metadata
+    });
+  }
 }
 
 function parseCheckout(body: unknown) {
@@ -207,4 +331,86 @@ function limitException(metric: string, usageBefore: number, quantity: number, l
 
 function requiredPlanFor(entitlement: string) {
   return entitlement === "teamWorkspace" ? "team" : "premium";
+}
+
+function stripeConfigured() {
+  return Boolean(process.env.STRIPE_SECRET_KEY);
+}
+
+function stripeCustomerId(userId: string) {
+  return `cus_jobos_${userId.slice(0, 12).replaceAll("-", "")}`;
+}
+
+function stripeCheckoutUrl(planCode: string, customerId: string, subscriptionId: string) {
+  const priceId = process.env[`STRIPE_PRICE_${planCode.toUpperCase()}`] ?? `price_jobos_${planCode}`;
+  return `${billingBaseUrl()}/stripe/checkout?price=${encodeURIComponent(priceId)}&customer=${encodeURIComponent(customerId)}&subscription=${encodeURIComponent(subscriptionId)}`;
+}
+
+function billingBaseUrl() {
+  return process.env.BILLING_PUBLIC_URL ?? "https://billing.local.test";
+}
+
+function appBaseUrl() {
+  return process.env.APP_BASE_URL ?? "http://localhost:3000";
+}
+
+function parseWebhookPayload(body: unknown) {
+  const raw = body && typeof body === "object" ? body as Record<string, unknown> : {};
+  const id = typeof raw.id === "string" && raw.id.trim() ? raw.id.trim() : "";
+  const type = typeof raw.type === "string" && raw.type.trim() ? raw.type.trim() : "";
+  const data = raw.data && typeof raw.data === "object" ? raw.data as Record<string, unknown> : {};
+  const object = data.object && typeof data.object === "object" ? data.object as Record<string, unknown> : {};
+  if (!id || !type) throw new BadRequestException("Webhook payload is missing id or type.");
+  return { id, type, object: normalizeWebhookObject(object), raw };
+}
+
+function normalizeWebhookObject(object: Record<string, unknown>) {
+  const metadataValue = object.metadata && typeof object.metadata === "object" ? object.metadata as Record<string, unknown> : {};
+  const metadata = Object.fromEntries(Object.entries(metadataValue).filter(([, value]) => typeof value === "string")) as Record<string, string>;
+  return {
+    id: stringValue(object.id),
+    customer: stringValue(object.customer),
+    subscription: stringValue(object.subscription ?? object.id),
+    status: stringValue(object.status) || "active",
+    cancelAtPeriodEnd: Boolean(object.cancel_at_period_end ?? object.cancelAtPeriodEnd),
+    currentPeriodEnd: numberValue(object.current_period_end ?? object.currentPeriodEnd),
+    metadata
+  };
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function verifyWebhookSignature(payload: ParsedWebhook, signature: string | undefined) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET ?? "local-stripe-webhook-secret";
+  if (!signature) throw new UnauthorizedException("Missing billing webhook signature.");
+  const expected = createHmac("sha256", secret).update(stableJson(payload.raw)).digest("hex");
+  const provided = signature.startsWith("sha256=") ? signature.slice("sha256=".length) : signature;
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const providedBuffer = Buffer.from(provided, "hex");
+  if (expectedBuffer.length !== providedBuffer.length || !timingSafeEqual(expectedBuffer, providedBuffer)) {
+    throw new UnauthorizedException("Invalid billing webhook signature.");
+  }
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function normalizeStripeStatus(status: string) {
+  if (["active", "trialing", "past_due", "unpaid", "canceled", "incomplete"].includes(status)) return status;
+  return "active";
 }

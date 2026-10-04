@@ -129,6 +129,18 @@ export const billingUsageEvents = pgTable("billing_usage_events", {
   userMetricIdx: index("billing_usage_events_user_metric_idx").on(table.userId, table.metric)
 }));
 
+export const billingWebhookEvents = pgTable("billing_webhook_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  provider: text("provider").notNull().default("stripe"),
+  providerEventId: text("provider_event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).defaultNow().notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  ...timestamps
+}, (table) => ({
+  providerEventIdx: uniqueIndex("billing_webhook_events_provider_event_idx").on(table.provider, table.providerEventId)
+}));
+
 export const supportDiagnosticBundles = pgTable("support_diagnostic_bundles", {
   id: uuid("id").defaultRandom().primaryKey(),
   requestedByUserId: uuid("requested_by_user_id").references(() => users.id, { onDelete: "set null" }),

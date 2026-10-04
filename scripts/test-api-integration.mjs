@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -44,6 +45,25 @@ function expectPlanLimit(body, metric) {
   if (payload?.code !== "PLAN_LIMIT_REACHED" || payload.metric !== metric || payload.preserveDraft !== true || payload.requiredPlan !== "premium") {
     throw new Error(`Expected structured ${metric} plan limit response.`);
   }
+}
+
+function signedWebhookHeaders(payload) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET ?? "local-stripe-webhook-secret";
+  return {
+    "Content-Type": "application/json",
+    "x-jobos-webhook-signature": createHmac("sha256", secret).update(stableJson(payload)).digest("hex")
+  };
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
 }
 
 async function main() {
@@ -699,10 +719,68 @@ async function main() {
     body: JSON.stringify({ planCode: "premium" })
   });
   if (checkout.plan.code !== "premium" || checkout.subscription.status !== "active") throw new Error("Local billing checkout failed.");
+  const portal = await request("/billing/portal", { method: "POST" });
+  if (!portal.portalUrl || !portal.customerId) throw new Error("Billing portal link was not generated.");
+  const checkoutCompleted = {
+    id: `evt_checkout_${Date.now()}`,
+    type: "checkout.session.completed",
+    data: {
+      object: {
+        id: `cs_local_${Date.now()}`,
+        customer: `cus_test_${primaryAuth.user.id.slice(0, 8)}`,
+        subscription: `sub_test_${primaryAuth.user.id.slice(0, 8)}`,
+        metadata: { userId: primaryAuth.user.id, planCode: "team" }
+      }
+    }
+  };
+  const webhookResult = await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(checkoutCompleted),
+    body: JSON.stringify(checkoutCompleted)
+  });
+  if (webhookResult.result?.planCode !== "team" || webhookResult.result?.status !== "active") throw new Error("Checkout completed webhook did not activate the mapped plan.");
+  const duplicateWebhook = await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(checkoutCompleted),
+    body: JSON.stringify(checkoutCompleted)
+  });
+  if (duplicateWebhook.duplicate !== true) throw new Error("Billing webhook idempotency did not detect a duplicate event.");
+  const subscriptionUpdated = {
+    id: `evt_subscription_${Date.now()}`,
+    type: "customer.subscription.updated",
+    data: {
+      object: {
+        id: checkoutCompleted.data.object.subscription,
+        customer: checkoutCompleted.data.object.customer,
+        status: "active",
+        current_period_end: Math.floor(Date.now() / 1000) + 86400,
+        metadata: { planCode: "premium" }
+      }
+    }
+  };
+  const subscriptionWebhook = await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(subscriptionUpdated),
+    body: JSON.stringify(subscriptionUpdated)
+  });
+  if (subscriptionWebhook.result?.planCode !== "premium") throw new Error("Subscription update webhook did not remap the plan.");
+  const paymentFailed = {
+    id: `evt_payment_failed_${Date.now()}`,
+    type: "invoice.payment_failed",
+    data: { object: { subscription: checkoutCompleted.data.object.subscription, customer: checkoutCompleted.data.object.customer } }
+  };
+  const paymentWebhook = await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(paymentFailed),
+    body: JSON.stringify(paymentFailed)
+  });
+  if (paymentWebhook.result?.status !== "past_due") throw new Error("Payment failed webhook did not mark the subscription past due.");
   const premiumBilling = await request("/billing/status");
-  if (premiumBilling.effectivePlan?.code !== "premium" || premiumBilling.entitlements.providerSync !== true || premiumBilling.entitlements.premiumAi !== true) {
-    throw new Error("Premium billing entitlements were not activated.");
+  if (premiumBilling.effectivePlan?.code !== "premium" || premiumBilling.subscription?.provider !== "stripe" || premiumBilling.subscription?.status !== "past_due" || premiumBilling.entitlements.providerSync !== true || premiumBilling.entitlements.premiumAi !== true) {
+    throw new Error("Stripe webhook billing entitlements or provider state were not activated.");
   }
+  const billingStateEvents = await request("/billing/usage-events");
+  if (!billingStateEvents.some((event) => event.metric === "billing_state" && event.action === "invoice.payment_failed")) throw new Error("Billing state transition audit events were not recorded.");
   const emailSyncJob = await request("/integrations/email/sync-jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

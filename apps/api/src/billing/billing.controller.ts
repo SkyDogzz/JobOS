@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Post } from "@nestjs/common";
 import { BillingService } from "./billing.service.js";
 
 @Controller("billing")
@@ -13,6 +13,16 @@ export class BillingController {
   @Post("checkout")
   checkout(@Body() body: unknown) {
     return this.billing.startCheckout(body);
+  }
+
+  @Post("portal")
+  portal() {
+    return this.billing.createPortalLink();
+  }
+
+  @Post("webhook")
+  webhook(@Headers("x-jobos-webhook-signature") signature: string | undefined, @Body() body: unknown) {
+    return this.billing.handleWebhook(body, signature);
   }
 
   @Get("usage-events")

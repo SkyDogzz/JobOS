@@ -190,6 +190,13 @@
       "when": 1792152000000,
       "tag": "0026_saas_plan_model",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792238400000,
+      "tag": "0027_stripe_billing",
+      "breakpoints": true
     }
   ]
 }

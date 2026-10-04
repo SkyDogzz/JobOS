@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, desc, eq } from "drizzle-orm";
-import { billingPlans, billingUsageEvents, userSubscriptions } from "@jobos/database";
+import { billingPlans, billingUsageEvents, billingWebhookEvents, userSubscriptions } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -54,6 +54,93 @@ export class BillingRepository {
       })
       .returning();
     return subscription;
+  }
+
+  async updateProviderMapping(input: { userId: string; planId: string; provider: string; providerCustomerId: string; providerSubscriptionId?: string | null; status?: string }) {
+    const now = new Date();
+    const [subscription] = await this.db
+      .insert(userSubscriptions)
+      .values({
+        userId: input.userId,
+        planId: input.planId,
+        status: input.status ?? "active",
+        provider: input.provider,
+        providerCustomerId: input.providerCustomerId,
+        providerSubscriptionId: input.providerSubscriptionId ?? null,
+        currentPeriodEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+      })
+      .onConflictDoUpdate({
+        target: userSubscriptions.userId,
+        set: {
+          planId: input.planId,
+          status: input.status ?? "active",
+          provider: input.provider,
+          providerCustomerId: input.providerCustomerId,
+          providerSubscriptionId: input.providerSubscriptionId ?? null,
+          updatedAt: now
+        }
+      })
+      .returning();
+    return subscription;
+  }
+
+  async updateSubscriptionFromProvider(input: {
+    providerSubscriptionId: string;
+    providerCustomerId?: string | null;
+    planId: string;
+    status: string;
+    cancelAtPeriodEnd?: boolean;
+    currentPeriodEnd?: Date | null;
+  }) {
+    const [subscription] = await this.db
+      .update(userSubscriptions)
+      .set({
+        planId: input.planId,
+        status: input.status,
+        provider: "stripe",
+        providerCustomerId: input.providerCustomerId ?? undefined,
+        providerSubscriptionId: input.providerSubscriptionId,
+        cancelAtPeriodEnd: input.cancelAtPeriodEnd ?? false,
+        currentPeriodEnd: input.currentPeriodEnd ?? undefined,
+        updatedAt: new Date()
+      })
+      .where(eq(userSubscriptions.providerSubscriptionId, input.providerSubscriptionId))
+      .returning();
+    return subscription ?? null;
+  }
+
+  async getSubscriptionByProviderSubscriptionId(providerSubscriptionId: string) {
+    const [row] = await this.db
+      .select({ subscription: userSubscriptions, plan: billingPlans })
+      .from(userSubscriptions)
+      .innerJoin(billingPlans, eq(userSubscriptions.planId, billingPlans.id))
+      .where(eq(userSubscriptions.providerSubscriptionId, providerSubscriptionId))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async getSubscriptionByProviderCustomerId(providerCustomerId: string) {
+    const [row] = await this.db
+      .select({ subscription: userSubscriptions, plan: billingPlans })
+      .from(userSubscriptions)
+      .innerJoin(billingPlans, eq(userSubscriptions.planId, billingPlans.id))
+      .where(eq(userSubscriptions.providerCustomerId, providerCustomerId))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async recordWebhookEvent(input: { provider: string; providerEventId: string; eventType: string; payload: Record<string, unknown> }) {
+    const [event] = await this.db
+      .insert(billingWebhookEvents)
+      .values({
+        provider: input.provider,
+        providerEventId: input.providerEventId,
+        eventType: input.eventType,
+        payload: input.payload
+      })
+      .onConflictDoNothing({ target: [billingWebhookEvents.provider, billingWebhookEvents.providerEventId] })
+      .returning();
+    return event ?? null;
   }
 
   async updateUsage(subscriptionId: string, usage: Record<string, number>) {
