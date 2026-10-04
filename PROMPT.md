@@ -885,3 +885,5 @@ Implement v2.0.0 intelligent job search copilot:
 - Add integration and E2E coverage for grounded recommendations and approval-gated actions.
 - Run full release checks.
 - Commit and tag the result.
+
+Commit: `26b0d32 Add intelligent job search copilot`
