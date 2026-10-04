@@ -61,6 +61,7 @@ async function main() {
   });
   if (primaryAuth.user.email !== primaryEmail) throw new Error("Primary auth registration failed.");
   const primarySession = sessionCookie;
+  await expectStatus("/admin/users", 403);
 
   const secondaryEmail = `integration-secondary-${Date.now()}@jobos.local`;
   const secondaryAuth = await request("/auth/register", {
@@ -70,6 +71,9 @@ async function main() {
   });
   if (secondaryAuth.user.email !== secondaryEmail) throw new Error("Secondary auth registration failed.");
   const secondarySession = sessionCookie;
+  const adminHeaders = { Authorization: "Bearer local-admin-support" };
+  const adminUsers = await request(`/admin/users?q=${encodeURIComponent("integration-primary")}`, { headers: adminHeaders });
+  if (!adminUsers.some((user) => user.id === primaryAuth.user.id)) throw new Error("Admin user lookup did not find the primary user.");
 
   const privateJob = await request("/jobs", {
     method: "POST",
@@ -87,6 +91,17 @@ async function main() {
   if (primaryJobsBefore.some((item) => item.id === privateJob.id)) throw new Error("Primary user could list a secondary user's job.");
   const privateJobDetail = await fetch(`${apiUrl}/jobs/${privateJob.id}`, { headers: { Cookie: primarySession } });
   if (privateJobDetail.ok) throw new Error("Primary user could read a secondary user's job detail.");
+  const adminSyncHealth = await request("/admin/sync-health", { headers: adminHeaders });
+  if (!Array.isArray(adminSyncHealth.email) || !Array.isArray(adminSyncHealth.calendar)) throw new Error("Admin sync health did not return sync arrays.");
+  const adminFailures = await request("/admin/failed-jobs", { headers: adminHeaders });
+  if (!Array.isArray(adminFailures)) throw new Error("Admin failed jobs endpoint did not return a list.");
+  const supportBundle = await request("/admin/support-bundles", {
+    method: "POST",
+    headers: { ...adminHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: secondaryAuth.user.id, reason: "Integration diagnostic bundle" })
+  });
+  if (!supportBundle.bundleId || supportBundle.payload.user.emailDomain !== "jobos.local") throw new Error("Support bundle did not return redacted user diagnostics.");
+  if (JSON.stringify(supportBundle).includes(secondaryEmail)) throw new Error("Support bundle leaked the target email address.");
 
   const freeBilling = await request("/billing/status");
   if (freeBilling.effectivePlan?.code !== "free" || freeBilling.entitlements.providerSync !== false) {
@@ -141,6 +156,8 @@ async function main() {
       sourceName: "integration-test"
     })
   });
+  const adminAudit = await request(`/admin/audit?userId=${primaryAuth.user.id}`, { headers: adminHeaders });
+  if (!Array.isArray(adminAudit)) throw new Error("Admin audit endpoint did not return a list.");
 
   const source = await request("/job-sources", {
     method: "POST",

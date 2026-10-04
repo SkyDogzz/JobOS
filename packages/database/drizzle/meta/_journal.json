@@ -169,6 +169,13 @@
       "when": 1791892800000,
       "tag": "0023_team_multi_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791979200000,
+      "tag": "0024_admin_support_tools",
+      "breakpoints": true
     }
   ]
 }

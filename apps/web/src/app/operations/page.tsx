@@ -1,10 +1,16 @@
 import Link from "next/link";
-import { ArrowLeft, ServerCog } from "lucide-react";
-import { getBackgroundJobs } from "../../lib/api";
+import { ArrowLeft, ServerCog, ShieldCheck } from "lucide-react";
+import { getAdminAudit, getAdminFailedJobs, getAdminSyncHealth, getAdminUsers, getBackgroundJobs } from "../../lib/api";
 
 export default async function OperationsPage() {
   const jobs = await getBackgroundJobs().catch(() => []);
   const failures = jobs.filter((job) => ["failed", "dead_lettered"].includes(job.status));
+  const [adminUsers, adminAudit, adminFailures, syncHealth] = await Promise.all([
+    getAdminUsers().catch(() => []),
+    getAdminAudit().catch(() => []),
+    getAdminFailedJobs().catch(() => []),
+    getAdminSyncHealth().catch(() => null)
+  ]);
 
   return (
     <main className="min-h-screen bg-paper px-5 py-6 text-ink sm:px-8 lg:px-10">
@@ -57,8 +63,37 @@ export default async function OperationsPage() {
             </table>
           </div>
         </section>
+
+        <section className="mt-6 rounded border border-ink/10 bg-white p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ShieldCheck size={18} />
+            <h2 className="font-semibold">Admin Support</h2>
+          </div>
+          {adminUsers.length === 0 && adminAudit.length === 0 && adminFailures.length === 0 && !syncHealth ? (
+            <p className="text-sm text-ink/55">Admin support token is not configured for this runtime.</p>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <AdminList title="User lookup" rows={adminUsers.map((user) => `${user.email} ${user.name ?? ""}`)} />
+              <AdminList title="Audit trail" rows={adminAudit.map((event) => `${event.kind} ${event.jobTitle}`)} />
+              <AdminList title="Failed jobs" rows={adminFailures.map((job) => `${job.queueName}/${job.jobName} ${job.status}`)} />
+              <AdminList title="Sync health" rows={[`Email sync jobs: ${syncHealth?.email.length ?? 0}`, `Calendar sync jobs: ${syncHealth?.calendar.length ?? 0}`]} />
+            </div>
+          )}
+        </section>
       </div>
     </main>
+  );
+}
+
+function AdminList({ title, rows }: { title: string; rows: string[] }) {
+  return (
+    <div className="rounded border border-ink/10 p-4">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+      {rows.length === 0 ? <p className="text-sm text-ink/55">No records.</p> : null}
+      <ul className="space-y-2 text-sm text-ink/70">
+        {rows.slice(0, 6).map((row, index) => <li key={`${title}-${index}`}>{row}</li>)}
+      </ul>
+    </div>
   );
 }
 

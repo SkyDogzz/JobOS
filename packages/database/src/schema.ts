@@ -129,6 +129,17 @@ export const billingUsageEvents = pgTable("billing_usage_events", {
   userMetricIdx: index("billing_usage_events_user_metric_idx").on(table.userId, table.metric)
 }));
 
+export const supportDiagnosticBundles = pgTable("support_diagnostic_bundles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestedByUserId: uuid("requested_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  targetUserId: uuid("target_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  reason: text("reason").notNull(),
+  redactedPayload: jsonb("redacted_payload").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  targetIdx: index("support_diagnostic_bundles_target_idx").on(table.targetUserId)
+}));
+
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),

@@ -429,6 +429,28 @@ export interface BackgroundJobSummary {
   createdAt: string;
 }
 
+export interface AdminUserSummary {
+  id: string;
+  email: string;
+  name: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditSummary {
+  id: string;
+  kind: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  applicationId: string;
+  userId: string;
+  jobTitle: string;
+}
+
+export interface AdminSyncHealth {
+  email: Array<Record<string, unknown>>;
+  calendar: Array<Record<string, unknown>>;
+}
+
 export interface BillingPlanSummary {
   id: string;
   code: string;
@@ -607,6 +629,14 @@ async function getJson<T>(path: string): Promise<T> {
     throw new Error(`API request failed: ${path}`);
   }
 
+  return response.json() as Promise<T>;
+}
+
+async function getAdminJson<T>(path: string): Promise<T> {
+  const token = process.env.ADMIN_SUPPORT_TOKEN;
+  if (!token) throw new Error("Admin support token is not configured.");
+  const response = await fetch(`${apiUrl}${path}`, { cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error(`Admin API request failed: ${path}`);
   return response.json() as Promise<T>;
 }
 
@@ -795,6 +825,22 @@ export async function getHealthMetrics() {
 
 export async function getBackgroundJobs() {
   return getJson<BackgroundJobSummary[]>("/operations/background-jobs");
+}
+
+export async function getAdminUsers(query = "") {
+  return getAdminJson<AdminUserSummary[]>(`/admin/users${query}`);
+}
+
+export async function getAdminAudit(query = "") {
+  return getAdminJson<AdminAuditSummary[]>(`/admin/audit${query}`);
+}
+
+export async function getAdminFailedJobs() {
+  return getAdminJson<BackgroundJobSummary[]>("/admin/failed-jobs");
+}
+
+export async function getAdminSyncHealth() {
+  return getAdminJson<AdminSyncHealth>("/admin/sync-health");
 }
 
 export async function getFunnelAnalytics(query = "") {
