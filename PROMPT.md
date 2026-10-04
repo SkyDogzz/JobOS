@@ -871,6 +871,8 @@ Implement v1.9.1 admin and support tools:
 - Keep checks green.
 - Commit the result.
 
+Commit: `4b4df98 Add admin support tools`
+
 ### v2.0.0 — Intelligent Job Search Copilot
 
 Implement v2.0.0 intelligent job search copilot:
