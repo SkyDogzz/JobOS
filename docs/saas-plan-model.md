@@ -3,6 +3,7 @@
 JobOS v2.1.0 defines the public SaaS catalog as deterministic database seed data.
 JobOS v2.1.1 enforces the free-tier usage boundaries through the billing service.
 JobOS v2.2.0 adds the Stripe integration contract while keeping deterministic local fakes for development and tests.
+JobOS v2.2.1 adds billing recovery and dunning state handling.
 
 ## Plans
 
@@ -56,3 +57,15 @@ Set these environment variables before using real Stripe billing:
 Webhook payloads are accepted at `POST /billing/webhook`. Local fixtures sign the stable JSON payload with HMAC-SHA256 in `x-jobos-webhook-signature`; Stripe deployments should pass the Stripe webhook signing secret through `STRIPE_WEBHOOK_SECRET`.
 
 The webhook processor records provider event IDs in `billing_webhook_events` before applying state changes, so replayed events are acknowledged as duplicates and skipped. Billing state transitions are audited in `billing_usage_events` with `metric: "billing_state"`.
+
+## Recovery And Dunning
+
+Subscription states are grouped into billing-state categories:
+
+- `active` and `trialing`: premium features remain enabled.
+- `past_due`: premium features remain enabled during the grace period so the user can recover billing.
+- `unpaid` with an expired grace period, `canceled`, and `incomplete`: premium features are locked and premium entitlements are downgraded until billing is recovered.
+
+`GET /billing/status` returns `billingState` with the category, whether premium features are enabled, the grace-period end, and the recommended recovery action. Account settings displays failed-payment, grace-period, scheduled-cancellation, and locked-feature states.
+
+Payment failure webhooks create `billing_payment_failed` notifications. Terminal dunning states create `billing_grace_period_expired` notifications.

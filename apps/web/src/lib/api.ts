@@ -507,6 +507,14 @@ export interface BillingStatus {
   plans: BillingPlanSummary[];
   subscription: BillingSubscriptionSummary | null;
   effectivePlan: BillingPlanSummary | null;
+  billingState: {
+    status: string;
+    category: string;
+    featuresEnabled: boolean;
+    gracePeriodEndsAt: string | null;
+    recoveryAction: string;
+    message: string;
+  };
   entitlements: Record<string, boolean>;
   limits: Record<string, number | boolean>;
   usage: Record<string, number>;

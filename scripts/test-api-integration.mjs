@@ -779,14 +779,66 @@ async function main() {
   if (premiumBilling.effectivePlan?.code !== "premium" || premiumBilling.subscription?.provider !== "stripe" || premiumBilling.subscription?.status !== "past_due" || premiumBilling.entitlements.providerSync !== true || premiumBilling.entitlements.premiumAi !== true) {
     throw new Error("Stripe webhook billing entitlements or provider state were not activated.");
   }
+  if (premiumBilling.billingState?.category !== "recoverable" || premiumBilling.billingState.featuresEnabled !== true) {
+    throw new Error("Past-due billing did not enter a recoverable grace state.");
+  }
   const billingStateEvents = await request("/billing/usage-events");
   if (!billingStateEvents.some((event) => event.metric === "billing_state" && event.action === "invoice.payment_failed")) throw new Error("Billing state transition audit events were not recorded.");
+  const paymentNotifications = await request("/notifications");
+  if (!paymentNotifications.some((item) => item.kind === "billing_payment_failed")) throw new Error("Payment failure notification was not created.");
   const emailSyncJob = await request("/integrations/email/sync-jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ connectionId: emailConnection.id, cursor: "integration-cursor" })
   });
   if (emailSyncJob.status !== "completed" || !emailSyncJob.finishedAt) throw new Error("Email provider sync did not complete.");
+  const subscriptionUnpaid = {
+    id: `evt_subscription_unpaid_${Date.now()}`,
+    type: "customer.subscription.updated",
+    data: {
+      object: {
+        id: checkoutCompleted.data.object.subscription,
+        customer: checkoutCompleted.data.object.customer,
+        status: "unpaid",
+        current_period_end: Math.floor(Date.now() / 1000) - 60,
+        metadata: { planCode: "premium" }
+      }
+    }
+  };
+  await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(subscriptionUnpaid),
+    body: JSON.stringify(subscriptionUnpaid)
+  });
+  const unpaidBilling = await request("/billing/status");
+  if (unpaidBilling.billingState?.category !== "terminal" || unpaidBilling.entitlements.providerSync !== false || unpaidBilling.entitlements.premiumAi !== false) {
+    throw new Error("Unpaid billing did not lock premium entitlements.");
+  }
+  const graceNotifications = await request("/notifications");
+  if (!graceNotifications.some((item) => item.kind === "billing_grace_period_expired")) throw new Error("Grace-period expiration notification was not created.");
+  await expectStatus("/integrations/email/sync-jobs", 403, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connectionId: emailConnection.id, cursor: "blocked-unpaid-cursor" })
+  });
+  const subscriptionRecovered = {
+    id: `evt_subscription_recovered_${Date.now()}`,
+    type: "customer.subscription.updated",
+    data: {
+      object: {
+        id: checkoutCompleted.data.object.subscription,
+        customer: checkoutCompleted.data.object.customer,
+        status: "active",
+        current_period_end: Math.floor(Date.now() / 1000) + 86400,
+        metadata: { planCode: "premium" }
+      }
+    }
+  };
+  await request("/billing/webhook", {
+    method: "POST",
+    headers: signedWebhookHeaders(subscriptionRecovered),
+    body: JSON.stringify(subscriptionRecovered)
+  });
   const syncedEmailMessages = await request("/integrations/email/messages");
   const syncedEmailMessage = syncedEmailMessages.find((item) => item.threadId === "provider-thread-1");
   if (!syncedEmailMessage) throw new Error("Email provider sync did not import a message.");

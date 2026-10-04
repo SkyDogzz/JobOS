@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { asc, desc, eq } from "drizzle-orm";
-import { billingPlans, billingUsageEvents, billingWebhookEvents, userSubscriptions } from "@jobos/database";
+import { billingPlans, billingUsageEvents, billingWebhookEvents, notifications, userSubscriptions } from "@jobos/database";
 import { DATABASE } from "../database/database.module.js";
 import type { JobOsDatabase } from "../database/database.types.js";
 
@@ -141,6 +141,22 @@ export class BillingRepository {
       .onConflictDoNothing({ target: [billingWebhookEvents.provider, billingWebhookEvents.providerEventId] })
       .returning();
     return event ?? null;
+  }
+
+  async createBillingNotification(input: { userId: string; kind: string; title: string; body: string; scheduledFor?: Date | null; metadata?: Record<string, unknown> }) {
+    const [notification] = await this.db
+      .insert(notifications)
+      .values({
+        userId: input.userId,
+        kind: input.kind,
+        title: input.title,
+        body: input.body,
+        scheduledFor: input.scheduledFor ?? new Date(),
+        deliveryChannel: "in_app",
+        metadata: input.metadata ?? {}
+      })
+      .returning();
+    return notification;
   }
 
   async updateUsage(subscriptionId: string, usage: Record<string, number>) {

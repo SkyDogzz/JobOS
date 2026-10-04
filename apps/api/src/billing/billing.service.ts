@@ -16,16 +16,20 @@ export class BillingService {
     const plans = await this.billing.listPlans();
     const subscription = await this.ensureSubscription(userId);
     const effectivePlan = subscription.plan;
+    const billingState = describeBillingState(subscription.subscription);
+    const entitlements = effectiveEntitlements((effectivePlan?.entitlements ?? {}) as Entitlements, billingState);
+    const limits = effectiveLimits((effectivePlan?.limits ?? {}) as Limits, billingState);
     return {
       providerMode: process.env.STRIPE_SECRET_KEY ? "stripe_optional" : "local_fake",
       plans,
       subscription: subscription.subscription,
       effectivePlan,
-      entitlements: (effectivePlan?.entitlements ?? {}) as Entitlements,
-      limits: (effectivePlan?.limits ?? {}) as Limits,
+      billingState,
+      entitlements,
+      limits,
       usage: subscription.subscription.usage ?? {},
-      warnings: buildWarnings(subscription.subscription.usage ?? {}, (effectivePlan?.limits ?? {}) as Limits),
-      upgradePrompts: buildUpgradePrompts((effectivePlan?.entitlements ?? {}) as Entitlements, (effectivePlan?.limits ?? {}) as Limits)
+      warnings: buildWarnings(subscription.subscription.usage ?? {}, limits),
+      upgradePrompts: buildUpgradePrompts(entitlements, limits, billingState)
     };
   }
 
@@ -243,6 +247,7 @@ export class BillingService {
       });
       const subscription = updated ?? current.subscription;
       await this.auditBillingState(subscription.userId, subscription.id, event.type, { planCode: plan.code, status, providerSubscriptionId });
+      await this.notifyDunningState(subscription.userId, status, { providerSubscriptionId, planCode: plan.code });
       return { status, planCode: plan.code, subscriptionId: subscription.id };
     }
 
@@ -260,6 +265,7 @@ export class BillingService {
       });
       const subscription = updated ?? current.subscription;
       await this.auditBillingState(subscription.userId, subscription.id, event.type, { status: "past_due", providerSubscriptionId });
+      await this.notifyDunningState(subscription.userId, "past_due", { providerSubscriptionId });
       return { status: "past_due", subscriptionId: subscription.id };
     }
 
@@ -278,6 +284,27 @@ export class BillingService {
       action,
       metadata
     });
+  }
+
+  private async notifyDunningState(userId: string, status: string, metadata: Record<string, unknown>) {
+    if (status === "past_due") {
+      await this.billing.createBillingNotification({
+        userId,
+        kind: "billing_payment_failed",
+        title: "Payment failed",
+        body: "Update your billing details to keep premium features active after the grace period.",
+        metadata: { source: "billing_dunning", status, ...metadata }
+      });
+    }
+    if (["unpaid", "canceled"].includes(status)) {
+      await this.billing.createBillingNotification({
+        userId,
+        kind: "billing_grace_period_expired",
+        title: status === "canceled" ? "Subscription canceled" : "Grace period expired",
+        body: "Premium features are locked until billing is recovered.",
+        metadata: { source: "billing_dunning", status, ...metadata }
+      });
+    }
   }
 }
 
@@ -306,8 +333,9 @@ function buildWarnings(usage: Record<string, number>, limits: Limits) {
     .filter((item) => item.remaining <= Math.max(1, Math.ceil(item.limit * 0.2)));
 }
 
-function buildUpgradePrompts(entitlements: Entitlements, limits: Limits) {
+function buildUpgradePrompts(entitlements: Entitlements, limits: Limits, billingState?: ReturnType<typeof describeBillingState>) {
   const prompts = [];
+  if (billingState && !billingState.featuresEnabled) prompts.push({ feature: "billingRecovery", label: billingState.message, requiredPlan: billingState.recoveryAction });
   if (!entitlements.premiumAi) prompts.push({ feature: "premiumAi", label: "Premium AI", requiredPlan: "premium" });
   if (!entitlements.providerSync) prompts.push({ feature: "providerSync", label: "Email and calendar sync", requiredPlan: "premium" });
   if (!entitlements.teamWorkspace) prompts.push({ feature: "teamWorkspace", label: "Team workspaces", requiredPlan: "team" });
@@ -413,4 +441,47 @@ function stableJson(value: unknown): string {
 function normalizeStripeStatus(status: string) {
   if (["active", "trialing", "past_due", "unpaid", "canceled", "incomplete"].includes(status)) return status;
   return "active";
+}
+
+function describeBillingState(subscription: { status: string; currentPeriodEnd: Date | string | null; cancelAtPeriodEnd: boolean }) {
+  const status = subscription.status;
+  const gracePeriodEndsAt = gracePeriodEnd(subscription.currentPeriodEnd);
+  const now = Date.now();
+  const recoverable = ["past_due", "trialing"].includes(status) || (status === "unpaid" && gracePeriodEndsAt !== null && gracePeriodEndsAt.getTime() > now);
+  const terminal = ["canceled"].includes(status) || status === "incomplete" || (status === "unpaid" && (!gracePeriodEndsAt || gracePeriodEndsAt.getTime() <= now));
+  const featuresEnabled = ["active", "trialing"].includes(status) || (status === "past_due" && (!gracePeriodEndsAt || gracePeriodEndsAt.getTime() > now)) || recoverable;
+  return {
+    status,
+    category: terminal ? "terminal" : recoverable ? "recoverable" : "active",
+    featuresEnabled,
+    gracePeriodEndsAt: gracePeriodEndsAt ? gracePeriodEndsAt.toISOString() : null,
+    recoveryAction: terminal ? "reactivate" : recoverable ? "update_payment_method" : "none",
+    message: terminal ? "Billing recovery required" : recoverable ? "Payment needs attention" : subscription.cancelAtPeriodEnd ? "Cancellation scheduled" : "Billing is active"
+  };
+}
+
+function gracePeriodEnd(value: Date | string | null) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function effectiveEntitlements(entitlements: Entitlements, billingState: ReturnType<typeof describeBillingState>) {
+  if (billingState.featuresEnabled) return entitlements;
+  return { ...entitlements, premiumAi: false, providerSync: false, teamWorkspace: false, documentTemplates: false, supportPriority: false };
+}
+
+function effectiveLimits(limits: Limits, billingState: ReturnType<typeof describeBillingState>) {
+  if (billingState.featuresEnabled) return limits;
+  return {
+    ...limits,
+    copilotMessages: Math.min(numericLimit(limits.copilotMessages) ?? 10, 10),
+    copilotActions: Math.min(numericLimit(limits.copilotActions) ?? 5, 5),
+    aiGenerations: Math.min(numericLimit(limits.aiGenerations) ?? 10, 10),
+    providerCalls: 0,
+    syncRuns: 0,
+    documentExports: Math.min(numericLimit(limits.documentExports) ?? 5, 5),
+    discoveredJobImports: Math.min(numericLimit(limits.discoveredJobImports) ?? 10, 10),
+    teamSeats: 1
+  };
 }

@@ -99,6 +99,12 @@ export default async function SettingsPage() {
               <Metric label="Sync runs" value={formatUsage(billing.usage.syncRuns, billing.limits.syncRuns)} />
               <Metric label="Document exports" value={formatUsage(billing.usage.documentExports, billing.limits.documentExports)} />
             </div>
+            <div className={`mt-4 rounded border p-3 text-sm ${billing.billingState.featuresEnabled ? "border-ink/10 bg-paper text-ink/70" : "border-rust/20 bg-rust/10 text-ink/75"}`}>
+              <p className="font-medium text-ink">{billing.billingState.message}</p>
+              <p className="mt-1">Status: {billing.billingState.status}. Premium features are {billing.billingState.featuresEnabled ? "available" : "locked"}.</p>
+              {billing.billingState.gracePeriodEndsAt ? <p className="mt-1">Grace period ends {new Date(billing.billingState.gracePeriodEndsAt).toLocaleDateString()}.</p> : null}
+              {billing.subscription?.cancelAtPeriodEnd ? <p className="mt-1">Cancellation is scheduled at period end.</p> : null}
+            </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {billing.plans.map((plan) => (
                 <div className={`rounded border p-4 ${plan.code === billing.effectivePlan?.code ? "border-ink bg-paper" : "border-ink/10"}`} key={plan.code}>
