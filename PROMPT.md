@@ -916,6 +916,8 @@ Implement v2.1.1 free tier limit enforcement:
 - Keep checks green.
 - Commit the result.
 
+Commit: `821b0e6 Enforce free tier limits`
+
 ### v2.2.0 — Stripe Billing Integration
 
 Implement v2.2.0 Stripe billing integration:
